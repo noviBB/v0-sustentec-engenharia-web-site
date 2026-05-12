@@ -82,7 +82,7 @@ export function Header() {
               size="sm"
               className="hidden md:inline-flex bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              <Link href="#contact">{t("nav.clientArea")}</Link>
+              <Link href="/portal/login">{t("nav.clientArea")}</Link>
             </Button>
 
             {/* Mobile Menu Button */}
@@ -119,7 +119,7 @@ export function Header() {
                 asChild
                 className="mt-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                <Link href="#contact">{t("nav.clientArea")}</Link>
+                <Link href="/portal/login">{t("nav.clientArea")}</Link>
               </Button>
             </div>
           </nav>
