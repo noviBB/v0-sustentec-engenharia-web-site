@@ -23,3 +23,4 @@ node_modules
 # autoskills (https://npm.im/autoskills) — local install state
 .agents/
 skills-lock.json
+.vercel
