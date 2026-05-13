@@ -9,54 +9,54 @@ export default function PortalPage() {
   const [activeItem, setActiveItem] = useState("painel")
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f5f7f5]">
       <PortalSidebar activeItem={activeItem} onItemChange={setActiveItem} />
       
       <div className="lg:ml-72">
         <div className="pt-16 lg:pt-0">
           <PortalHeader />
           
-          <main className="p-6">
+          <main className="p-4 md:p-6">
             {activeItem === "painel" && <DashboardContent />}
             {activeItem === "processo" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Meu Processo</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Meu Processo</h2>
                 <p className="text-muted-foreground">Detalhes do seu processo de licenciamento</p>
               </div>
             )}
             {activeItem === "documentos" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Documentos</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Documentos</h2>
                 <p className="text-muted-foreground">Gerencie seus documentos</p>
               </div>
             )}
             {activeItem === "historico" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Historico</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Historico</h2>
                 <p className="text-muted-foreground">Historico completo do processo</p>
               </div>
             )}
             {activeItem === "pendencias" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Pendencias</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Pendencias</h2>
                 <p className="text-muted-foreground">Acoes pendentes do cliente</p>
               </div>
             )}
             {activeItem === "mensagens" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Mensagens</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Mensagens</h2>
                 <p className="text-muted-foreground">Comunicacao com a equipe tecnica</p>
               </div>
             )}
             {activeItem === "agendamentos" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Agendamentos</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Agendamentos</h2>
                 <p className="text-muted-foreground">Vistorias e reunioes agendadas</p>
               </div>
             )}
             {activeItem === "dados" && (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Dados Cadastrais</h2>
+              <div className="bg-white rounded-xl p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Dados Cadastrais</h2>
                 <p className="text-muted-foreground">Seus dados e informacoes de contato</p>
               </div>
             )}
