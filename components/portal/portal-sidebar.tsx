@@ -7,40 +7,56 @@ import { cn } from "@/lib/utils"
 import {
   Leaf,
   LayoutDashboard,
-  FileText,
-  FolderOpen,
-  History,
-  AlertCircle,
+  FolderKanban,
   MessageSquare,
   Calendar,
   User,
   LogOut,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
+interface Process {
+  id: string
+  name: string
+  location: string
+  status: string
+  pendencias: number
+}
+
 interface PortalSidebarProps {
   activeItem: string
   onItemChange: (item: string) => void
+  selectedProcess: string | null
+  onProcessChange: (processId: string) => void
+  processes: Process[]
 }
 
 const menuItems = [
   { id: "painel", label: "Painel Principal", icon: LayoutDashboard },
-  { id: "processo", label: "Meu Processo", icon: FileText },
-  { id: "documentos", label: "Documentos", icon: FolderOpen },
-  { id: "historico", label: "Historico", icon: History },
-  { id: "pendencias", label: "Pendencias", icon: AlertCircle, badge: 2 },
+  { id: "processos", label: "Meus Processos", icon: FolderKanban },
   { id: "mensagens", label: "Mensagens", icon: MessageSquare, badge: 1 },
   { id: "agendamentos", label: "Agendamentos", icon: Calendar },
   { id: "dados", label: "Dados Cadastrais", icon: User },
 ]
 
-export function PortalSidebar({ activeItem, onItemChange }: PortalSidebarProps) {
+export function PortalSidebar({ 
+  activeItem, 
+  onItemChange, 
+  selectedProcess, 
+  onProcessChange,
+  processes 
+}: PortalSidebarProps) {
   const { logout } = useAuth()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [processesExpanded, setProcessesExpanded] = useState(true)
+
+  const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#2d5a27]">
@@ -62,34 +78,85 @@ export function PortalSidebar({ activeItem, onItemChange }: PortalSidebarProps) 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => {
-              onItemChange(item.id)
-              setIsMobileOpen(false)
-            }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
-              activeItem === item.id
-                ? "bg-[#4caf50] text-white shadow-md"
-                : "text-white/80 hover:bg-white/10 hover:text-white"
+          <div key={item.id}>
+            <button
+              onClick={() => {
+                if (item.id === "processos") {
+                  setProcessesExpanded(!processesExpanded)
+                } else {
+                  onItemChange(item.id)
+                  setIsMobileOpen(false)
+                }
+              }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                activeItem === item.id && item.id !== "processos"
+                  ? "bg-[#4caf50] text-white shadow-md"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
+              )}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.id === "processos" && (
+                <>
+                  {totalPendencias > 0 && (
+                    <Badge className="h-5 min-w-5 flex items-center justify-center text-xs rounded-full bg-amber-500 text-white mr-1">
+                      {totalPendencias}
+                    </Badge>
+                  )}
+                  {processesExpanded ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </>
+              )}
+              {item.badge && item.id !== "processos" && (
+                <Badge
+                  className={cn(
+                    "h-5 min-w-5 flex items-center justify-center text-xs rounded-full",
+                    activeItem === item.id
+                      ? "bg-white text-[#4caf50]"
+                      : "bg-[#4caf50] text-white"
+                  )}
+                >
+                  {item.badge}
+                </Badge>
+              )}
+            </button>
+
+            {/* Process List (expandable) */}
+            {item.id === "processos" && processesExpanded && (
+              <div className="ml-4 mt-1 space-y-1">
+                {processes.map((process) => (
+                  <button
+                    key={process.id}
+                    onClick={() => {
+                      onProcessChange(process.id)
+                      onItemChange("processo-detalhe")
+                      setIsMobileOpen(false)
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all",
+                      selectedProcess === process.id
+                        ? "bg-[#4caf50] text-white shadow-md"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    <div className="flex-1 text-left">
+                      <p className="truncate">{process.name}</p>
+                      <p className="text-[10px] opacity-70">{process.location}</p>
+                    </div>
+                    {process.pendencias > 0 && (
+                      <Badge className="h-4 min-w-4 flex items-center justify-center text-[10px] rounded-full bg-amber-500 text-white">
+                        {process.pendencias}
+                      </Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.badge && (
-              <Badge
-                className={cn(
-                  "h-5 min-w-5 flex items-center justify-center text-xs rounded-full",
-                  activeItem === item.id
-                    ? "bg-white text-[#4caf50]"
-                    : "bg-[#4caf50] text-white"
-                )}
-              >
-                {item.badge}
-              </Badge>
-            )}
-          </button>
+          </div>
         ))}
       </nav>
 
