@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AuthProvider, useAuth } from "@/lib/auth-context"
+import { Toaster } from "@/components/ui/toaster"
 
 function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -40,6 +41,7 @@ export default function PortalLayout({
   return (
     <AuthProvider>
       <PortalLayoutContent>{children}</PortalLayoutContent>
+      <Toaster />
     </AuthProvider>
   )
 }

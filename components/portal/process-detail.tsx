@@ -2,20 +2,18 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   FileSearch,
   Calendar,
-  ShieldCheck,
+  Wallet,
   Download,
   AlertTriangle,
   MessageCircle,
   ArrowRight,
   CheckCircle,
-  Circle,
   FileText,
   MapPin,
   Building,
@@ -23,9 +21,6 @@ import {
   Clock,
   Trees,
   ClipboardList,
-  Search,
-  FileCheck,
-  Award,
   Upload,
   Eye,
   TrendingUp,
@@ -39,14 +34,16 @@ interface ProcessDetailProps {
 
 // Process data mock
 const processData: Record<string, {
+  code: string
   name: string
   location: string
   status: string
   progress: number
   estimatedDays: number
   estimatedDate: string
-  risk: string
-  currentStep: number
+  paymentsMade: number
+  paymentsTotal: number
+  paidAmount: string
   licenseType: string
   environmentalAgency: string
   impactClass: string
@@ -55,65 +52,60 @@ const processData: Record<string, {
   crea: string
 }> = {
   "proc-001": {
-    name: "Condominio Residencial Multifamiliar",
-    location: "Nova Friburgo - RJ",
+    code: "CC 26-004",
+    name: "Enge Prat - UNOPS Planos",
+    location: "",
     status: "Em analise pelo orgao ambiental",
     progress: 65,
     estimatedDays: 120,
     estimatedDate: "22/08/2026",
-    risk: "Baixo",
-    currentStep: 4,
+    paymentsMade: 2,
+    paymentsTotal: 3,
+    paidAmount: "R$ 4.500,00",
     licenseType: "LP / LI",
     environmentalAgency: "INEA",
     impactClass: "MEDIO",
     responsibleTech: "Leonardo Martins",
-    activity: "Condominio Residencial Multifamiliar",
+    activity: "UNOPS Planos",
     crea: "2018101234",
   },
   "proc-002": {
-    name: "Posto de Combustiveis",
-    location: "Petropolis - RJ",
+    code: "CC 26-016",
+    name: "Licenças Enge Prat - Niterói",
+    location: "Niterói - RJ",
     status: "Aguardando documentacao",
     progress: 25,
     estimatedDays: 180,
     estimatedDate: "15/11/2026",
-    risk: "Medio",
-    currentStep: 2,
+    paymentsMade: 1,
+    paymentsTotal: 4,
+    paidAmount: "R$ 2.200,00",
     licenseType: "LO",
     environmentalAgency: "INEA",
     impactClass: "ALTO",
     responsibleTech: "Leonardo Martins",
-    activity: "Posto de Abastecimento de Combustiveis",
+    activity: "Licenciamento Municipal",
     crea: "2018101234",
   },
   "proc-003": {
-    name: "Loteamento Residencial",
-    location: "Teresopolis - RJ",
-    status: "Licenca emitida",
+    code: "CC 26-017",
+    name: "Laudo de Avaliação Cautelar de Vizinhança - Enge Prat",
+    location: "",
+    status: "Concluido",
     progress: 100,
     estimatedDays: 0,
     estimatedDate: "Concluido",
-    risk: "Baixo",
-    currentStep: 7,
-    licenseType: "LP",
+    paymentsMade: 2,
+    paymentsTotal: 2,
+    paidAmount: "R$ 3.800,00",
+    licenseType: "Laudo Tecnico",
     environmentalAgency: "INEA",
     impactClass: "BAIXO",
     responsibleTech: "Leonardo Martins",
-    activity: "Loteamento Residencial",
+    activity: "Avaliação Cautelar de Vizinhança",
     crea: "2018101234",
   },
 }
-
-// Process workflow steps
-const workflowSteps = [
-  { id: 1, label: "Contratacao", icon: FileText },
-  { id: 2, label: "Levantamento Tecnico", icon: ClipboardList },
-  { id: 3, label: "Protocolo", icon: FileCheck },
-  { id: 4, label: "Analise do Orgao", icon: Search },
-  { id: 5, label: "Exigencias", icon: AlertTriangle },
-  { id: 6, label: "Aprovacao", icon: CheckCircle },
-  { id: 7, label: "Licenca Emitida", icon: Award },
-]
 
 // Evolution history by process
 const evolutionHistory: Record<string, Array<{ date: string; event: string; current: boolean }>> = {
@@ -181,33 +173,32 @@ const pendencias: Record<string, Array<{ id: string; title: string; description:
 
 export function ProcessDetail({ processId }: ProcessDetailProps) {
   const [activeTab, setActiveTab] = useState("resumo")
-  
+
   const process = processData[processId] || processData["proc-001"]
   const history = evolutionHistory[processId] || evolutionHistory["proc-001"]
   const docs = documents[processId] || documents["proc-001"]
   const processPendencias = pendencias[processId] || pendencias["proc-001"]
 
-  const getStepStatus = (stepId: number) => {
-    if (stepId < process.currentStep) return "completed"
-    if (stepId === process.currentStep) return "current"
-    return "pending"
-  }
-
   return (
     <div className="space-y-6">
       {/* Process Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
+          <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2.5 py-1 mb-2">
+            {process.code}
+          </span>
           <h2 className="text-2xl font-bold text-foreground">{process.name}</h2>
-          <p className="text-muted-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            {process.location}
-          </p>
+          {process.location && (
+            <p className="text-muted-foreground flex items-center gap-2 mt-1">
+              <MapPin className="w-4 h-4" />
+              {process.location}
+            </p>
+          )}
         </div>
-        <Badge 
-          className={`text-sm px-4 py-1.5 ${
-            process.progress === 100 
-              ? "bg-[#4caf50] text-white" 
+        <Badge
+          className={`text-sm px-4 py-1.5 self-start ${
+            process.progress === 100
+              ? "bg-[#4caf50] text-white"
               : "bg-[#e8f5e9] text-[#2d5a27]"
           }`}
         >
@@ -216,7 +207,7 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Current Status */}
         <Card className="bg-white">
           <CardHeader className="pb-2">
@@ -236,26 +227,12 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
           </CardContent>
         </Card>
 
-        {/* Progress */}
+        {/* Tempo de tramitação */}
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">PROGRESSO DO PROCESSO</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="text-4xl font-bold text-[#2d5a27]">{process.progress}%</div>
-              <Progress value={process.progress} className="h-2 bg-[#e8f5e9]" />
-              <p className="text-xs text-muted-foreground">
-                {process.progress === 100 ? "Processo concluido" : "Previsao para proxima etapa: 30 dias"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Estimated Deadline */}
-        <Card className="bg-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">PRAZO ESTIMADO</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+              TEMPO DE TRAMITAÇÃO DO PROCESSO
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start gap-3">
@@ -273,117 +250,55 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
           </CardContent>
         </Card>
 
-        {/* Risk */}
-        <Card className="bg-white">
+        {/* Pagamentos realizados */}
+        <Card className="bg-[#f5f1e6] border-[#e5dcc5]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">RISCO DO PROCESSO</CardTitle>
+            <CardTitle className="text-xs font-semibold text-[#2d5a27]/70 tracking-wide">
+              PAGAMENTOS REALIZADOS
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start gap-3">
-              <div className="p-2.5 bg-[#e8f5e9] rounded-xl">
-                <ShieldCheck className="w-6 h-6 text-[#2d5a27]" />
+              <div className="p-2.5 bg-white rounded-xl">
+                <Wallet className="w-6 h-6 text-[#2d5a27]" />
               </div>
               <div>
-                <Badge className={`text-base font-semibold px-3 py-1 ${
-                  process.risk === "Baixo" 
-                    ? "bg-[#e8f5e9] text-[#2d5a27] hover:bg-[#c8e6c9]"
-                    : process.risk === "Medio"
-                    ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                    : "bg-red-100 text-red-800 hover:bg-red-200"
-                }`}>
-                  {process.risk}
-                </Badge>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {process.risk === "Baixo" ? "Situacao favoravel" : "Atencao requerida"}
+                <p className="text-3xl font-bold text-foreground">
+                  {process.paymentsMade} <span className="text-lg text-muted-foreground font-medium">de {process.paymentsTotal}</span>
                 </p>
+                <p className="text-sm text-[#2d5a27] font-semibold">{process.paidAmount}</p>
+                <p className="text-xs text-[#2d5a27]/70 mt-0.5">pagamentos realizados</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Process Workflow */}
-      <Card className="bg-white">
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold tracking-wide">FLUXOGRAMA DO PROCESSO</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-start justify-between overflow-x-auto pb-4 gap-2">
-            {workflowSteps.map((step, index) => {
-              const status = getStepStatus(step.id)
-              return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center min-w-[90px]">
-                    <div
-                      className={`w-14 h-14 rounded-xl flex items-center justify-center border-2 transition-all ${
-                        status === "completed"
-                          ? "bg-[#e8f5e9] border-[#4caf50] text-[#2d5a27]"
-                          : status === "current"
-                          ? "bg-[#2d5a27] border-[#2d5a27] text-white shadow-lg"
-                          : "bg-gray-50 border-gray-200 text-gray-400"
-                      }`}
-                    >
-                      <step.icon className="w-6 h-6" />
-                    </div>
-                    <span className="text-xs text-center mt-2 text-muted-foreground max-w-[90px] leading-tight">
-                      {step.label}
-                    </span>
-                    <div className="mt-2">
-                      {status === "completed" && (
-                        <CheckCircle className="w-5 h-5 text-[#4caf50]" />
-                      )}
-                      {status === "current" && (
-                        <div className="w-3 h-3 bg-[#2d5a27] rounded-full animate-pulse" />
-                      )}
-                      {status === "pending" && (
-                        <Circle className="w-5 h-5 text-gray-300" />
-                      )}
-                    </div>
-                  </div>
-                  {index < workflowSteps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-1 mt-[-40px] ${
-                        status === "completed" ? "bg-[#4caf50]" : "bg-gray-200"
-                      }`}
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <div className="text-center pt-4 border-t border-gray-100">
-            <Badge variant="outline" className="text-[#2d5a27] border-[#2d5a27] bg-[#e8f5e9] px-4 py-1.5">
-              Etapa atual: {workflowSteps[process.currentStep - 1]?.label || "Concluido"}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Tabs for Resumo, Evolucao, Documentos, Pendencias */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid grid-cols-4 gap-2 bg-transparent p-0 h-auto">
-          <TabsTrigger 
+          <TabsTrigger
             value="resumo"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <ClipboardList className="w-4 h-4" />
             Resumo
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="evolucao"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <TrendingUp className="w-4 h-4" />
             Evolucao
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="documentos"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <FolderOpen className="w-4 h-4" />
             Documentos
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="pendencias"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3 relative"
           >
@@ -412,13 +327,15 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                     <p className="font-medium">{process.licenseType}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-[#2d5a27] mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Local do empreendimento</p>
-                    <p className="font-medium">{process.location}</p>
+                {process.location && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-[#2d5a27] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Local do empreendimento</p>
+                      <p className="font-medium">{process.location}</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-start gap-3">
                   <Building className="w-4 h-4 text-[#2d5a27] mt-0.5 shrink-0" />
                   <div>
@@ -429,7 +346,7 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                 <div className="flex items-start gap-3">
                   <Clock className="w-4 h-4 text-[#2d5a27] mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Prazo estimado</p>
+                    <p className="text-xs text-muted-foreground">Tempo de tramitação</p>
                     <p className="font-medium">{process.progress === 100 ? "Concluido" : `${process.estimatedDays} dias`}</p>
                   </div>
                 </div>
@@ -438,7 +355,7 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                   <div>
                     <p className="text-xs text-muted-foreground">Classe de Impacto</p>
                     <Badge className={`mt-0.5 ${
-                      process.impactClass === "BAIXO" 
+                      process.impactClass === "BAIXO"
                         ? "bg-green-100 text-green-800"
                         : process.impactClass === "MEDIO"
                         ? "bg-amber-100 text-amber-800"
@@ -525,8 +442,8 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                   <div
                     key={index}
                     className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
-                      file.status === "disponivel" 
-                        ? "border-gray-100 hover:bg-gray-50" 
+                      file.status === "disponivel"
+                        ? "border-gray-100 hover:bg-gray-50"
                         : "border-dashed border-gray-300 bg-gray-50"
                     }`}
                   >
@@ -545,7 +462,7 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={`text-xs ${
-                        file.status === "disponivel" 
+                        file.status === "disponivel"
                           ? "bg-red-50 text-red-600 border-red-200"
                           : "bg-gray-100 text-gray-500 border-gray-200"
                       }`}>
@@ -590,8 +507,8 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                     <div
                       key={item.id}
                       className={`p-4 border rounded-lg ${
-                        item.priority === "alta" 
-                          ? "border-amber-300 bg-amber-50" 
+                        item.priority === "alta"
+                          ? "border-amber-300 bg-amber-50"
                           : "border-gray-200 bg-white"
                       }`}
                     >
@@ -614,7 +531,7 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <Badge className={`${
-                            item.priority === "alta" 
+                            item.priority === "alta"
                               ? "bg-amber-500 text-white"
                               : "bg-blue-100 text-blue-800"
                           }`}>

@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 
 interface Process {
   id: string
+  code: string
   name: string
   location: string
   status: string
@@ -143,9 +144,11 @@ export function PortalSidebar({
                         : "text-white/70 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <div className="flex-1 text-left">
-                      <p className="truncate">{process.name}</p>
-                      <p className="text-[10px] opacity-70">{process.location}</p>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
+                        {process.code}
+                      </p>
+                      <p className="truncate text-xs">{process.name}</p>
                     </div>
                     {process.pendencias > 0 && (
                       <Badge className="h-4 min-w-4 flex items-center justify-center text-[10px] rounded-full bg-amber-500 text-white">

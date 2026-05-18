@@ -16,6 +16,7 @@ import {
 
 interface Process {
   id: string
+  code: string
   name: string
   location: string
   status: string
@@ -38,7 +39,7 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
     <div className="space-y-6">
       {/* Welcome */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Ola, Cliente!</h2>
+        <h2 className="text-2xl font-bold text-foreground">Olá, Engeprat!</h2>
         <p className="text-muted-foreground">
           Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.
         </p>
@@ -140,11 +141,16 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
                       )}
                     </div>
                     <div>
+                      <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
+                        {process.code}
+                      </span>
                       <p className="font-semibold text-foreground">{process.name}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                        <MapPin className="w-3 h-3" />
-                        {process.location}
-                      </p>
+                      {process.location && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          {process.location}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -190,9 +196,9 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
         <CardContent>
           <div className="space-y-4">
             {[
-              { date: "27/04/2026", process: "Condominio Residencial Multifamiliar", event: "Em analise pelo orgao ambiental" },
-              { date: "15/04/2026", process: "Posto de Combustiveis", event: "Aguardando documentacao complementar" },
-              { date: "10/01/2026", process: "Loteamento Residencial", event: "Licenca emitida com sucesso" },
+              { date: "27/04/2026", process: "CC 26-004 · Enge Prat - UNOPS Planos", event: "Em analise pelo orgao ambiental" },
+              { date: "15/04/2026", process: "CC 26-016 · Licenças Enge Prat - Niterói", event: "Aguardando documentacao complementar" },
+              { date: "10/01/2026", process: "CC 26-017 · Laudo de Avaliação Cautelar de Vizinhança - Enge Prat", event: "Licenca emitida com sucesso" },
             ].map((activity, index) => (
               <div key={index} className="flex items-start gap-3">
                 <div className="flex flex-col items-center">
