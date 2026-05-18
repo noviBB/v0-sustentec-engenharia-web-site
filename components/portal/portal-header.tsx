@@ -68,7 +68,7 @@ export function PortalHeader() {
                   {user?.name?.charAt(0) || "C"}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:block">{user?.name || "Cliente"}</span>
+              <span className="text-sm font-medium hidden sm:block">{user?.name || "Engeprat"}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
