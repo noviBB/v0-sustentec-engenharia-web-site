@@ -13,3 +13,13 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+
+# Worktrees (branches checked out under ./.worktrees/<branch>)
+.worktrees/
+
+# Claude Code (both files local-only; do not commit)
+.claude/
+
+# autoskills (https://npm.im/autoskills) — local install state
+.agents/
+skills-lock.json
