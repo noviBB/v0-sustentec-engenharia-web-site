@@ -63,6 +63,10 @@ git worktree remove ./.worktrees/<branch>                 # cleanup
 
 Don't `cd` into a worktree and commit in the main checkout simultaneously — work in one or the other.
 
+## Commit signatures
+
+**Do not add `Co-Authored-By: Claude` (or any Claude-related) trailers to commit messages.** Commits should be authored under the user's normal git identity with no attribution to Claude in the body or trailers. This applies to all commits, including squash-merges and amended commits.
+
 ## More
 
 See [docs/](docs/) for non-code knowledge: conventions, i18n policy, deploy chain, design tokens, and the roadmap.
