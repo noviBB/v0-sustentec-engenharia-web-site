@@ -49,7 +49,7 @@ const processData: Record<string, {
   impactClass: string
   responsibleTech: string
   activity: string
-  crea: string
+  tipologia: string
 }> = {
   "proc-001": {
     code: "CC 26-004",
@@ -67,7 +67,7 @@ const processData: Record<string, {
     impactClass: "MEDIO",
     responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "UNOPS Planos",
-    crea: "9999999999",
+    tipologia: "Licenciamento ambiental — médio impacto",
   },
   "proc-002": {
     code: "CC 26-016",
@@ -85,7 +85,7 @@ const processData: Record<string, {
     impactClass: "ALTO",
     responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "Licenciamento Municipal",
-    crea: "9999999999",
+    tipologia: "Licenciamento ambiental — alto impacto",
   },
   "proc-003": {
     code: "CC 26-017",
@@ -103,7 +103,7 @@ const processData: Record<string, {
     impactClass: "BAIXO",
     responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "Avaliação Cautelar de Vizinhança",
-    crea: "9999999999",
+    tipologia: "Laudo técnico — baixo impacto",
   },
 }
 
@@ -174,10 +174,32 @@ const pendencias: Record<string, Array<{ id: string; title: string; description:
 export function ProcessDetail({ processId }: ProcessDetailProps) {
   const [activeTab, setActiveTab] = useState("resumo")
 
-  const process = processData[processId] || processData["proc-001"]
-  const history = evolutionHistory[processId] || evolutionHistory["proc-001"]
-  const docs = documents[processId] || documents["proc-001"]
-  const processPendencias = pendencias[processId] || pendencias["proc-001"]
+  const process = processData[processId]
+  const history = evolutionHistory[processId] ?? []
+  const docs = documents[processId] ?? []
+  const processPendencias = pendencias[processId] ?? []
+
+  if (!process) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2.5 py-1 mb-2">
+            {processId}
+          </span>
+          <h2 className="text-2xl font-bold text-foreground">Detalhes em breve</h2>
+        </div>
+        <Card className="bg-white">
+          <CardContent className="py-16 text-center">
+            <FileSearch className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-lg font-medium text-foreground">Detalhes em breve</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              As informações detalhadas deste processo serão publicadas aqui em breve.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -380,8 +402,8 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
                 <div className="flex items-start gap-3">
                   <FileText className="w-4 h-4 text-[#2d5a27] mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">CREA</p>
-                    <p className="font-medium">{process.crea}</p>
+                    <p className="text-xs text-muted-foreground">Tipologia</p>
+                    <p className="font-medium">{process.tipologia}</p>
                   </div>
                 </div>
               </div>

@@ -31,7 +31,7 @@ export function ContactSection() {
     {
       icon: Phone,
       label: "Telefone",
-      value: "+55 (22) 99999-9999",
+      value: "+55 (22) 99870-6033",
     },
     {
       icon: Mail,
@@ -165,7 +165,7 @@ export function ContactSection() {
                 className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               >
                 <a
-                  href="https://wa.me/5522999999999"
+                  href="https://wa.me/5522998706033"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

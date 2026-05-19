@@ -21,15 +21,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Demo-only mock auth. There is no backend; these credentials are bundled into
 // the client and gate access to mock data only. Replace with a real auth backend
 // before wiring up any real client data.
-const MOCK_USER = {
-  id: "1",
-  name: "Cliente",
-  email: "cliente@exemplo.com",
-}
-
-const MOCK_CREDENTIALS = {
-  email: "cliente@exemplo.com",
-  password: "123456",
+const MOCK_USERS: Record<string, { user: User; password: string }> = {
+  "cliente@exemplo.com": {
+    user: { id: "1", name: "Engeprat", email: "cliente@exemplo.com" },
+    password: "123456",
+  },
+  "victorf@sustentec-engenharia.com.br": {
+    user: {
+      id: "2",
+      name: "Victor Leonardo Ferreira Coutinho",
+      email: "victorf@sustentec-engenharia.com.br",
+    },
+    password: "sustentec1",
+  },
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -38,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check for existing session
     const storedUser = localStorage.getItem("sustentec_user")
     if (storedUser) {
       setUser(JSON.parse(storedUser))
@@ -48,17 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-    
-    // Simulate API call delay
+
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    if (email === MOCK_CREDENTIALS.email && password === MOCK_CREDENTIALS.password) {
-      setUser(MOCK_USER)
-      localStorage.setItem("sustentec_user", JSON.stringify(MOCK_USER))
+
+    const entry = MOCK_USERS[email.toLowerCase().trim()]
+    if (entry && entry.password === password) {
+      setUser(entry.user)
+      localStorage.setItem("sustentec_user", JSON.stringify(entry.user))
       setIsLoading(false)
       return true
     }
-    
+
     setIsLoading(false)
     return false
   }

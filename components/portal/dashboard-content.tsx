@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
+import type { ProcessBucket } from "@/lib/portal-data"
 import {
   FolderKanban,
   ArrowRight,
@@ -12,6 +14,7 @@ import {
   AlertTriangle,
   FileSearch,
   TrendingUp,
+  Eye,
 } from "lucide-react"
 
 interface Process {
@@ -22,6 +25,7 @@ interface Process {
   status: string
   pendencias: number
   progress: number
+  bucket: ProcessBucket
 }
 
 interface DashboardContentProps {
@@ -29,23 +33,37 @@ interface DashboardContentProps {
   onSelectProcess: (processId: string) => void
 }
 
+const BUCKET_LABELS: Record<ProcessBucket, string> = {
+  andamento: "Em andamento",
+  acompanhamento: "Em acompanhamento",
+  finalizado: "Finalizado",
+}
+
 export function DashboardContent({ processes, onSelectProcess }: DashboardContentProps) {
+  const { user } = useAuth()
+  const firstName = (user?.name ?? "Cliente").trim().split(" ")[0]
+
   const totalProcesses = processes.length
-  const completedProcesses = processes.filter(p => p.progress === 100).length
-  const inProgressProcesses = processes.filter(p => p.progress < 100).length
+  const inProgress = processes.filter(p => p.bucket === "andamento").length
+  const inAccompaniment = processes.filter(p => p.bucket === "acompanhamento").length
+  const finalized = processes.filter(p => p.bucket === "finalizado").length
   const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
+
+  const groupedProcesses: Array<{ bucket: ProcessBucket; items: Process[] }> = [
+    { bucket: "andamento", items: processes.filter(p => p.bucket === "andamento") },
+    { bucket: "acompanhamento", items: processes.filter(p => p.bucket === "acompanhamento") },
+    { bucket: "finalizado", items: processes.filter(p => p.bucket === "finalizado") },
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Olá, Engeprat!</h2>
+        <h2 className="text-2xl font-bold text-foreground">Olá, {firstName}!</h2>
         <p className="text-muted-foreground">
           Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.
         </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-white">
           <CardHeader className="pb-2">
@@ -74,7 +92,7 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
                 <FileSearch className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{inProgressProcesses}</p>
+                <p className="text-3xl font-bold text-foreground">{inProgress}</p>
                 <p className="text-xs text-muted-foreground">processos ativos</p>
               </div>
             </div>
@@ -83,16 +101,16 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
 
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">CONCLUIDOS</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">EM ACOMPANHAMENTO</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-[#e8f5e9] rounded-xl">
-                <CheckCircle className="w-6 h-6 text-[#4caf50]" />
+              <div className="p-2.5 bg-amber-100 rounded-xl">
+                <Eye className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{completedProcesses}</p>
-                <p className="text-xs text-muted-foreground">licencas emitidas</p>
+                <p className="text-3xl font-bold text-foreground">{inAccompaniment}</p>
+                <p className="text-xs text-muted-foreground">em acompanhamento</p>
               </div>
             </div>
           </CardContent>
@@ -100,133 +118,113 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
 
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">PENDENCIAS</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">FINALIZADOS</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-100 rounded-xl">
-                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              <div className="p-2.5 bg-[#e8f5e9] rounded-xl">
+                <CheckCircle className="w-6 h-6 text-[#4caf50]" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{totalPendencias}</p>
-                <p className="text-xs text-muted-foreground">itens pendentes</p>
+                <p className="text-3xl font-bold text-foreground">{finalized}</p>
+                <p className="text-xs text-muted-foreground">licenças emitidas</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Processes List */}
       <Card className="bg-white">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold tracking-wide">MEUS PROCESSOS</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {processes.map((process) => (
-              <div
-                key={process.id}
-                className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => onSelectProcess(process.id)}
-              >
-                <div className="flex-1">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      process.progress === 100 ? "bg-[#e8f5e9]" : "bg-blue-100"
-                    }`}>
-                      {process.progress === 100 ? (
-                        <CheckCircle className="w-5 h-5 text-[#4caf50]" />
-                      ) : (
-                        <FileSearch className="w-5 h-5 text-blue-600" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
-                        {process.code}
-                      </span>
-                      <p className="font-semibold text-foreground">{process.name}</p>
-                      {process.location && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          {process.location}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4 mt-4 md:mt-0">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{process.progress}%</span>
-                  </div>
-                  
-                  <Badge className={`${
-                    process.progress === 100 
-                      ? "bg-[#e8f5e9] text-[#2d5a27]" 
-                      : "bg-blue-100 text-blue-800"
-                  }`}>
-                    {process.status}
-                  </Badge>
-                  
-                  {process.pendencias > 0 && (
-                    <Badge className="bg-amber-100 text-amber-800">
-                      {process.pendencias} pendencia{process.pendencias > 1 ? "s" : ""}
-                    </Badge>
-                  )}
-                  
-                  <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
-                    Ver detalhes <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card className="bg-white">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-semibold tracking-wide">ATIVIDADE RECENTE</CardTitle>
-          <Button variant="link" className="text-[#2d5a27] text-sm px-0 hover:text-[#1b3d19]">
-            Ver todas <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[
-              { date: "27/04/2026", process: "CC 26-004 · Enge Prat - UNOPS Planos", event: "Em analise pelo orgao ambiental" },
-              { date: "15/04/2026", process: "CC 26-016 · Licenças Enge Prat - Niterói", event: "Aguardando documentacao complementar" },
-              { date: "10/01/2026", process: "CC 26-017 · Laudo de Avaliação Cautelar de Vizinhança - Enge Prat", event: "Licenca emitida com sucesso" },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="flex flex-col items-center">
-                  <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${
-                    index === 0 ? "bg-[#4caf50]" : "bg-gray-300"
-                  }`} />
-                  {index < 2 && (
-                    <div className="w-0.5 h-10 bg-gray-200 mt-1" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground font-medium">{activity.date}</p>
-                    <Badge variant="outline" className="text-xs">{activity.process}</Badge>
-                  </div>
-                  <p className={`text-sm mt-1 ${
-                    index === 0 ? "font-semibold text-[#2d5a27]" : "text-foreground"
-                  }`}>
-                    {activity.event}
+          <div className="space-y-6">
+            {groupedProcesses.map(group => (
+              <div key={group.bucket}>
+                <h4 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                  {BUCKET_LABELS[group.bucket]}
+                </h4>
+                {group.items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic px-1 py-2">
+                    Nenhum processo nesta categoria.
                   </p>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {group.items.map(process => (
+                      <div
+                        key={process.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => onSelectProcess(process.id)}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-lg ${
+                              process.bucket === "finalizado"
+                                ? "bg-[#e8f5e9]"
+                                : process.bucket === "acompanhamento"
+                                ? "bg-amber-100"
+                                : "bg-blue-100"
+                            }`}>
+                              {process.bucket === "finalizado" ? (
+                                <CheckCircle className="w-5 h-5 text-[#4caf50]" />
+                              ) : process.bucket === "acompanhamento" ? (
+                                <Eye className="w-5 h-5 text-amber-600" />
+                              ) : (
+                                <FileSearch className="w-5 h-5 text-blue-600" />
+                              )}
+                            </div>
+                            <div>
+                              <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
+                                {process.code}
+                              </span>
+                              <p className="font-semibold text-foreground">{process.name}</p>
+                              {process.location && (
+                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {process.location}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-4 md:mt-0">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">{process.progress}%</span>
+                          </div>
+
+                          <Badge className={`${
+                            process.bucket === "finalizado"
+                              ? "bg-[#e8f5e9] text-[#2d5a27]"
+                              : process.bucket === "acompanhamento"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}>
+                            {process.status}
+                          </Badge>
+
+                          {process.pendencias > 0 && (
+                            <Badge className="bg-amber-100 text-amber-800">
+                              {process.pendencias} pendencia{process.pendencias > 1 ? "s" : ""}
+                            </Badge>
+                          )}
+
+                          <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
+                            Ver detalhes <ArrowRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="pt-6">
@@ -234,8 +232,8 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
               <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
                 <Clock className="w-6 h-6 text-[#2d5a27]" />
               </div>
-              <p className="font-semibold text-foreground">Agendar Reuniao</p>
-              <p className="text-sm text-muted-foreground mt-1">Marque uma reuniao com seu responsavel tecnico</p>
+              <p className="font-semibold text-foreground">Agendar Reunião</p>
+              <p className="text-sm text-muted-foreground mt-1">Marque uma reunião com seu responsável técnico</p>
             </div>
           </CardContent>
         </Card>
@@ -258,8 +256,10 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
               <div className="p-3 bg-amber-100 rounded-xl w-fit mx-auto mb-3">
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
               </div>
-              <p className="font-semibold text-foreground">Resolver Pendencias</p>
-              <p className="text-sm text-muted-foreground mt-1">Voce tem {totalPendencias} itens pendentes</p>
+              <p className="font-semibold text-foreground">Resolver Pendências</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Você tem {totalPendencias} {totalPendencias === 1 ? "item pendente" : "itens pendentes"}
+              </p>
             </div>
           </CardContent>
         </Card>
