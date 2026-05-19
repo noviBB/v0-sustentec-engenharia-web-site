@@ -13,7 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function PortalHeader() {
+interface PortalHeaderProps {
+  onItemChange: (item: string) => void
+}
+
+export function PortalHeader({ onItemChange }: PortalHeaderProps) {
   const { user, logout } = useAuth()
 
   return (
@@ -72,7 +76,7 @@ export function PortalHeader() {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem>Meu Perfil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onItemChange("dados")}>Meu Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configuracoes</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive">

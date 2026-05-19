@@ -25,8 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 const RESPONSIBLE_TECHS = [
-  { id: "leonardo-martins", name: "Eng. Leonardo Martins" },
-  { id: "ana-pereira", name: "Eng. Ana Pereira" },
+  { id: "ivon-benitez", name: "Dra. Ivón Oristela Benítez González" },
 ]
 
 const TIME_SLOTS = (() => {
@@ -71,20 +70,31 @@ export function SchedulingView() {
     e.preventDefault()
     if (!canSubmit || !date) return
 
-    const payload = {
-      responsavelTecnico: tech,
-      data: date.toISOString().slice(0, 10),
-      horario: time,
-      assunto: subject.trim(),
-      mensagem: message.trim() || null,
-    }
+    const techName = RESPONSIBLE_TECHS.find((t) => t.id === tech)?.name ?? tech
+    const trimmedSubject = subject.trim()
+    const trimmedMessage = message.trim()
 
-    console.log("Agendamento solicitado:", payload)
+    const bodyLines = [
+      "Olá, gostaria de solicitar um agendamento com os seguintes detalhes:",
+      "",
+      `Responsável técnico: ${techName}`,
+      `Data: ${formatDateBR(date)}`,
+      `Horário: ${time}`,
+      `Assunto: ${trimmedSubject}`,
+    ]
+    if (trimmedMessage) bodyLines.push("", `Mensagem: ${trimmedMessage}`)
+
+    const mailto =
+      "mailto:contato@sustentec-engenharia.com.br" +
+      `?subject=${encodeURIComponent("Solicitação de agendamento — " + trimmedSubject)}` +
+      `&body=${encodeURIComponent(bodyLines.join("\n"))}`
+
+    window.location.href = mailto
 
     toast({
-      title: "Solicitação enviada",
+      title: "Solicitação preparada",
       description:
-        "Confirmaremos seu agendamento em breve por e-mail ou WhatsApp.",
+        "Abrimos seu aplicativo de e-mail. Confirme o envio para concluir a solicitação.",
     })
 
     setTech("")

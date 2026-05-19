@@ -65,9 +65,9 @@ const processData: Record<string, {
     licenseType: "LP / LI",
     environmentalAgency: "INEA",
     impactClass: "MEDIO",
-    responsibleTech: "Leonardo Martins",
+    responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "UNOPS Planos",
-    crea: "2018101234",
+    crea: "9999999999",
   },
   "proc-002": {
     code: "CC 26-016",
@@ -83,9 +83,9 @@ const processData: Record<string, {
     licenseType: "LO",
     environmentalAgency: "INEA",
     impactClass: "ALTO",
-    responsibleTech: "Leonardo Martins",
+    responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "Licenciamento Municipal",
-    crea: "2018101234",
+    crea: "9999999999",
   },
   "proc-003": {
     code: "CC 26-017",
@@ -101,9 +101,9 @@ const processData: Record<string, {
     licenseType: "Laudo Tecnico",
     environmentalAgency: "INEA",
     impactClass: "BAIXO",
-    responsibleTech: "Leonardo Martins",
+    responsibleTech: "Dra. Ivón Oristela Benítez González",
     activity: "Avaliação Cautelar de Vizinhança",
-    crea: "2018101234",
+    crea: "9999999999",
   },
 }
 
@@ -567,8 +567,14 @@ export function ProcessDetail({ processId }: ProcessDetailProps) {
             <p className="text-sm text-muted-foreground mb-4">
               Fale diretamente com seu responsavel tecnico.
             </p>
-            <Button size="sm" className="bg-[#4caf50] hover:bg-[#43a047] text-white">
-              Falar agora
+            <Button asChild size="sm" className="bg-[#4caf50] hover:bg-[#43a047] text-white">
+              <a
+                href="https://wa.me/5522998706033"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Falar agora
+              </a>
             </Button>
           </CardContent>
         </Card>

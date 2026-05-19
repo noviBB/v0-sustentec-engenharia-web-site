@@ -165,26 +165,32 @@ export function PortalSidebar({
 
       {/* Responsible Tech */}
       <div className="p-4 border-t border-white/10">
-        <p className="text-xs text-white/60 mb-3">Seu responsavel tecnico</p>
+        <p className="text-xs text-white/60 mb-3">Responsável técnico de Sustentec-Engenharia</p>
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10 border-2 border-white/20">
-            <AvatarImage src="/placeholder-user.jpg" />
-            <AvatarFallback className="bg-[#4caf50] text-white text-sm">LM</AvatarFallback>
+            <AvatarImage src="/responsavel-ivon.jpg" alt="Dra. Ivón Oristela Benítez González" />
+            <AvatarFallback className="bg-[#4caf50] text-white text-sm">IO</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
-              Eng. Leonardo Martins
+              Dra. Ivón Oristela Benítez González
             </p>
-            <p className="text-xs text-white/60">Responsavel Tecnico</p>
           </div>
         </div>
         <Button
+          asChild
           variant="outline"
           size="sm"
           className="w-full bg-[#4caf50] border-[#4caf50] text-white hover:bg-[#43a047] hover:border-[#43a047]"
         >
-          <MessageSquare className="w-4 h-4 mr-2" />
-          Falar no WhatsApp
+          <a
+            href="https://wa.me/5522998706033"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Falar no WhatsApp
+          </a>
         </Button>
       </div>
 

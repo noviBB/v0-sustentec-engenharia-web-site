@@ -18,7 +18,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock user for demonstration - in production, this would connect to a real backend
+// Demo-only mock auth. There is no backend; these credentials are bundled into
+// the client and gate access to mock data only. Replace with a real auth backend
+// before wiring up any real client data.
 const MOCK_USER = {
   id: "1",
   name: "Cliente",

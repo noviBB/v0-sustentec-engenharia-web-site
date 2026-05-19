@@ -6,6 +6,7 @@ import { PortalHeader } from "@/components/portal/portal-header"
 import { DashboardContent } from "@/components/portal/dashboard-content"
 import { ProcessDetail } from "@/components/portal/process-detail"
 import { SchedulingView } from "@/components/portal/scheduling-view"
+import { DadosCadastraisView } from "@/components/portal/dados-cadastrais-view"
 
 // Mock processes data
 const clientProcesses = [
@@ -80,12 +81,8 @@ export default function PortalPage() {
         return <SchedulingView />
 
       case "dados":
-        return (
-          <div className="bg-white rounded-xl p-8 text-center">
-            <h2 className="text-xl font-semibold mb-2 text-[#2d5a27]">Dados Cadastrais</h2>
-            <p className="text-muted-foreground">Atualize suas informacoes pessoais e de contato.</p>
-          </div>
-        )
+        return <DadosCadastraisView />
+
       default:
         return (
           <DashboardContent 
@@ -108,7 +105,7 @@ export default function PortalPage() {
       
       <div className="lg:ml-72">
         <div className="pt-16 lg:pt-0">
-          <PortalHeader />
+          <PortalHeader onItemChange={setActiveItem} />
           
           <main className="p-4 md:p-6">
             {renderContent()}
