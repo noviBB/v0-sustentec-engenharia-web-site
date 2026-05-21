@@ -18,13 +18,16 @@ export interface PortalProcess {
   bucket: ProcessBucket
 }
 
+export type MessageDirection = "inbound" | "outbound"
+
 export interface PortalMessage {
   id: string
-  from: "contato@sustentec-engenharia.com.br"
+  from: string
   to: string
   subject: string
   body: string
   date: string
+  direction: MessageDirection
   read?: boolean
   processCode?: string
 }
@@ -205,16 +208,40 @@ export const MESSAGES_BY_USER: Record<string, PortalMessage[]> = {
       subject: "Andamento do processo CC 26-004",
       body: "Olá, informamos que o processo CC 26-004 foi encaminhado para análise técnica pelo órgão ambiental. Mantemos você atualizado sobre as próximas etapas.",
       date: "2026-04-02T10:00:00Z",
+      direction: "inbound",
       read: false,
       processCode: "CC 26-004",
     },
     {
       id: "msg-eng-2",
+      from: ENGEPRAT_EMAIL,
+      to: SUSTENTEC_EMAIL,
+      subject: "Re: Andamento do processo CC 26-004",
+      body: "Obrigado pela atualização. Vocês têm previsão de retorno do órgão ambiental? Estamos coordenando o cronograma do empreendimento com base nesse parecer.",
+      date: "2026-04-03T16:12:00Z",
+      direction: "outbound",
+      read: true,
+      processCode: "CC 26-004",
+    },
+    {
+      id: "msg-eng-3",
       from: SUSTENTEC_EMAIL,
       to: ENGEPRAT_EMAIL,
       subject: "Documentação pendente — CC 26-016",
       body: "Identificamos pendências de documentação no processo CC 26-016. Por favor, envie o EIA/RIMA e o plano de emergência atualizado.",
       date: "2026-04-15T14:30:00Z",
+      direction: "inbound",
+      read: true,
+      processCode: "CC 26-016",
+    },
+    {
+      id: "msg-eng-4",
+      from: ENGEPRAT_EMAIL,
+      to: SUSTENTEC_EMAIL,
+      subject: "Re: Documentação pendente — CC 26-016",
+      body: "Estamos finalizando a revisão do EIA/RIMA com a equipe técnica. Devemos enviar até o fim da próxima semana. O plano de emergência segue em anexo.",
+      date: "2026-04-16T09:45:00Z",
+      direction: "outbound",
       read: true,
       processCode: "CC 26-016",
     },
@@ -227,7 +254,18 @@ export const MESSAGES_BY_USER: Record<string, PortalMessage[]> = {
       subject: "Boas-vindas ao Portal Sustentec",
       body: "Olá Victor, seu acesso ao portal foi habilitado. Em breve disponibilizaremos os detalhes completos dos seus processos. Qualquer dúvida, fale conosco no WhatsApp.",
       date: "2026-05-19T09:00:00Z",
+      direction: "inbound",
       read: false,
+    },
+    {
+      id: "msg-vic-2",
+      from: VICTORF_EMAIL,
+      to: SUSTENTEC_EMAIL,
+      subject: "Re: Boas-vindas ao Portal Sustentec",
+      body: "Obrigado pelo acesso. Quando os detalhes completos dos processos CC 24-016 (Hydroen) e CC 26-021 (Fazenda Sapucay) ficarem disponíveis, podem me avisar por aqui?",
+      date: "2026-05-19T11:20:00Z",
+      direction: "outbound",
+      read: true,
     },
   ],
 }
@@ -239,5 +277,6 @@ export function getProcessesForEmail(email: string | undefined | null): PortalPr
 
 export function getMessagesForEmail(email: string | undefined | null): PortalMessage[] {
   if (!email) return []
-  return MESSAGES_BY_USER[email.toLowerCase().trim()] ?? []
+  const normalized = email.toLowerCase().trim()
+  return MESSAGES_BY_USER[normalized] ?? []
 }
