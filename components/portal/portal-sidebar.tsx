@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { getMessagesForEmail } from "@/lib/portal-data"
 import { cn } from "@/lib/utils"
 import {
   Leaf,
@@ -38,30 +39,42 @@ interface PortalSidebarProps {
   processes: Process[]
 }
 
-const menuItems = [
-  { id: "painel", label: "Painel Principal", icon: LayoutDashboard },
-  { id: "processos", label: "Meus Processos", icon: FolderKanban },
-  { id: "mensagens", label: "Mensagens", icon: MessageSquare, badge: 1 },
-  { id: "agendamentos", label: "Agendamentos", icon: Calendar },
-  { id: "dados", label: "Dados Cadastrais", icon: User },
-]
-
-export function PortalSidebar({ 
-  activeItem, 
-  onItemChange, 
-  selectedProcess, 
+export function PortalSidebar({
+  activeItem,
+  onItemChange,
+  selectedProcess,
   onProcessChange,
-  processes 
+  processes,
 }: PortalSidebarProps) {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
+
+  const messages = getMessagesForEmail(user?.email)
+  const unreadMessages = messages.filter(m => !m.read).length
+
+  const menuItems: Array<{
+    id: string
+    label: string
+    icon: typeof LayoutDashboard
+    badge?: number
+  }> = [
+    { id: "painel", label: "Painel Principal", icon: LayoutDashboard },
+    { id: "processos", label: "Meus Processos", icon: FolderKanban },
+    {
+      id: "mensagens",
+      label: "Mensagens",
+      icon: MessageSquare,
+      badge: unreadMessages > 0 ? unreadMessages : undefined,
+    },
+    { id: "agendamentos", label: "Agendamentos", icon: Calendar },
+    { id: "dados", label: "Dados Cadastrais", icon: User },
+  ]
 
   const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#2d5a27]">
-      {/* Logo */}
       <div className="p-4 border-b border-white/10">
         <Link href="/portal" className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
@@ -76,7 +89,6 @@ export function PortalSidebar({
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
           <div key={item.id}>
@@ -126,7 +138,6 @@ export function PortalSidebar({
               )}
             </button>
 
-            {/* Process List (expandable) */}
             {item.id === "processos" && processesExpanded && (
               <div className="ml-4 mt-1 space-y-1">
                 {processes.map((process) => (
@@ -163,7 +174,6 @@ export function PortalSidebar({
         ))}
       </nav>
 
-      {/* Responsible Tech */}
       <div className="p-4 border-t border-white/10">
         <p className="text-xs text-white/60 mb-3">Responsável técnico de Sustentec-Engenharia</p>
         <div className="flex items-center gap-3 mb-3">
@@ -194,7 +204,6 @@ export function PortalSidebar({
         </Button>
       </div>
 
-      {/* Logout */}
       <div className="p-4 border-t border-white/10">
         <button
           onClick={logout}
@@ -209,7 +218,6 @@ export function PortalSidebar({
 
   return (
     <>
-      {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2d5a27] border-b border-white/10">
         <div className="flex items-center justify-between p-4">
           <Link href="/portal" className="flex items-center gap-2">
@@ -229,7 +237,6 @@ export function PortalSidebar({
         </div>
       </div>
 
-      {/* Mobile Sidebar */}
       {isMobileOpen && (
         <div className="lg:hidden fixed inset-0 z-40 pt-16">
           <div
@@ -242,7 +249,6 @@ export function PortalSidebar({
         </div>
       )}
 
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-72 fixed left-0 top-0 bottom-0">
         <SidebarContent />
       </aside>

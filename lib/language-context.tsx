@@ -103,6 +103,12 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.address": "Endereço",
     "contact.whatsapp": "Falar no WhatsApp",
 
+    // Support
+    "support.heading": "Dúvidas ou precisa de suporte?",
+    "support.subtitle": "Fale com nossa equipe diretamente pelo WhatsApp.",
+    "support.cta": "Falar no WhatsApp",
+    "support.phone_display": "+55 (22) 99870-6033",
+
     // Footer
     "footer.description":
       "Soluções ambientais inteligentes para um futuro sustentável.",
@@ -204,6 +210,12 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.submit": "Send Message",
     "contact.address": "Address",
     "contact.whatsapp": "Chat on WhatsApp",
+
+    // Support
+    "support.heading": "Questions or need support?",
+    "support.subtitle": "Talk to our team directly on WhatsApp.",
+    "support.cta": "Chat on WhatsApp",
+    "support.phone_display": "+55 (22) 99870-6033",
 
     // Footer
     "footer.description":

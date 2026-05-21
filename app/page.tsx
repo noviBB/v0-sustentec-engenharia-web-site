@@ -7,6 +7,7 @@ import { StatsSection } from "@/components/stats-section"
 import { ServicesSection } from "@/components/services-section"
 import { TrackerSection } from "@/components/tracker-section"
 import { ValuesSection } from "@/components/values-section"
+import { SupportSection } from "@/components/support-section"
 import { ContactSection } from "@/components/contact-section"
 import { Footer } from "@/components/footer"
 
@@ -21,6 +22,7 @@ export default function Home() {
           <ServicesSection />
           <TrackerSection />
           <ValuesSection />
+          <SupportSection />
           <ContactSection />
         </main>
         <Footer />

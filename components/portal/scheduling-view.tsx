@@ -37,7 +37,7 @@ const TIME_SLOTS = (() => {
   return slots
 })()
 
-const ALLOWED_WEEKDAYS = new Set([1, 2, 3]) // Mon, Tue, Wed
+const ALLOWED_WEEKDAYS = new Set([1, 2, 3, 4]) // Mon, Tue, Wed, Thu
 
 function isDateDisabled(date: Date) {
   const today = new Date()
@@ -134,7 +134,7 @@ export function SchedulingView() {
                 Horário de atendimento
               </p>
               <p className="text-sm text-[#2d5a27]/80">
-                Segunda a quarta-feira, das 09:00 às 17:30. Selecione abaixo
+                Segunda a quinta-feira, das 09:00 às 17:30. Selecione abaixo
                 uma data e um horário disponíveis.
               </p>
             </div>
@@ -193,7 +193,7 @@ export function SchedulingView() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">
-                  Disponível apenas de segunda a quarta-feira.
+                  Disponível apenas de segunda a quinta-feira.
                 </p>
               </div>
 

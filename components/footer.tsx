@@ -94,7 +94,7 @@ export function Footer() {
             </h3>
             <ul className="space-y-3 text-sm text-sidebar-foreground/70">
               <li>Nova Friburgo - RJ, Brasil</li>
-              <li>+55 (22) 99999-9999</li>
+              <li>+55 (22) 99870-6033</li>
               <li>contato@sustentec.com.br</li>
             </ul>
           </div>
