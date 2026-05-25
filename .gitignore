@@ -24,3 +24,10 @@ node_modules
 .agents/
 skills-lock.json
 .vercel
+
+# Database / seeds
+scripts/.seed-users.json
+drizzle/.snapshots/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
