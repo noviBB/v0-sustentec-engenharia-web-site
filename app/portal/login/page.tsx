@@ -1,45 +1,24 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useActionState, useState } from "react"
+import { signIn, type SignInState } from "@/app/portal/actions"
+import { useLanguage } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Leaf, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
+const INITIAL_STATE: SignInState = { ok: true }
+
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const { t } = useLanguage()
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
+  const [state, formAction, isPending] = useActionState(signIn, INITIAL_STATE)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsSubmitting(true)
-
-    const supabase = createClient()
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-
-    if (signInError) {
-      setError("E-mail ou senha incorretos. Tente novamente.")
-      setIsSubmitting(false)
-      return
-    }
-
-    // Force a full server-side navigation so the protected layout (server
-    // component) re-runs with the freshly-set session cookie.
-    router.push("/portal")
-    router.refresh()
-  }
+  const errorMessage =
+    state.code === "invalid_credentials" ? t("portal.login.invalidCredentials") : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
@@ -47,56 +26,51 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <Leaf className="w-7 h-7 text-primary-foreground" />
-            </div>
             <div className="text-left">
               <span className="text-2xl font-bold text-foreground">
                 Susten<span className="text-primary">tec</span>
               </span>
-              <p className="text-xs text-muted-foreground">Portal do Cliente</p>
+              <p className="text-xs text-muted-foreground">{t("portal.login.tagline")}</p>
             </div>
           </Link>
         </div>
 
         <Card className="border-border/50 shadow-xl">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
+            <CardTitle className="text-2xl">{t("portal.login.welcome")}</CardTitle>
             <CardDescription>
-              Acesse sua conta para acompanhar seu processo
+              {t("portal.login.description")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
+            <form action={formAction} className="space-y-4">
+              {errorMessage && (
                 <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
+                  <span>{errorMessage}</span>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="email">{t("portal.login.email")}</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("portal.login.emailPlaceholder")}
                   required
                   className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">{t("portal.login.password")}</Label>
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t("portal.login.passwordPlaceholder")}
                     required
                     className="h-11 pr-10"
                   />
@@ -104,6 +78,11 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={
+                      showPassword
+                        ? t("portal.login.hidePassword")
+                        : t("portal.login.showPassword")
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -116,20 +95,20 @@ export default function LoginPage() {
 
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
-                  <span className="text-muted-foreground">Lembrar de mim</span>
+                  <input type="checkbox" name="remember" className="rounded border-border" />
+                  <span className="text-muted-foreground">{t("portal.login.rememberMe")}</span>
                 </label>
                 <Link href="#" className="text-primary hover:underline">
-                  Esqueci minha senha
+                  {t("portal.login.forgotPassword")}
                 </Link>
               </div>
 
               <Button
                 type="submit"
                 className="w-full h-11"
-                disabled={isSubmitting}
+                disabled={isPending}
               >
-                {isSubmitting ? "Entrando..." : "Entrar"}
+                {isPending ? t("portal.login.submitting") : t("portal.login.submit")}
               </Button>
             </form>
           </CardContent>
@@ -137,7 +116,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           <Link href="/" className="hover:text-primary transition-colors">
-            Voltar ao site principal
+            {t("portal.login.backToSite")}
           </Link>
         </p>
       </div>
