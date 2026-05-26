@@ -312,6 +312,8 @@ export const contactSubmissions = pgTable('contact_submissions', {
     .notNull()
     .defaultNow(),
   ip_hash: text('ip_hash'),
+  source: text('source').notNull().default('marketing_site'),
+  user_agent: text('user_agent'),
 });
 
 // ---------------------------------------------------------------------------
