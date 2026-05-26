@@ -1,6 +1,7 @@
 "use client"
 
 import { LanguageProvider } from "@/lib/language-context"
+import { Toaster } from "@/components/ui/toaster"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { StatsSection } from "@/components/stats-section"
@@ -27,6 +28,7 @@ export default function Home() {
         </main>
         <Footer />
       </div>
+      <Toaster />
     </LanguageProvider>
   )
 }

@@ -1,26 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useTransition } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { MapPin, Phone, Mail, MessageCircle } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useLanguage } from "@/lib/language-context"
+import { useToast } from "@/hooks/use-toast"
+import { submitContact } from "@/lib/actions/contact"
+import {
+  contactSubmissionSchema,
+  type ContactSubmissionInput,
+} from "@/lib/actions/contact-schema"
 
 export function ContactSection() {
   const { t } = useLanguage()
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ContactSubmissionInput>({
+    resolver: zodResolver(contactSubmissionSchema),
+    defaultValues: { name: "", email: "", phone: "", message: "" },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormData({ name: "", email: "", phone: "", message: "" })
-  }
+  const onSubmit = handleSubmit((values) => {
+    startTransition(async () => {
+      const result = await submitContact(values)
+
+      if (result.ok) {
+        toast({
+          title: t("contact.success.title"),
+          description: t("contact.success.description"),
+        })
+        reset()
+        return
+      }
+
+      const description =
+        result.code === "rate_limited"
+          ? t("contact.error.rateLimited")
+          : result.code === "validation"
+          ? t("contact.error.validation")
+          : t("contact.error.server")
+
+      toast({
+        title: t("contact.error.title"),
+        description,
+        variant: "destructive",
+      })
+    })
+  })
 
   const contactInfo = [
     {
@@ -30,12 +68,12 @@ export function ContactSection() {
     },
     {
       icon: Phone,
-      label: "Telefone",
+      label: t("contact.phone"),
       value: "+55 (22) 99870-6033",
     },
     {
       icon: Mail,
-      label: "E-mail",
+      label: t("contact.email"),
       value: "contato@sustentec.com.br",
     },
   ]
@@ -55,18 +93,20 @@ export function ContactSection() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Contact Form */}
           <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={onSubmit} className="space-y-6" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="name">{t("contact.name")}</Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Seu nome completo"
-                  required
+                  placeholder={t("contact.namePlaceholder")}
+                  aria-invalid={errors.name ? "true" : "false"}
+                  {...register("name")}
                 />
+                {errors.name && (
+                  <p className="text-sm text-destructive">
+                    {t("contact.validation.nameRequired")}
+                  </p>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -75,24 +115,23 @@ export function ContactSection() {
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="seu@email.com"
-                    required
+                    placeholder={t("contact.emailPlaceholder")}
+                    aria-invalid={errors.email ? "true" : "false"}
+                    {...register("email")}
                   />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">
+                      {t("contact.validation.emailInvalid")}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">{t("contact.phone")}</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    placeholder="(22) 99999-9999"
+                    placeholder={t("contact.phonePlaceholder")}
+                    {...register("phone")}
                   />
                 </div>
               </div>
@@ -101,22 +140,25 @@ export function ContactSection() {
                 <Label htmlFor="message">{t("contact.message")}</Label>
                 <Textarea
                   id="message"
-                  value={formData.message}
-                  onChange={(e) =>
-                    setFormData({ ...formData, message: e.target.value })
-                  }
-                  placeholder="Como podemos ajudar?"
+                  placeholder={t("contact.messagePlaceholder")}
                   rows={5}
-                  required
+                  aria-invalid={errors.message ? "true" : "false"}
+                  {...register("message")}
                 />
+                {errors.message && (
+                  <p className="text-sm text-destructive">
+                    {t("contact.validation.messageRequired")}
+                  </p>
+                )}
               </div>
 
               <Button
                 type="submit"
                 size="lg"
+                disabled={isPending}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                {t("contact.submit")}
+                {isPending ? t("contact.submitting") : t("contact.submit")}
               </Button>
             </form>
           </div>
@@ -148,15 +190,16 @@ export function ContactSection() {
                   <MessageCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">WhatsApp</div>
+                  <div className="font-semibold text-lg">
+                    {t("contact.whatsappLabel")}
+                  </div>
                   <div className="text-sm text-primary-foreground/80">
-                    Atendimento rápido
+                    {t("contact.whatsappTagline")}
                   </div>
                 </div>
               </div>
               <p className="text-sm text-primary-foreground/90 mb-6">
-                Fale diretamente com nossa equipe técnica para tirar dúvidas ou
-                solicitar um orçamento.
+                {t("contact.whatsappDescription")}
               </p>
               <Button
                 asChild

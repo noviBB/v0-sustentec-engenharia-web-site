@@ -102,6 +102,28 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.submit": "Enviar Mensagem",
     "contact.address": "Endereço",
     "contact.whatsapp": "Falar no WhatsApp",
+    "contact.namePlaceholder": "Seu nome completo",
+    "contact.emailPlaceholder": "seu@email.com",
+    "contact.phonePlaceholder": "(22) 99999-9999",
+    "contact.messagePlaceholder": "Como podemos ajudar?",
+    "contact.submitting": "Enviando...",
+    "contact.success.title": "Mensagem enviada",
+    "contact.success.description":
+      "Recebemos seu contato. Nossa equipe responderá em breve.",
+    "contact.error.title": "Não foi possível enviar",
+    "contact.error.validation":
+      "Confira os campos destacados e tente novamente.",
+    "contact.error.rateLimited":
+      "Você já enviou uma mensagem recentemente. Aguarde alguns minutos antes de tentar de novo.",
+    "contact.error.server":
+      "Ocorreu um erro ao registrar sua mensagem. Tente novamente em instantes.",
+    "contact.validation.nameRequired": "Informe seu nome completo.",
+    "contact.validation.emailInvalid": "Informe um e-mail válido.",
+    "contact.validation.messageRequired": "Escreva uma mensagem.",
+    "contact.whatsappLabel": "WhatsApp",
+    "contact.whatsappTagline": "Atendimento rápido",
+    "contact.whatsappDescription":
+      "Fale diretamente com nossa equipe técnica para tirar dúvidas ou solicitar um orçamento.",
 
     // Support
     "support.heading": "Dúvidas ou precisa de suporte?",
@@ -210,6 +232,28 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.submit": "Send Message",
     "contact.address": "Address",
     "contact.whatsapp": "Chat on WhatsApp",
+    "contact.namePlaceholder": "Your full name",
+    "contact.emailPlaceholder": "you@email.com",
+    "contact.phonePlaceholder": "(22) 99999-9999",
+    "contact.messagePlaceholder": "How can we help?",
+    "contact.submitting": "Sending...",
+    "contact.success.title": "Message sent",
+    "contact.success.description":
+      "We received your message. Our team will get back to you shortly.",
+    "contact.error.title": "Could not send",
+    "contact.error.validation":
+      "Please review the highlighted fields and try again.",
+    "contact.error.rateLimited":
+      "You already submitted a message recently. Please wait a few minutes before trying again.",
+    "contact.error.server":
+      "Something went wrong saving your message. Please try again in a moment.",
+    "contact.validation.nameRequired": "Please enter your full name.",
+    "contact.validation.emailInvalid": "Please enter a valid email.",
+    "contact.validation.messageRequired": "Please write a message.",
+    "contact.whatsappLabel": "WhatsApp",
+    "contact.whatsappTagline": "Quick support",
+    "contact.whatsappDescription":
+      "Talk directly to our technical team to ask questions or request a quote.",
 
     // Support
     "support.heading": "Questions or need support?",
