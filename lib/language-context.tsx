@@ -113,8 +113,6 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.error.title": "Não foi possível enviar",
     "contact.error.validation":
       "Confira os campos destacados e tente novamente.",
-    "contact.error.rateLimited":
-      "Você já enviou uma mensagem recentemente. Aguarde alguns minutos antes de tentar de novo.",
     "contact.error.server":
       "Ocorreu um erro ao registrar sua mensagem. Tente novamente em instantes.",
     "contact.validation.nameRequired": "Informe seu nome completo.",
@@ -243,8 +241,6 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.error.title": "Could not send",
     "contact.error.validation":
       "Please review the highlighted fields and try again.",
-    "contact.error.rateLimited":
-      "You already submitted a message recently. Please wait a few minutes before trying again.",
     "contact.error.server":
       "Something went wrong saving your message. Please try again in a moment.",
     "contact.validation.nameRequired": "Please enter your full name.",
