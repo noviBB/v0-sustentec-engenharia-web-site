@@ -276,27 +276,41 @@ export const messages = pgTable(
 // ---------------------------------------------------------------------------
 // appointments
 // ---------------------------------------------------------------------------
-export const appointments = pgTable('appointments', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  client_id: uuid('client_id')
-    .notNull()
-    .references(() => clients.id, { onDelete: 'cascade' }),
-  process_id: uuid('process_id').references(() => processes.id, {
-    onDelete: 'set null',
-  }),
-  title: text('title'),
-  description: text('description'),
-  starts_at: timestamp('starts_at', { withTimezone: true }).notNull(),
-  ends_at: timestamp('ends_at', { withTimezone: true }),
-  status: appointmentStatus('status').notNull().default('agendada'),
-  meet_url: text('meet_url'),
-  created_at: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const appointments = pgTable(
+  'appointments',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    client_id: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, { onDelete: 'cascade' }),
+    process_id: uuid('process_id').references(() => processes.id, {
+      onDelete: 'set null',
+    }),
+    responsible_tech_id: uuid('responsible_tech_id').references(
+      () => responsibleTechs.id,
+      { onDelete: 'set null' },
+    ),
+    title: text('title'),
+    description: text('description'),
+    starts_at: timestamp('starts_at', { withTimezone: true }).notNull(),
+    ends_at: timestamp('ends_at', { withTimezone: true }),
+    status: appointmentStatus('status').notNull().default('agendada'),
+    meet_url: text('meet_url'),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Prevents double-booking the same tech in the same slot. Active
+    // appointments only — cancelled ones don't lock the slot.
+    uniqueIndex('appointments_tech_slot_uniq')
+      .on(t.responsible_tech_id, t.starts_at)
+      .where(sql`status <> 'cancelada' AND responsible_tech_id IS NOT NULL`),
+  ],
+);
 
 // ---------------------------------------------------------------------------
 // contact_submissions

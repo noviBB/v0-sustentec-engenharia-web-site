@@ -2,42 +2,50 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building, User, Mail, Phone, MapPin, FileText } from "lucide-react"
+import type { Client } from "@/lib/db/clients"
+import { useLanguage } from "@/lib/language-context"
 
-const fields = [
-  {
-    icon: FileText,
-    label: "CNPJ",
-    value: "00.000.000/0001-00",
-  },
-  {
-    icon: User,
-    label: "Responsável legal",
-    value: "—",
-  },
-  {
-    icon: Mail,
-    label: "E-mail",
-    value: "contato@engeprat.com.br",
-  },
-  {
-    icon: Phone,
-    label: "Telefone",
-    value: "+55 21 0000-0000",
-  },
-  {
-    icon: MapPin,
-    label: "Endereço",
-    value: "—",
-  },
-]
+interface DadosCadastraisViewProps {
+  client: Client
+}
 
-export function DadosCadastraisView() {
+/** Formats a 14-digit BR CNPJ string as `XX.XXX.XXX/XXXX-XX`. */
+function formatCnpj(raw: string | null | undefined): string {
+  if (!raw) return "—"
+  const digits = raw.replace(/\D/g, "")
+  if (digits.length !== 14) return raw
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`
+}
+
+export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
+  const { t } = useLanguage()
+
+  const fields: ReadonlyArray<{
+    icon: typeof Building
+    label: string
+    value: string
+  }> = [
+    {
+      icon: FileText,
+      label: t("portal.dados.field.cnpj"),
+      value: formatCnpj(client.notion_cnpj_filter),
+    },
+    // TODO(#22, cadastral fields): clients schema lacks these fields — placeholder until
+    // cadastral columns (contact_name, contact_email, contact_phone, address_*) ship.
+    { icon: User, label: t("portal.dados.field.responsibleLegal"), value: "—" },
+    { icon: Mail, label: t("portal.dados.field.email"), value: "—" }, // TODO(#22, cadastral fields)
+    { icon: Phone, label: t("portal.dados.field.phone"), value: "—" }, // TODO(#22, cadastral fields)
+    { icon: MapPin, label: t("portal.dados.field.address"), value: "—" }, // TODO(#22, cadastral fields)
+  ]
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Dados Cadastrais</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.dados.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Informações do cliente registradas no portal.
+          {t("portal.dados.subtitle")}
         </p>
       </div>
 
@@ -47,7 +55,7 @@ export function DadosCadastraisView() {
             <div className="p-1.5 bg-[#f5f1e6] border border-[#e5dcc5] rounded-lg">
               <Building className="w-4 h-4 text-[#2d5a27]" />
             </div>
-            CLIENTE
+            {t("portal.dados.section.client")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -57,10 +65,10 @@ export function DadosCadastraisView() {
             </div>
             <div>
               <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27]/70">
-                Cliente
+                {t("portal.dados.section.client.eyebrow")}
               </p>
               <p className="text-2xl font-bold text-foreground leading-tight">
-                Engeprat
+                {client.name}
               </p>
             </div>
           </div>

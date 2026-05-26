@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
 import { signOut } from "@/app/portal/actions"
-import { getMessagesForEmail } from "@/lib/portal-data"
+import type { ProcessRow } from "@/lib/db/processes"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/language-context"
 import {
   Leaf,
   LayoutDashboard,
@@ -23,21 +23,13 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
-interface Process {
-  id: string
-  code: string
-  name: string
-  location: string
-  status: string
-  pendencias: number
-}
-
 interface PortalSidebarProps {
   activeItem: string
   onItemChange: (item: string) => void
   selectedProcess: string | null
   onProcessChange: (processId: string) => void
-  processes: Process[]
+  processes: ProcessRow[]
+  unreadCount: number
 }
 
 export function PortalSidebar({
@@ -46,13 +38,13 @@ export function PortalSidebar({
   selectedProcess,
   onProcessChange,
   processes,
+  unreadCount,
 }: PortalSidebarProps) {
-  const { user } = useAuth()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
+  const { t } = useLanguage()
 
-  const messages = getMessagesForEmail(user.email)
-  const unreadMessages = messages.filter(m => !m.read).length
+  const unreadMessages = unreadCount
 
   const menuItems: Array<{
     id: string
@@ -60,19 +52,22 @@ export function PortalSidebar({
     icon: typeof LayoutDashboard
     badge?: number
   }> = [
-    { id: "painel", label: "Painel Principal", icon: LayoutDashboard },
-    { id: "processos", label: "Meus Processos", icon: FolderKanban },
+    { id: "painel", label: t("portal.sidebar.menu.painel"), icon: LayoutDashboard },
+    { id: "processos", label: t("portal.sidebar.menu.processos"), icon: FolderKanban },
     {
       id: "mensagens",
-      label: "Mensagens",
+      label: t("portal.sidebar.menu.mensagens"),
       icon: MessageSquare,
       badge: unreadMessages > 0 ? unreadMessages : undefined,
     },
-    { id: "agendamentos", label: "Agendamentos", icon: Calendar },
-    { id: "dados", label: "Dados Cadastrais", icon: User },
+    { id: "agendamentos", label: t("portal.sidebar.menu.agendamentos"), icon: Calendar },
+    { id: "dados", label: t("portal.sidebar.menu.dados"), icon: User },
   ]
 
-  const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
+  const totalPendencias = processes.reduce(
+    (acc, p) => acc + (p.pendencias_count ?? 0),
+    0,
+  )
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#2d5a27]">
@@ -85,7 +80,7 @@ export function PortalSidebar({
             <span className="text-lg font-bold text-white">
               Susten<span className="text-[#8bc34a]">tec</span>
             </span>
-            <p className="text-xs text-white/70">Portal do Cliente</p>
+            <p className="text-xs text-white/70">{t("portal.sidebar.tagline")}</p>
           </div>
         </Link>
       </div>
@@ -157,14 +152,16 @@ export function PortalSidebar({
                     )}
                   >
                     <div className="flex-1 text-left min-w-0">
-                      <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
-                        {process.code}
-                      </p>
-                      <p className="truncate text-xs">{process.name}</p>
+                      {process.code && (
+                        <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
+                          {process.code}
+                        </p>
+                      )}
+                      <p className="truncate text-xs">{process.name ?? "—"}</p>
                     </div>
-                    {process.pendencias > 0 && (
+                    {process.pendencias_count > 0 && (
                       <Badge className="h-4 min-w-4 flex items-center justify-center text-[10px] rounded-full bg-amber-500 text-white">
-                        {process.pendencias}
+                        {process.pendencias_count}
                       </Badge>
                     )}
                   </button>
@@ -176,8 +173,9 @@ export function PortalSidebar({
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        <p className="text-xs text-white/60 mb-3">Responsável técnico de Sustentec-Engenharia</p>
+        <p className="text-xs text-white/60 mb-3">{t("portal.sidebar.tech.heading")}</p>
         <div className="flex items-center gap-3 mb-3">
+          {/* TODO(#9): per-tenant tech resolution when Notion adapter lands */}
           <Avatar className="h-10 w-10 border-2 border-white/20">
             <AvatarImage src="/responsavel-ivon.jpg" alt="Dra. Ivón Oristela Benítez González" />
             <AvatarFallback className="bg-[#4caf50] text-white text-sm">IO</AvatarFallback>
@@ -200,7 +198,7 @@ export function PortalSidebar({
             rel="noopener noreferrer"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
-            Falar no WhatsApp
+            {t("portal.sidebar.tech.whatsapp")}
           </a>
         </Button>
       </div>
@@ -212,7 +210,7 @@ export function PortalSidebar({
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Sair do Portal
+            {t("portal.sidebar.signOut")}
           </button>
         </form>
       </div>

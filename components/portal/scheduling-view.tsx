@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -22,11 +22,14 @@ import {
   Info,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
+import { createAppointmentAction } from "@/lib/actions/appointments"
+import type { ResponsibleTechOption } from "@/lib/db/responsibleTechs"
 
-const RESPONSIBLE_TECHS = [
-  { id: "ivon-benitez", name: "Dra. Ivón Oristela Benítez González" },
-]
+interface SchedulingViewProps {
+  techs: ResponsibleTechOption[]
+}
 
 const TIME_SLOTS = (() => {
   const slots: string[] = []
@@ -55,8 +58,23 @@ function formatDateBR(date: Date) {
   })
 }
 
-export function SchedulingView() {
+/**
+ * Combines a chosen date + a "HH:MM" string into an ISO timestamp anchored
+ * to America/Sao_Paulo (UTC-3, no DST since 2019). Going through the
+ * browser's local TZ would let two users in different TZs both book "10:00"
+ * and produce different UTC slots — breaking the unique constraint's intent.
+ */
+function combineDateTimeIso(date: Date, time: string): string {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}T${time}:00-03:00`
+}
+
+export function SchedulingView({ techs }: SchedulingViewProps) {
   const { toast } = useToast()
+  const { t } = useLanguage()
+  const [isPending, startTransition] = useTransition()
   const [tech, setTech] = useState("")
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState("")
@@ -64,39 +82,9 @@ export function SchedulingView() {
   const [message, setMessage] = useState("")
 
   const canSubmit =
-    tech !== "" && date !== undefined && time !== "" && subject.trim() !== ""
+    tech !== "" && date !== undefined && time !== "" && subject.trim() !== "" && !isPending
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!canSubmit || !date) return
-
-    const techName = RESPONSIBLE_TECHS.find((t) => t.id === tech)?.name ?? tech
-    const trimmedSubject = subject.trim()
-    const trimmedMessage = message.trim()
-
-    const bodyLines = [
-      "Olá, gostaria de solicitar um agendamento com os seguintes detalhes:",
-      "",
-      `Responsável técnico: ${techName}`,
-      `Data: ${formatDateBR(date)}`,
-      `Horário: ${time}`,
-      `Assunto: ${trimmedSubject}`,
-    ]
-    if (trimmedMessage) bodyLines.push("", `Mensagem: ${trimmedMessage}`)
-
-    const mailto =
-      "mailto:contato@sustentec-engenharia.com.br" +
-      `?subject=${encodeURIComponent("Solicitação de agendamento — " + trimmedSubject)}` +
-      `&body=${encodeURIComponent(bodyLines.join("\n"))}`
-
-    window.location.href = mailto
-
-    toast({
-      title: "Solicitação preparada",
-      description:
-        "Abrimos seu aplicativo de e-mail. Confirme o envio para concluir a solicitação.",
-    })
-
+  function resetForm() {
     setTech("")
     setDate(undefined)
     setTime("")
@@ -104,13 +92,71 @@ export function SchedulingView() {
     setMessage("")
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit || !date) return
+
+    const scheduled_for = combineDateTimeIso(date, time)
+
+    startTransition(async () => {
+      const result = await createAppointmentAction({
+        responsible_tech_id: tech,
+        scheduled_for,
+        subject: subject.trim(),
+        notes: message.trim() || undefined,
+      })
+
+      if (result.ok) {
+        toast({
+          title: t("portal.appointment.success.title"),
+          description: t("portal.appointment.success.description"),
+        })
+        resetForm()
+        return
+      }
+
+      switch (result.code) {
+        case "double_booked":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.doubleBooked.title"),
+            description: t("portal.appointment.error.doubleBooked.description"),
+          })
+          break
+        case "validation":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.validation.title"),
+            description: t("portal.appointment.error.validation.description"),
+          })
+          break
+        case "unauthorized":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.unauthorized.title"),
+            description: t("portal.appointment.error.unauthorized.description"),
+          })
+          break
+        default:
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.server.title"),
+            description: result.ref
+              ? `${t("portal.appointment.error.server.description")} (ref ${result.ref})`
+              : t("portal.appointment.error.server.description"),
+          })
+      }
+    })
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Agendamentos</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.scheduling.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Marque uma reunião com seu responsável técnico em poucos cliques.
+          {t("portal.scheduling.subtitle")}
         </p>
       </div>
 
@@ -120,41 +166,44 @@ export function SchedulingView() {
             <div className="p-1.5 bg-[#f5f1e6] border border-[#e5dcc5] rounded-lg">
               <CalendarIcon className="w-4 h-4 text-[#2d5a27]" />
             </div>
-            AGENDAR REUNIÃO
+            {t("portal.scheduling.card.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Office hours banner */}
           <div className="flex items-start gap-3 p-4 mb-6 rounded-lg bg-[#f5f1e6] border border-[#e5dcc5]">
             <div className="p-2 bg-white rounded-lg shrink-0">
               <Info className="w-4 h-4 text-[#2d5a27]" />
             </div>
             <div>
               <p className="text-sm font-semibold text-[#2d5a27]">
-                Horário de atendimento
+                {t("portal.scheduling.hours.title")}
               </p>
               <p className="text-sm text-[#2d5a27]/80">
-                Segunda a quinta-feira, das 09:00 às 17:30. Selecione abaixo
-                uma data e um horário disponíveis.
+                {t("portal.scheduling.hours.description")}
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Responsável técnico */}
             <div className="space-y-2">
               <Label htmlFor="tech" className="flex items-center gap-2 text-sm font-medium">
                 <Users className="w-4 h-4 text-[#2d5a27]" />
-                Responsável técnico
+                {t("portal.scheduling.field.tech")}
               </Label>
-              <Select value={tech} onValueChange={setTech}>
+              <Select value={tech} onValueChange={setTech} disabled={techs.length === 0}>
                 <SelectTrigger id="tech">
-                  <SelectValue placeholder="Selecione o responsável técnico" />
+                  <SelectValue
+                    placeholder={
+                      techs.length === 0
+                        ? t("portal.scheduling.field.tech.empty")
+                        : t("portal.scheduling.field.tech.placeholder")
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {RESPONSIBLE_TECHS.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
+                  {techs.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -162,11 +211,10 @@ export function SchedulingView() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Data */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <CalendarIcon className="w-4 h-4 text-[#2d5a27]" />
-                  Data
+                  {t("portal.scheduling.field.date")}
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -179,7 +227,7 @@ export function SchedulingView() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? formatDateBR(date) : "Selecione uma data"}
+                      {date ? formatDateBR(date) : t("portal.scheduling.field.date.placeholder")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -193,19 +241,18 @@ export function SchedulingView() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">
-                  Disponível apenas de segunda a quinta-feira.
+                  {t("portal.scheduling.field.date.hint")}
                 </p>
               </div>
 
-              {/* Horário */}
               <div className="space-y-2">
                 <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium">
                   <Clock className="w-4 h-4 text-[#2d5a27]" />
-                  Horário
+                  {t("portal.scheduling.field.time")}
                 </Label>
                 <Select value={time} onValueChange={setTime}>
                   <SelectTrigger id="time">
-                    <SelectValue placeholder="Selecione um horário" />
+                    <SelectValue placeholder={t("portal.scheduling.field.time.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TIME_SLOTS.map((slot) => (
@@ -218,27 +265,28 @@ export function SchedulingView() {
               </div>
             </div>
 
-            {/* Assunto */}
             <div className="space-y-2">
               <Label htmlFor="subject" className="text-sm font-medium">
-                Assunto
+                {t("portal.scheduling.field.subject")}
               </Label>
               <Input
                 id="subject"
-                placeholder="Ex.: dúvidas sobre o protocolo do processo CC 26-016"
+                placeholder={t("portal.scheduling.field.subject.placeholder")}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
               />
             </div>
 
-            {/* Mensagem */}
             <div className="space-y-2">
               <Label htmlFor="message" className="text-sm font-medium">
-                Mensagem <span className="text-muted-foreground font-normal">(opcional)</span>
+                {t("portal.scheduling.field.message")}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {t("portal.scheduling.field.message.optional")}
+                </span>
               </Label>
               <Textarea
                 id="message"
-                placeholder="Detalhe o que gostaria de discutir na reunião."
+                placeholder={t("portal.scheduling.field.message.placeholder")}
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -251,7 +299,9 @@ export function SchedulingView() {
                 disabled={!canSubmit}
                 className="bg-[#2d5a27] hover:bg-[#1b3d19] text-white"
               >
-                Solicitar agendamento
+                {isPending
+                  ? t("portal.appointment.submitting")
+                  : t("portal.scheduling.submit")}
               </Button>
             </div>
           </form>

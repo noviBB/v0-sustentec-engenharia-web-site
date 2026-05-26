@@ -1,7 +1,9 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
+import type { User } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { clients, userClients } from '@/lib/db/schema';
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 
 export type Client = typeof clients.$inferSelect;
 
@@ -31,4 +33,29 @@ export async function getClientForUser(
     .limit(1);
 
   return rows[0]?.client ?? null;
+}
+
+export type RequireClientResult =
+  | { ok: true; user: User; client: Client }
+  | { ok: false; code: 'unauthorized' };
+
+/**
+ * Server-action helper: resolves the signed-in user and their tenant in
+ * one shot. Returns `{ ok: false, code: 'unauthorized' }` on either a
+ * missing auth user OR a missing tenant link — actions should map both
+ * to the same toast since the difference isn't actionable to the user.
+ */
+export async function requireClient(): Promise<RequireClientResult> {
+  const supabase = await createSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, code: 'unauthorized' };
+  }
+  const client = await getClientForUser(user.id);
+  if (!client) {
+    return { ok: false, code: 'unauthorized' };
+  }
+  return { ok: true, user, client };
 }

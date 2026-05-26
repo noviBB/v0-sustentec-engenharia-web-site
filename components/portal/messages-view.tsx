@@ -1,15 +1,33 @@
 "use client"
 
+import { useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useAuth } from "@/lib/auth-context"
-import { getMessagesForEmail } from "@/lib/portal-data"
+import type { MessageRow } from "@/lib/db/messages"
+import { markMessageReadAction } from "@/lib/actions/messages"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/language-context"
+import { useToast } from "@/hooks/use-toast"
 
-function formatMessageDate(iso: string) {
+interface MessagesViewProps {
+  messages: MessageRow[]
+  /**
+   * Called optimistically before the server action — the shell uses this to
+   * decrement the unread badge and flip the row.
+   */
+  onMarkedRead: (messageId: string) => void
+  /**
+   * Called when the server action fails — rolls back the optimistic update.
+   */
+  onMarkReadFailed: (messageId: string) => void
+}
+
+function formatMessageDate(value: string | Date | null) {
+  if (!value) return ""
   try {
-    return new Date(iso).toLocaleString("pt-BR", {
+    const d = value instanceof Date ? value : new Date(value)
+    return d.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -17,24 +35,57 @@ function formatMessageDate(iso: string) {
       minute: "2-digit",
     })
   } catch {
-    return iso
+    return String(value)
   }
 }
 
-export function MessagesView() {
-  const { user } = useAuth()
-  const messages = getMessagesForEmail(user?.email)
+export function MessagesView({
+  messages,
+  onMarkedRead,
+  onMarkReadFailed,
+}: MessagesViewProps) {
+  const { t } = useLanguage()
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+
   // Ascending order — thread-style, most recent at the bottom.
-  const sorted = [...messages].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  )
+  const sorted = [...messages].sort((a, b) => {
+    const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
+    const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0
+    return ta - tb
+  })
+
+  function handleClick(msg: MessageRow) {
+    if (msg.read || msg.direction === "outbound") return
+    // Optimistic: tell the parent to bump the counter immediately, then
+    // run the mutation. If it fails we roll back via `onMarkReadFailed`
+    // and surface a toast (with a correlation ref for server errors).
+    onMarkedRead(msg.id)
+    startTransition(async () => {
+      const result = await markMessageReadAction(msg.id)
+      if (!result.ok) {
+        onMarkReadFailed(msg.id)
+        const description =
+          result.code === "server_error" && result.ref
+            ? `${t("portal.messages.error.server.description")} (ref ${result.ref})`
+            : t("portal.messages.error.server.description")
+        toast({
+          variant: "destructive",
+          title: t("portal.messages.error.server.title"),
+          description,
+        })
+      }
+    })
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mensagens</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.messages.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Conversa entre você e a equipe Sustentec, vinculada ao seu e-mail cadastrado.
+          {t("portal.messages.subtitle")}
         </p>
       </div>
 
@@ -42,22 +93,28 @@ export function MessagesView() {
         <Card className="bg-white">
           <CardContent className="py-16 text-center">
             <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-lg font-medium text-foreground">Nenhuma mensagem ainda</p>
+            <p className="text-lg font-medium text-foreground">
+              {t("portal.messages.empty.title")}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Você verá aqui as respostas enviadas pela equipe Sustentec.
+              {t("portal.messages.empty.description")}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {sorted.map(msg => {
+          {sorted.map((msg) => {
             const isOutbound = msg.direction === "outbound"
+            const isUnread = !msg.read && !isOutbound
             return (
               <Card
                 key={msg.id}
+                onClick={() => handleClick(msg)}
                 className={cn(
                   "bg-white",
-                  isOutbound && "ml-auto max-w-[88%] border-l-4 border-l-[#2d5a27]"
+                  isOutbound && "ml-auto max-w-[88%] border-l-4 border-l-[#2d5a27]",
+                  isUnread && "cursor-pointer ring-1 ring-[#2d5a27]/40",
+                  isPending && "opacity-90",
                 )}
               >
                 <CardHeader className="pb-3">
@@ -80,7 +137,7 @@ export function MessagesView() {
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base font-semibold text-foreground">
-                            {msg.subject}
+                            {msg.subject ?? t("portal.messages.noSubject")}
                           </CardTitle>
                           <Badge
                             variant={isOutbound ? "default" : "secondary"}
@@ -92,33 +149,39 @@ export function MessagesView() {
                             {isOutbound ? (
                               <span className="inline-flex items-center gap-1">
                                 <ArrowUpRight className="w-3 h-3" />
-                                Você enviou
+                                {t("portal.messages.badge.outbound")}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1">
                                 <ArrowDownLeft className="w-3 h-3" />
-                                Recebida
+                                {t("portal.messages.badge.inbound")}
                               </span>
                             )}
                           </Badge>
+                          {isUnread && (
+                            <Badge className="text-[10px] bg-[#2d5a27] text-white">
+                              {t("portal.messages.badge.unread")}
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          De: <span className="font-medium">{msg.from}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Para: <span className="font-medium">{msg.to}</span>
-                        </p>
+                        {msg.from_addr && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t("portal.messages.from")}{" "}
+                            <span className="font-medium">{msg.from_addr}</span>
+                          </p>
+                        )}
+                        {msg.to_addr && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("portal.messages.to")}{" "}
+                            <span className="font-medium">{msg.to_addr}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-xs text-muted-foreground">
-                        {formatMessageDate(msg.date)}
+                        {formatMessageDate(msg.sent_at)}
                       </span>
-                      {msg.processCode && (
-                        <Badge variant="outline" className="text-xs">
-                          {msg.processCode}
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
