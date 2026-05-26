@@ -1,7 +1,5 @@
 "use client"
 
-import { LanguageProvider } from "@/lib/language-context"
-import { Toaster } from "@/components/ui/toaster"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { StatsSection } from "@/components/stats-section"
@@ -14,21 +12,18 @@ import { Footer } from "@/components/footer"
 
 export default function Home() {
   return (
-    <LanguageProvider>
-      <div className="min-h-screen">
-        <Header />
-        <main>
-          <HeroSection />
-          <StatsSection />
-          <ServicesSection />
-          <TrackerSection />
-          <ValuesSection />
-          <SupportSection />
-          <ContactSection />
-        </main>
-        <Footer />
-      </div>
-      <Toaster />
-    </LanguageProvider>
+    <div className="min-h-screen">
+      <Header />
+      <main>
+        <HeroSection />
+        <StatsSection />
+        <ServicesSection />
+        <TrackerSection />
+        <ValuesSection />
+        <SupportSection />
+        <ContactSection />
+      </main>
+      <Footer />
+    </div>
   )
 }
