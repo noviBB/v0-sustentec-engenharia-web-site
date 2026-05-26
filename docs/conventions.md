@@ -55,3 +55,11 @@ Never concatenate Tailwind classes with template strings or `${a} ${b}` — conf
 
 - Prefer the `@/...` alias over relative `../../` paths.
 - Group imports: external packages first, then `@/...`, then relative.
+
+## Notion adapter boundary
+
+The Notion adapter lives under [lib/notion/](../lib/notion/) and is the **sole writer** of process data into Supabase. The portal reads only from Supabase.
+
+- Import the adapter **only** via its public surface `@/lib/notion` (re-exports `syncClient`, `syncOne`, `listForClient`, `handleWebhook`, `exportToNotion` + public types/errors).
+- The internal modules (`client`, `property-map`, `parsers`, `repository`, `bucketing`, `types`, `export`) and `@notionhq/client` are **off-limits outside `lib/notion/**`**. This is enforced by `no-restricted-imports` in [eslint.config.mjs](../eslint.config.mjs) — importing them elsewhere fails `pnpm lint`.
+- `NOTION_INTEGRATION_TOKEN` is validated **lazily** (inside `lib/notion/client.ts`, at sync time) — never at module load or build time, so `pnpm build` succeeds with an empty token.
