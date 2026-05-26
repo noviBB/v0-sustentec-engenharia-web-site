@@ -2,36 +2,35 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building, User, Mail, Phone, MapPin, FileText } from "lucide-react"
+import type { Client } from "@/lib/db/clients"
 
-const fields = [
-  {
-    icon: FileText,
-    label: "CNPJ",
-    value: "00.000.000/0001-00",
-  },
-  {
-    icon: User,
-    label: "Responsável legal",
-    value: "—",
-  },
-  {
-    icon: Mail,
-    label: "E-mail",
-    value: "contato@engeprat.com.br",
-  },
-  {
-    icon: Phone,
-    label: "Telefone",
-    value: "+55 21 0000-0000",
-  },
-  {
-    icon: MapPin,
-    label: "Endereço",
-    value: "—",
-  },
-]
+interface DadosCadastraisViewProps {
+  client: Client
+}
 
-export function DadosCadastraisView() {
+/** Formats a 14-digit BR CNPJ string as `XX.XXX.XXX/XXXX-XX`. */
+function formatCnpj(raw: string | null | undefined): string {
+  if (!raw) return "—"
+  const digits = raw.replace(/\D/g, "")
+  if (digits.length !== 14) return raw
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`
+}
+
+export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
+  const fields: ReadonlyArray<{
+    icon: typeof Building
+    label: string
+    value: string
+  }> = [
+    { icon: FileText, label: "CNPJ", value: formatCnpj(client.notion_cnpj_filter) },
+    // TODO(#19): clients schema lacks this field — placeholder until cadastral
+    // columns (responsible_name, contact_email, phone, address) ship.
+    { icon: User, label: "Responsável legal", value: "—" },
+    { icon: Mail, label: "E-mail", value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: Phone, label: "Telefone", value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: MapPin, label: "Endereço", value: "—" }, // TODO(#19): clients schema lacks this field
+  ]
+
   return (
     <div className="space-y-6">
       <div>
@@ -60,7 +59,7 @@ export function DadosCadastraisView() {
                 Cliente
               </p>
               <p className="text-2xl font-bold text-foreground leading-tight">
-                Engeprat
+                {client.name}
               </p>
             </div>
           </div>

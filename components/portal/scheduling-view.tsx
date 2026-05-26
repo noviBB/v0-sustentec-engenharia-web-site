@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -22,11 +22,14 @@ import {
   Info,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
+import { createAppointmentAction } from "@/lib/actions/appointments"
+import type { ResponsibleTechOption } from "@/lib/db/responsibleTechs"
 
-const RESPONSIBLE_TECHS = [
-  { id: "ivon-benitez", name: "Dra. Ivón Oristela Benítez González" },
-]
+interface SchedulingViewProps {
+  techs: ResponsibleTechOption[]
+}
 
 const TIME_SLOTS = (() => {
   const slots: string[] = []
@@ -55,8 +58,22 @@ function formatDateBR(date: Date) {
   })
 }
 
-export function SchedulingView() {
+/**
+ * Combines a local date + a "HH:MM" string into an ISO timestamp at the
+ * user's local timezone. We round-trip through `Date.toISOString()` so the
+ * server receives UTC.
+ */
+function combineDateTimeIso(date: Date, time: string): string {
+  const [hh, mm] = time.split(":").map((s) => Number.parseInt(s, 10))
+  const local = new Date(date)
+  local.setHours(hh, mm, 0, 0)
+  return local.toISOString()
+}
+
+export function SchedulingView({ techs }: SchedulingViewProps) {
   const { toast } = useToast()
+  const { t } = useLanguage()
+  const [isPending, startTransition] = useTransition()
   const [tech, setTech] = useState("")
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState("")
@@ -64,39 +81,9 @@ export function SchedulingView() {
   const [message, setMessage] = useState("")
 
   const canSubmit =
-    tech !== "" && date !== undefined && time !== "" && subject.trim() !== ""
+    tech !== "" && date !== undefined && time !== "" && subject.trim() !== "" && !isPending
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!canSubmit || !date) return
-
-    const techName = RESPONSIBLE_TECHS.find((t) => t.id === tech)?.name ?? tech
-    const trimmedSubject = subject.trim()
-    const trimmedMessage = message.trim()
-
-    const bodyLines = [
-      "Olá, gostaria de solicitar um agendamento com os seguintes detalhes:",
-      "",
-      `Responsável técnico: ${techName}`,
-      `Data: ${formatDateBR(date)}`,
-      `Horário: ${time}`,
-      `Assunto: ${trimmedSubject}`,
-    ]
-    if (trimmedMessage) bodyLines.push("", `Mensagem: ${trimmedMessage}`)
-
-    const mailto =
-      "mailto:contato@sustentec-engenharia.com.br" +
-      `?subject=${encodeURIComponent("Solicitação de agendamento — " + trimmedSubject)}` +
-      `&body=${encodeURIComponent(bodyLines.join("\n"))}`
-
-    window.location.href = mailto
-
-    toast({
-      title: "Solicitação preparada",
-      description:
-        "Abrimos seu aplicativo de e-mail. Confirme o envio para concluir a solicitação.",
-    })
-
+  function resetForm() {
     setTech("")
     setDate(undefined)
     setTime("")
@@ -104,9 +91,65 @@ export function SchedulingView() {
     setMessage("")
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit || !date) return
+
+    const scheduled_for = combineDateTimeIso(date, time)
+
+    startTransition(async () => {
+      const result = await createAppointmentAction({
+        responsible_tech_id: tech,
+        scheduled_for,
+        subject: subject.trim(),
+        notes: message.trim() || undefined,
+      })
+
+      if (result.ok) {
+        toast({
+          title: t("portal.appointment.success.title"),
+          description: t("portal.appointment.success.description"),
+        })
+        resetForm()
+        return
+      }
+
+      switch (result.code) {
+        case "double_booked":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.doubleBooked.title"),
+            description: t("portal.appointment.error.doubleBooked.description"),
+          })
+          break
+        case "validation":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.validation.title"),
+            description: t("portal.appointment.error.validation.description"),
+          })
+          break
+        case "unauthorized":
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.unauthorized.title"),
+            description: t("portal.appointment.error.unauthorized.description"),
+          })
+          break
+        default:
+          toast({
+            variant: "destructive",
+            title: t("portal.appointment.error.server.title"),
+            description: result.ref
+              ? `${t("portal.appointment.error.server.description")} (ref ${result.ref})`
+              : t("portal.appointment.error.server.description"),
+          })
+      }
+    })
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-foreground">Agendamentos</h2>
         <p className="text-muted-foreground">
@@ -124,7 +167,6 @@ export function SchedulingView() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Office hours banner */}
           <div className="flex items-start gap-3 p-4 mb-6 rounded-lg bg-[#f5f1e6] border border-[#e5dcc5]">
             <div className="p-2 bg-white rounded-lg shrink-0">
               <Info className="w-4 h-4 text-[#2d5a27]" />
@@ -141,20 +183,19 @@ export function SchedulingView() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Responsável técnico */}
             <div className="space-y-2">
               <Label htmlFor="tech" className="flex items-center gap-2 text-sm font-medium">
                 <Users className="w-4 h-4 text-[#2d5a27]" />
                 Responsável técnico
               </Label>
-              <Select value={tech} onValueChange={setTech}>
+              <Select value={tech} onValueChange={setTech} disabled={techs.length === 0}>
                 <SelectTrigger id="tech">
-                  <SelectValue placeholder="Selecione o responsável técnico" />
+                  <SelectValue placeholder={techs.length === 0 ? "Nenhum responsável disponível" : "Selecione o responsável técnico"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {RESPONSIBLE_TECHS.map((t) => (
+                  {techs.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {t.name}
+                      {t.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -162,7 +203,6 @@ export function SchedulingView() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Data */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <CalendarIcon className="w-4 h-4 text-[#2d5a27]" />
@@ -197,7 +237,6 @@ export function SchedulingView() {
                 </p>
               </div>
 
-              {/* Horário */}
               <div className="space-y-2">
                 <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium">
                   <Clock className="w-4 h-4 text-[#2d5a27]" />
@@ -218,7 +257,6 @@ export function SchedulingView() {
               </div>
             </div>
 
-            {/* Assunto */}
             <div className="space-y-2">
               <Label htmlFor="subject" className="text-sm font-medium">
                 Assunto
@@ -231,7 +269,6 @@ export function SchedulingView() {
               />
             </div>
 
-            {/* Mensagem */}
             <div className="space-y-2">
               <Label htmlFor="message" className="text-sm font-medium">
                 Mensagem <span className="text-muted-foreground font-normal">(opcional)</span>
@@ -251,7 +288,7 @@ export function SchedulingView() {
                 disabled={!canSubmit}
                 className="bg-[#2d5a27] hover:bg-[#1b3d19] text-white"
               >
-                Solicitar agendamento
+                {isPending ? t("portal.appointment.submitting") : "Solicitar agendamento"}
               </Button>
             </div>
           </form>

@@ -1,15 +1,27 @@
 "use client"
 
+import { useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useAuth } from "@/lib/auth-context"
-import { getMessagesForEmail } from "@/lib/portal-data"
+import type { MessageRow } from "@/lib/db/messages"
+import { markMessageReadAction } from "@/lib/actions/messages"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-function formatMessageDate(iso: string) {
+interface MessagesViewProps {
+  messages: MessageRow[]
+  /**
+   * Called after the server action confirms the mark-read — the shell
+   * uses this to optimistically decrement the unread badge.
+   */
+  onMarkedRead: (messageId: string) => void
+}
+
+function formatMessageDate(value: string | Date | null) {
+  if (!value) return ""
   try {
-    return new Date(iso).toLocaleString("pt-BR", {
+    const d = value instanceof Date ? value : new Date(value)
+    return d.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -17,17 +29,30 @@ function formatMessageDate(iso: string) {
       minute: "2-digit",
     })
   } catch {
-    return iso
+    return String(value)
   }
 }
 
-export function MessagesView() {
-  const { user } = useAuth()
-  const messages = getMessagesForEmail(user?.email)
+export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
+  const [isPending, startTransition] = useTransition()
+
   // Ascending order — thread-style, most recent at the bottom.
-  const sorted = [...messages].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  )
+  const sorted = [...messages].sort((a, b) => {
+    const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
+    const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0
+    return ta - tb
+  })
+
+  function handleClick(msg: MessageRow) {
+    if (msg.read || msg.direction === "outbound") return
+    // Optimistic: tell the parent to bump the counter immediately, then
+    // run the mutation. If it fails we leave the optimistic state alone
+    // (next nav reconciles) — this is a low-stakes UX op.
+    onMarkedRead(msg.id)
+    startTransition(async () => {
+      await markMessageReadAction(msg.id)
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -50,14 +75,18 @@ export function MessagesView() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sorted.map(msg => {
+          {sorted.map((msg) => {
             const isOutbound = msg.direction === "outbound"
+            const isUnread = !msg.read && !isOutbound
             return (
               <Card
                 key={msg.id}
+                onClick={() => handleClick(msg)}
                 className={cn(
                   "bg-white",
-                  isOutbound && "ml-auto max-w-[88%] border-l-4 border-l-[#2d5a27]"
+                  isOutbound && "ml-auto max-w-[88%] border-l-4 border-l-[#2d5a27]",
+                  isUnread && "cursor-pointer ring-1 ring-[#2d5a27]/40",
+                  isPending && "opacity-90",
                 )}
               >
                 <CardHeader className="pb-3">
@@ -80,7 +109,7 @@ export function MessagesView() {
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base font-semibold text-foreground">
-                            {msg.subject}
+                            {msg.subject ?? "(sem assunto)"}
                           </CardTitle>
                           <Badge
                             variant={isOutbound ? "default" : "secondary"}
@@ -101,24 +130,28 @@ export function MessagesView() {
                               </span>
                             )}
                           </Badge>
+                          {isUnread && (
+                            <Badge className="text-[10px] bg-[#2d5a27] text-white">
+                              Não lida
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          De: <span className="font-medium">{msg.from}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Para: <span className="font-medium">{msg.to}</span>
-                        </p>
+                        {msg.from_addr && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            De: <span className="font-medium">{msg.from_addr}</span>
+                          </p>
+                        )}
+                        {msg.to_addr && (
+                          <p className="text-xs text-muted-foreground">
+                            Para: <span className="font-medium">{msg.to_addr}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-xs text-muted-foreground">
-                        {formatMessageDate(msg.date)}
+                        {formatMessageDate(msg.sent_at)}
                       </span>
-                      {msg.processCode && (
-                        <Badge variant="outline" className="text-xs">
-                          {msg.processCode}
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
