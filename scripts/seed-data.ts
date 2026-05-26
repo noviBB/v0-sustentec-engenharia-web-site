@@ -344,7 +344,9 @@ async function seedMessagesForClient(
 
   let inserted = 0;
   for (const row of rows) {
-    // Idempotency: look for existing row by (client_id, sent_at, subject).
+    // Idempotency: dedupe by (client_id, sent_at, subject, body). Including
+    // `body` keeps two messages with the same subject/timestamp but different
+    // bodies (e.g. a quick follow-up) from collapsing into one seed row.
     const existing = await db
       .select({ id: schema.messages.id })
       .from(schema.messages)
@@ -353,6 +355,7 @@ async function seedMessagesForClient(
           eq(schema.messages.client_id, clientId),
           eq(schema.messages.subject, row.subject),
           eq(schema.messages.sent_at, new Date(row.sent_at)),
+          eq(schema.messages.body, row.body),
         ),
       )
       .limit(1);
