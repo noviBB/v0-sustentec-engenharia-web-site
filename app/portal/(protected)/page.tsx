@@ -13,13 +13,14 @@ import { MessagesView } from "@/components/portal/messages-view"
 
 export default function PortalPage() {
   const { user } = useAuth()
-  const clientProcesses = getProcessesForEmail(user?.email)
+  const clientProcesses = getProcessesForEmail(user.email)
 
   const [activeItem, setActiveItem] = useState("painel")
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null)
 
   const handleProcessSelect = (processId: string) => {
     setSelectedProcess(processId)
+    // TODO: replace synthetic id with real /portal/processos/[id] route in #7
     setActiveItem("processo-detalhe")
   }
 

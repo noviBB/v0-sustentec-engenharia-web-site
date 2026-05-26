@@ -138,6 +138,29 @@ const translations: Record<Language, Record<string, string>> = {
     "footer.rights": "Todos os direitos reservados.",
     "footer.privacy": "Política de Privacidade",
     "footer.terms": "Termos de Uso",
+
+    // Portal — login
+    "portal.login.tagline": "Portal do Cliente",
+    "portal.login.welcome": "Bem-vindo de volta",
+    "portal.login.description": "Acesse sua conta para acompanhar seu processo",
+    "portal.login.email": "E-mail",
+    "portal.login.emailPlaceholder": "seu@email.com",
+    "portal.login.password": "Senha",
+    "portal.login.passwordPlaceholder": "Digite sua senha",
+    "portal.login.showPassword": "Mostrar senha",
+    "portal.login.hidePassword": "Ocultar senha",
+    "portal.login.rememberMe": "Lembrar de mim",
+    "portal.login.forgotPassword": "Esqueci minha senha",
+    "portal.login.submit": "Entrar",
+    "portal.login.submitting": "Entrando...",
+    "portal.login.backToSite": "Voltar ao site principal",
+    "portal.login.invalidCredentials":
+      "E-mail ou senha incorretos. Tente novamente.",
+
+    // Portal — header / user menu
+    "portal.menu.profile": "Meu Perfil",
+    "portal.menu.settings": "Configurações",
+    "portal.menu.signOut": "Sair",
   },
   en: {
     // Navigation
@@ -266,6 +289,29 @@ const translations: Record<Language, Record<string, string>> = {
     "footer.rights": "All rights reserved.",
     "footer.privacy": "Privacy Policy",
     "footer.terms": "Terms of Use",
+
+    // Portal — login
+    "portal.login.tagline": "Client Portal",
+    "portal.login.welcome": "Welcome back",
+    "portal.login.description": "Sign in to track your process",
+    "portal.login.email": "Email",
+    "portal.login.emailPlaceholder": "you@email.com",
+    "portal.login.password": "Password",
+    "portal.login.passwordPlaceholder": "Enter your password",
+    "portal.login.showPassword": "Show password",
+    "portal.login.hidePassword": "Hide password",
+    "portal.login.rememberMe": "Remember me",
+    "portal.login.forgotPassword": "Forgot password",
+    "portal.login.submit": "Sign in",
+    "portal.login.submitting": "Signing in...",
+    "portal.login.backToSite": "Back to main site",
+    "portal.login.invalidCredentials":
+      "Invalid email or password. Please try again.",
+
+    // Portal — header / user menu
+    "portal.menu.profile": "My Profile",
+    "portal.menu.settings": "Settings",
+    "portal.menu.signOut": "Sign out",
   },
 }
 

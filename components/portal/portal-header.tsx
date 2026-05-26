@@ -1,7 +1,9 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { Bell, ChevronDown, Leaf } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
+import { signOut } from "@/app/portal/actions"
+import { Bell, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -18,7 +20,9 @@ interface PortalHeaderProps {
 }
 
 export function PortalHeader({ onItemChange }: PortalHeaderProps) {
-  const { user, logout } = useAuth()
+  const { user, displayName } = useAuth()
+  const { t } = useLanguage()
+  const initial = displayName.trim().charAt(0).toUpperCase() || "C"
 
   return (
     <header className="h-auto bg-card border-b border-border">
@@ -69,19 +73,29 @@ export function PortalHeader({ onItemChange }: PortalHeaderProps) {
               <Avatar className="h-7 w-7">
                 <AvatarImage src="/placeholder-user.jpg" />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                  {user?.name?.charAt(0) || "C"}
+                  {initial}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:block">{user?.name || "Engeprat"}</span>
+              <span className="text-sm font-medium hidden sm:flex flex-col items-start leading-tight">
+                <span>{displayName}</span>
+                {user?.email && displayName !== user.email && (
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                )}
+              </span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onItemChange("dados")}>Meu Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configuracoes</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onItemChange("dados")}>{t("portal.menu.profile")}</DropdownMenuItem>
+              <DropdownMenuItem>{t("portal.menu.settings")}</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive">
-                Sair
-              </DropdownMenuItem>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="w-full text-left text-destructive text-sm px-2 py-1.5 rounded-sm hover:bg-accent"
+                >
+                  {t("portal.menu.signOut")}
+                </button>
+              </form>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,25 +1,34 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { env } from '@/lib/env';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 /**
- * Refreshes the Supabase session on every Edge/Node middleware invocation.
+ * Canonical Supabase session refresh helper for Next.js middleware.
  *
- * Per `@supabase/ssr` v0.6+ the `setAll` callback applies Cache-Control /
- * Expires / Pragma cookies to both the request cookies and the outgoing
- * `NextResponse.next({ request })` response so a CDN cannot cache an
- * authenticated user's response. Not wired to `middleware.ts` in this ticket —
- * that's #6's job.
+ * Per `@supabase/ssr` guidance, every request that touches an authenticated
+ * route must call `supabase.auth.getUser()` so the session cookies get
+ * rotated when the access token is close to expiry. This helper wraps that
+ * dance — `middleware.ts` at the repo root delegates here so there is exactly
+ * one place that knows about cookie passthrough.
+ *
+ * Callers may inspect `request.cookies` after invocation (Supabase mutates
+ * the underlying request when refreshing) — but in the common case they
+ * should just return the `NextResponse` this function produces.
+ *
+ * IMPORTANT: do not insert any logic between `createServerClient` and
+ * `getUser()`. Supabase relies on `getUser()` being the first call to detect
+ * and refresh stale tokens.
  */
 export async function updateSession(
   request: NextRequest,
-): Promise<NextResponse> {
+): Promise<{ response: NextResponse; user: Awaited<ReturnType<typeof getUserSafe>> }> {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -38,10 +47,16 @@ export async function updateSession(
     },
   );
 
-  // Touch the session so the auth cookies refresh if needed.
-  // Do NOT add logic between createServerClient and getUser — token refresh
-  // depends on this being the first call.
-  await supabase.auth.getUser();
+  const user = await getUserSafe(supabase);
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
+}
+
+async function getUserSafe(
+  supabase: ReturnType<typeof createServerClient>,
+) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }
