@@ -131,13 +131,6 @@ export default function LoginPage() {
               >
                 {isSubmitting ? "Entrando..." : "Entrar"}
               </Button>
-
-              <div className="text-center text-sm text-muted-foreground pt-4 border-t">
-                <p>Credenciais de demonstracao:</p>
-                <p className="font-mono text-xs mt-1">
-                  cliente@exemplo.com / 123456
-                </p>
-              </div>
             </form>
           </CardContent>
         </Card>
