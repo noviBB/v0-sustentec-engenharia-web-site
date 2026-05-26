@@ -30,12 +30,12 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
       label: t("portal.dados.field.cnpj"),
       value: formatCnpj(client.notion_cnpj_filter),
     },
-    // TODO(#19): clients schema lacks this field — placeholder until cadastral
-    // columns (responsible_name, contact_email, phone, address) ship.
+    // TODO(#22, cadastral fields): clients schema lacks these fields — placeholder until
+    // cadastral columns (contact_name, contact_email, contact_phone, address_*) ship.
     { icon: User, label: t("portal.dados.field.responsibleLegal"), value: "—" },
-    { icon: Mail, label: t("portal.dados.field.email"), value: "—" }, // TODO(#19): clients schema lacks this field
-    { icon: Phone, label: t("portal.dados.field.phone"), value: "—" }, // TODO(#19): clients schema lacks this field
-    { icon: MapPin, label: t("portal.dados.field.address"), value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: Mail, label: t("portal.dados.field.email"), value: "—" }, // TODO(#22, cadastral fields)
+    { icon: Phone, label: t("portal.dados.field.phone"), value: "—" }, // TODO(#22, cadastral fields)
+    { icon: MapPin, label: t("portal.dados.field.address"), value: "—" }, // TODO(#22, cadastral fields)
   ]
 
   return (

@@ -13,7 +13,7 @@ export type NewClient = Pick<
 /**
  * Fetches a client by id, scoped to non-deleted rows.
  *
- * Application-layer scoping only — RLS enforcement is deferred to #18.
+ * Application-layer scoping only — RLS enforcement is deferred to #22 (RLS section).
  */
 export async function getClientById(clientId: string): Promise<Client | null> {
   const rows = await db

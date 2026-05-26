@@ -35,7 +35,7 @@ export async function submitContact(
   const ipHash = ip === 'unknown' ? null : hashIp(ip);
   const userAgent = hdrs.get('user-agent');
 
-  // TODO(#17): re-introduce rate limiting with Upstash — see issue 17
+  // TODO(#22, rate limiting): re-introduce rate limiting with Upstash
 
   try {
     await insertContactSubmission({

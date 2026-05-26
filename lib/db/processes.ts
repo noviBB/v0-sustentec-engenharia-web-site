@@ -48,7 +48,7 @@ export type ProcessRow = {
  * a second roundtrip.
  *
  * Application-layer scoping — `WHERE client_id = $clientId` is the
- * isolation boundary until RLS lands in #18. Defaults to `LIMIT 200` so a
+ * isolation boundary until RLS lands in #22 (RLS section). Defaults to `LIMIT 200` so a
  * runaway list doesn't blow up the RSC payload; callers can paginate later
  * via `{ limit, offset }`.
  */

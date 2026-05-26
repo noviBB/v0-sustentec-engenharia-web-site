@@ -46,8 +46,8 @@ export async function countUnreadForClient(clientId: string): Promise<number> {
  * unexpected DB failures surface as a typed `server_error` (with an 8-char
  * correlation `ref` that the UI shows in the toast and we log to stderr).
  *
- * TODO(#21): AC expects `read_at = now()` but the current schema only has
- * a `read boolean` column. Track schema extension in issue #21.
+ * TODO(#22, read_at): AC expects `read_at = now()` but the current schema only has
+ * a `read boolean` column. Track schema extension in issue #22.
  */
 export async function markMessageRead(
   clientId: string,
