@@ -17,12 +17,20 @@ const serverEnvSchema = z.object({
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DATABASE_DIRECT_URL: z.string().min(1).optional(),
+  // Shared secret for the manual sync / cron endpoints.
+  CRON_SECRET: z.string().min(1, 'CRON_SECRET is required'),
+  // External credential — NOT available at build time. Optional here and
+  // validated LAZILY inside lib/notion/client.ts when a sync actually runs, so
+  // `pnpm build` succeeds with an empty token.
+  NOTION_INTEGRATION_TOKEN: z.string().optional(),
 });
 
 const parsed = serverEnvSchema.safeParse({
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_DIRECT_URL: process.env.DATABASE_DIRECT_URL,
+  CRON_SECRET: process.env.CRON_SECRET,
+  NOTION_INTEGRATION_TOKEN: process.env.NOTION_INTEGRATION_TOKEN,
 });
 
 if (!parsed.success) {
