@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { signOut } from "@/app/portal/actions"
 import { getMessagesForEmail } from "@/lib/portal-data"
 import { cn } from "@/lib/utils"
 import {
@@ -46,11 +47,11 @@ export function PortalSidebar({
   onProcessChange,
   processes,
 }: PortalSidebarProps) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
 
-  const messages = getMessagesForEmail(user?.email)
+  const messages = getMessagesForEmail(user.email)
   const unreadMessages = messages.filter(m => !m.read).length
 
   const menuItems: Array<{
@@ -124,7 +125,7 @@ export function PortalSidebar({
                   )}
                 </>
               )}
-              {item.badge && item.id !== "processos" && (
+              {item.badge != null && item.id !== "processos" && (
                 <Badge
                   className={cn(
                     "h-5 min-w-5 flex items-center justify-center text-xs rounded-full",
@@ -205,13 +206,15 @@ export function PortalSidebar({
       </div>
 
       <div className="p-4 border-t border-white/10">
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          Sair do Portal
-        </button>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            Sair do Portal
+          </button>
+        </form>
       </div>
     </div>
   )

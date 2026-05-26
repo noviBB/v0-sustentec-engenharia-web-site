@@ -40,8 +40,8 @@ const BUCKET_LABELS: Record<ProcessBucket, string> = {
 }
 
 export function DashboardContent({ processes, onSelectProcess }: DashboardContentProps) {
-  const { user } = useAuth()
-  const firstName = (user?.name ?? "Cliente").trim().split(" ")[0]
+  const { displayName } = useAuth()
+  const firstName = displayName.trim().split(/[\s@]/)[0]
 
   const totalProcesses = processes.length
   const inProgress = processes.filter(p => p.bucket === "andamento").length
