@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import { AuthProvider } from "@/lib/auth-context"
-import { Toaster } from "@/components/ui/toaster"
 import { createClient } from "@/lib/supabase/server"
 import { getClientForUser } from "@/lib/auth/tenant"
 import { getProfileByUserId } from "@/lib/db/profiles"
@@ -53,9 +52,6 @@ export default async function PortalLayout({
   }
 
   return (
-    <AuthProvider initial={{ user, profile, client }}>
-      {children}
-      <Toaster />
-    </AuthProvider>
+    <AuthProvider initial={{ user, profile, client }}>{children}</AuthProvider>
   )
 }
