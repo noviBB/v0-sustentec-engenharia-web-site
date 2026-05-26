@@ -161,6 +161,36 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.menu.profile": "Meu Perfil",
     "portal.menu.settings": "Configurações",
     "portal.menu.signOut": "Sair",
+
+    // Portal — appointment scheduling
+    "portal.appointment.submitting": "Agendando...",
+    "portal.appointment.success.title": "Agendamento solicitado",
+    "portal.appointment.success.description":
+      "Recebemos sua solicitação. Você receberá uma confirmação em breve.",
+    "portal.appointment.error.doubleBooked.title": "Horário indisponível",
+    "portal.appointment.error.doubleBooked.description":
+      "Esse horário já foi reservado por outro cliente. Por favor, escolha outro.",
+    "portal.appointment.error.validation.title": "Confira os dados",
+    "portal.appointment.error.validation.description":
+      "Alguns campos do agendamento estão inválidos. Revise e tente novamente.",
+    "portal.appointment.error.unauthorized.title": "Sessão expirada",
+    "portal.appointment.error.unauthorized.description":
+      "Sua sessão expirou. Faça login novamente para concluir o agendamento.",
+    "portal.appointment.error.server.title": "Não foi possível agendar",
+    "portal.appointment.error.server.description":
+      "Ocorreu um erro inesperado ao registrar o agendamento. Tente novamente em instantes.",
+    "portal.appointment.validation.techRequired":
+      "Selecione um responsável técnico.",
+    "portal.appointment.validation.slotRequired":
+      "Selecione uma data e um horário válidos.",
+    "portal.appointment.validation.subjectRequired":
+      "Informe o assunto do agendamento.",
+
+    // Portal — messages
+    "portal.messages.markRead": "Marcar como lida",
+    "portal.messages.empty.title": "Nenhuma mensagem ainda",
+    "portal.messages.empty.description":
+      "Você verá aqui as respostas enviadas pela equipe Sustentec.",
   },
   en: {
     // Navigation
@@ -312,6 +342,36 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.menu.profile": "My Profile",
     "portal.menu.settings": "Settings",
     "portal.menu.signOut": "Sign out",
+
+    // Portal — appointment scheduling
+    "portal.appointment.submitting": "Scheduling...",
+    "portal.appointment.success.title": "Appointment requested",
+    "portal.appointment.success.description":
+      "We received your request. You will get a confirmation shortly.",
+    "portal.appointment.error.doubleBooked.title": "Slot unavailable",
+    "portal.appointment.error.doubleBooked.description":
+      "That slot is already booked by another client. Please pick a different one.",
+    "portal.appointment.error.validation.title": "Check the form",
+    "portal.appointment.error.validation.description":
+      "Some appointment fields are invalid. Please review and try again.",
+    "portal.appointment.error.unauthorized.title": "Session expired",
+    "portal.appointment.error.unauthorized.description":
+      "Your session has expired. Please sign in again to finish scheduling.",
+    "portal.appointment.error.server.title": "Could not schedule",
+    "portal.appointment.error.server.description":
+      "Something went wrong saving your appointment. Please try again shortly.",
+    "portal.appointment.validation.techRequired":
+      "Please select a responsible engineer.",
+    "portal.appointment.validation.slotRequired":
+      "Please select a valid date and time.",
+    "portal.appointment.validation.subjectRequired":
+      "Please enter the meeting subject.",
+
+    // Portal — messages
+    "portal.messages.markRead": "Mark as read",
+    "portal.messages.empty.title": "No messages yet",
+    "portal.messages.empty.description":
+      "Replies from the Sustentec team will appear here.",
   },
 }
 
