@@ -1,7 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { getClientForUser } from '@/lib/auth/tenant';
+import { requireClient } from '@/lib/auth/tenant';
 import { createAppointment } from '@/lib/db/appointments';
 import {
   createAppointmentSchema,
@@ -21,16 +20,8 @@ import {
 export async function createAppointmentAction(
   input: unknown,
 ): Promise<CreateAppointmentResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { ok: false, code: 'unauthorized' };
-  }
-
-  const client = await getClientForUser(user.id);
-  if (!client) {
+  const ctx = await requireClient();
+  if (!ctx.ok) {
     return { ok: false, code: 'unauthorized' };
   }
 
@@ -40,7 +31,7 @@ export async function createAppointmentAction(
   }
   const data: CreateAppointmentInput = parsed.data;
 
-  const result = await createAppointment(client.id, {
+  const result = await createAppointment(ctx.client.id, {
     responsible_tech_id: data.responsible_tech_id,
     title: data.subject,
     description: data.notes ?? null,
