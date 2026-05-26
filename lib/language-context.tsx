@@ -191,6 +191,107 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.messages.empty.title": "Nenhuma mensagem ainda",
     "portal.messages.empty.description":
       "Você verá aqui as respostas enviadas pela equipe Sustentec.",
+    "portal.messages.title": "Mensagens",
+    "portal.messages.subtitle":
+      "Conversa entre você e a equipe Sustentec, vinculada ao seu e-mail cadastrado.",
+    "portal.messages.noSubject": "(sem assunto)",
+    "portal.messages.badge.outbound": "Você enviou",
+    "portal.messages.badge.inbound": "Recebida",
+    "portal.messages.badge.unread": "Não lida",
+    "portal.messages.from": "De:",
+    "portal.messages.to": "Para:",
+    "portal.messages.error.server.title": "Não foi possível marcar como lida",
+    "portal.messages.error.server.description":
+      "Ocorreu um erro inesperado. Tente novamente em instantes.",
+
+    // Portal — scheduling
+    "portal.scheduling.title": "Agendamentos",
+    "portal.scheduling.subtitle":
+      "Marque uma reunião com seu responsável técnico em poucos cliques.",
+    "portal.scheduling.card.title": "AGENDAR REUNIÃO",
+    "portal.scheduling.hours.title": "Horário de atendimento",
+    "portal.scheduling.hours.description":
+      "Segunda a quinta-feira, das 09:00 às 17:30. Selecione abaixo uma data e um horário disponíveis.",
+    "portal.scheduling.field.tech": "Responsável técnico",
+    "portal.scheduling.field.tech.placeholder":
+      "Selecione o responsável técnico",
+    "portal.scheduling.field.tech.empty": "Nenhum responsável disponível",
+    "portal.scheduling.field.date": "Data",
+    "portal.scheduling.field.date.placeholder": "Selecione uma data",
+    "portal.scheduling.field.date.hint":
+      "Disponível apenas de segunda a quinta-feira.",
+    "portal.scheduling.field.time": "Horário",
+    "portal.scheduling.field.time.placeholder": "Selecione um horário",
+    "portal.scheduling.field.subject": "Assunto",
+    "portal.scheduling.field.subject.placeholder":
+      "Ex.: dúvidas sobre o protocolo do processo CC 26-016",
+    "portal.scheduling.field.message": "Mensagem",
+    "portal.scheduling.field.message.optional": "(opcional)",
+    "portal.scheduling.field.message.placeholder":
+      "Detalhe o que gostaria de discutir na reunião.",
+    "portal.scheduling.submit": "Solicitar agendamento",
+
+    // Portal — dashboard
+    "portal.dashboard.greeting": "Olá, {name}!",
+    "portal.dashboard.subtitle":
+      "Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.",
+    "portal.dashboard.unread.one":
+      "Você tem {count} mensagem não lida.",
+    "portal.dashboard.unread.other":
+      "Você tem {count} mensagens não lidas.",
+    "portal.dashboard.stat.total": "TOTAL DE PROCESSOS",
+    "portal.dashboard.stat.total.label": "processos cadastrados",
+    "portal.dashboard.stat.inProgress": "EM ANDAMENTO",
+    "portal.dashboard.stat.inProgress.label": "processos ativos",
+    "portal.dashboard.stat.accompaniment": "EM ACOMPANHAMENTO",
+    "portal.dashboard.stat.accompaniment.label": "em acompanhamento",
+    "portal.dashboard.stat.finalized": "FINALIZADOS",
+    "portal.dashboard.stat.finalized.label": "licenças emitidas",
+    "portal.dashboard.processes.title": "MEUS PROCESSOS",
+    "portal.dashboard.processes.empty.title":
+      "Nenhum processo cadastrado ainda",
+    "portal.dashboard.processes.empty.description":
+      "Quando a equipe Sustentec cadastrar processos para você, eles aparecerão aqui.",
+    "portal.dashboard.bucket.andamento": "Em andamento",
+    "portal.dashboard.bucket.acompanhamento": "Em acompanhamento",
+    "portal.dashboard.bucket.finalizado": "Finalizado",
+    "portal.dashboard.bucket.empty": "Nenhum processo nesta categoria.",
+    "portal.dashboard.pendencias.one": "{count} pendência",
+    "portal.dashboard.pendencias.other": "{count} pendências",
+    "portal.dashboard.viewDetails": "Ver detalhes",
+    "portal.dashboard.shortcut.schedule.title": "Agendar Reunião",
+    "portal.dashboard.shortcut.schedule.description":
+      "Marque uma reunião com seu responsável técnico",
+    "portal.dashboard.shortcut.newProcess.title": "Novo Processo",
+    "portal.dashboard.shortcut.newProcess.description":
+      "Solicite um novo processo de licenciamento",
+    "portal.dashboard.shortcut.pendencias.title": "Resolver Pendências",
+    "portal.dashboard.shortcut.pendencias.one":
+      "Você tem {count} item pendente",
+    "portal.dashboard.shortcut.pendencias.other":
+      "Você tem {count} itens pendentes",
+
+    // Portal — dados cadastrais
+    "portal.dados.title": "Dados Cadastrais",
+    "portal.dados.subtitle": "Informações do cliente registradas no portal.",
+    "portal.dados.section.client": "CLIENTE",
+    "portal.dados.section.client.eyebrow": "Cliente",
+    "portal.dados.field.cnpj": "CNPJ",
+    "portal.dados.field.responsibleLegal": "Responsável legal",
+    "portal.dados.field.email": "E-mail",
+    "portal.dados.field.phone": "Telefone",
+    "portal.dados.field.address": "Endereço",
+
+    // Portal — sidebar
+    "portal.sidebar.tagline": "Portal do Cliente",
+    "portal.sidebar.menu.painel": "Painel Principal",
+    "portal.sidebar.menu.processos": "Meus Processos",
+    "portal.sidebar.menu.mensagens": "Mensagens",
+    "portal.sidebar.menu.agendamentos": "Agendamentos",
+    "portal.sidebar.menu.dados": "Dados Cadastrais",
+    "portal.sidebar.tech.heading": "Responsável técnico de Sustentec-Engenharia",
+    "portal.sidebar.tech.whatsapp": "Falar no WhatsApp",
+    "portal.sidebar.signOut": "Sair do Portal",
   },
   en: {
     // Navigation
@@ -372,6 +473,107 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.messages.empty.title": "No messages yet",
     "portal.messages.empty.description":
       "Replies from the Sustentec team will appear here.",
+    "portal.messages.title": "Messages",
+    "portal.messages.subtitle":
+      "Thread between you and the Sustentec team, tied to your registered email.",
+    "portal.messages.noSubject": "(no subject)",
+    "portal.messages.badge.outbound": "You sent",
+    "portal.messages.badge.inbound": "Received",
+    "portal.messages.badge.unread": "Unread",
+    "portal.messages.from": "From:",
+    "portal.messages.to": "To:",
+    "portal.messages.error.server.title": "Could not mark as read",
+    "portal.messages.error.server.description":
+      "Something went wrong. Please try again in a moment.",
+
+    // Portal — scheduling
+    "portal.scheduling.title": "Scheduling",
+    "portal.scheduling.subtitle":
+      "Book a meeting with your responsible engineer in a few clicks.",
+    "portal.scheduling.card.title": "BOOK A MEETING",
+    "portal.scheduling.hours.title": "Business hours",
+    "portal.scheduling.hours.description":
+      "Monday to Thursday, 09:00 to 17:30. Pick an available date and time below.",
+    "portal.scheduling.field.tech": "Responsible engineer",
+    "portal.scheduling.field.tech.placeholder":
+      "Select the responsible engineer",
+    "portal.scheduling.field.tech.empty": "No engineer available",
+    "portal.scheduling.field.date": "Date",
+    "portal.scheduling.field.date.placeholder": "Pick a date",
+    "portal.scheduling.field.date.hint":
+      "Available Monday to Thursday only.",
+    "portal.scheduling.field.time": "Time",
+    "portal.scheduling.field.time.placeholder": "Pick a time",
+    "portal.scheduling.field.subject": "Subject",
+    "portal.scheduling.field.subject.placeholder":
+      "e.g. questions about the protocol for case CC 26-016",
+    "portal.scheduling.field.message": "Message",
+    "portal.scheduling.field.message.optional": "(optional)",
+    "portal.scheduling.field.message.placeholder":
+      "Describe what you would like to discuss in the meeting.",
+    "portal.scheduling.submit": "Request appointment",
+
+    // Portal — dashboard
+    "portal.dashboard.greeting": "Hi, {name}!",
+    "portal.dashboard.subtitle":
+      "Welcome to your portal. Track the progress of your environmental cases here.",
+    "portal.dashboard.unread.one":
+      "You have {count} unread message.",
+    "portal.dashboard.unread.other":
+      "You have {count} unread messages.",
+    "portal.dashboard.stat.total": "TOTAL CASES",
+    "portal.dashboard.stat.total.label": "cases registered",
+    "portal.dashboard.stat.inProgress": "IN PROGRESS",
+    "portal.dashboard.stat.inProgress.label": "active cases",
+    "portal.dashboard.stat.accompaniment": "IN MONITORING",
+    "portal.dashboard.stat.accompaniment.label": "in monitoring",
+    "portal.dashboard.stat.finalized": "FINALIZED",
+    "portal.dashboard.stat.finalized.label": "licenses issued",
+    "portal.dashboard.processes.title": "MY CASES",
+    "portal.dashboard.processes.empty.title":
+      "No cases registered yet",
+    "portal.dashboard.processes.empty.description":
+      "Cases registered by the Sustentec team will appear here.",
+    "portal.dashboard.bucket.andamento": "In progress",
+    "portal.dashboard.bucket.acompanhamento": "In monitoring",
+    "portal.dashboard.bucket.finalizado": "Finalized",
+    "portal.dashboard.bucket.empty": "No cases in this category.",
+    "portal.dashboard.pendencias.one": "{count} pending item",
+    "portal.dashboard.pendencias.other": "{count} pending items",
+    "portal.dashboard.viewDetails": "View details",
+    "portal.dashboard.shortcut.schedule.title": "Book a Meeting",
+    "portal.dashboard.shortcut.schedule.description":
+      "Book a meeting with your responsible engineer",
+    "portal.dashboard.shortcut.newProcess.title": "New Case",
+    "portal.dashboard.shortcut.newProcess.description":
+      "Request a new licensing case",
+    "portal.dashboard.shortcut.pendencias.title": "Resolve Pending Items",
+    "portal.dashboard.shortcut.pendencias.one":
+      "You have {count} pending item",
+    "portal.dashboard.shortcut.pendencias.other":
+      "You have {count} pending items",
+
+    // Portal — dados cadastrais
+    "portal.dados.title": "Account Details",
+    "portal.dados.subtitle": "Client information registered in the portal.",
+    "portal.dados.section.client": "CLIENT",
+    "portal.dados.section.client.eyebrow": "Client",
+    "portal.dados.field.cnpj": "CNPJ",
+    "portal.dados.field.responsibleLegal": "Legal representative",
+    "portal.dados.field.email": "Email",
+    "portal.dados.field.phone": "Phone",
+    "portal.dados.field.address": "Address",
+
+    // Portal — sidebar
+    "portal.sidebar.tagline": "Client Portal",
+    "portal.sidebar.menu.painel": "Dashboard",
+    "portal.sidebar.menu.processos": "My Cases",
+    "portal.sidebar.menu.mensagens": "Messages",
+    "portal.sidebar.menu.agendamentos": "Scheduling",
+    "portal.sidebar.menu.dados": "Account Details",
+    "portal.sidebar.tech.heading": "Sustentec-Engenharia responsible engineer",
+    "portal.sidebar.tech.whatsapp": "Chat on WhatsApp",
+    "portal.sidebar.signOut": "Sign out of Portal",
   },
 }
 

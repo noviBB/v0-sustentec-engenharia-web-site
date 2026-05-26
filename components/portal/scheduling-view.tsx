@@ -59,15 +59,16 @@ function formatDateBR(date: Date) {
 }
 
 /**
- * Combines a local date + a "HH:MM" string into an ISO timestamp at the
- * user's local timezone. We round-trip through `Date.toISOString()` so the
- * server receives UTC.
+ * Combines a chosen date + a "HH:MM" string into an ISO timestamp anchored
+ * to America/Sao_Paulo (UTC-3, no DST since 2019). Going through the
+ * browser's local TZ would let two users in different TZs both book "10:00"
+ * and produce different UTC slots — breaking the unique constraint's intent.
  */
 function combineDateTimeIso(date: Date, time: string): string {
-  const [hh, mm] = time.split(":").map((s) => Number.parseInt(s, 10))
-  const local = new Date(date)
-  local.setHours(hh, mm, 0, 0)
-  return local.toISOString()
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}T${time}:00-03:00`
 }
 
 export function SchedulingView({ techs }: SchedulingViewProps) {
@@ -151,9 +152,11 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Agendamentos</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.scheduling.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Marque uma reunião com seu responsável técnico em poucos cliques.
+          {t("portal.scheduling.subtitle")}
         </p>
       </div>
 
@@ -163,7 +166,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
             <div className="p-1.5 bg-[#f5f1e6] border border-[#e5dcc5] rounded-lg">
               <CalendarIcon className="w-4 h-4 text-[#2d5a27]" />
             </div>
-            AGENDAR REUNIÃO
+            {t("portal.scheduling.card.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -173,11 +176,10 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
             </div>
             <div>
               <p className="text-sm font-semibold text-[#2d5a27]">
-                Horário de atendimento
+                {t("portal.scheduling.hours.title")}
               </p>
               <p className="text-sm text-[#2d5a27]/80">
-                Segunda a quinta-feira, das 09:00 às 17:30. Selecione abaixo
-                uma data e um horário disponíveis.
+                {t("portal.scheduling.hours.description")}
               </p>
             </div>
           </div>
@@ -186,16 +188,22 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
             <div className="space-y-2">
               <Label htmlFor="tech" className="flex items-center gap-2 text-sm font-medium">
                 <Users className="w-4 h-4 text-[#2d5a27]" />
-                Responsável técnico
+                {t("portal.scheduling.field.tech")}
               </Label>
               <Select value={tech} onValueChange={setTech} disabled={techs.length === 0}>
                 <SelectTrigger id="tech">
-                  <SelectValue placeholder={techs.length === 0 ? "Nenhum responsável disponível" : "Selecione o responsável técnico"} />
+                  <SelectValue
+                    placeholder={
+                      techs.length === 0
+                        ? t("portal.scheduling.field.tech.empty")
+                        : t("portal.scheduling.field.tech.placeholder")
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {techs.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.display_name}
+                  {techs.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -206,7 +214,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <CalendarIcon className="w-4 h-4 text-[#2d5a27]" />
-                  Data
+                  {t("portal.scheduling.field.date")}
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -219,7 +227,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? formatDateBR(date) : "Selecione uma data"}
+                      {date ? formatDateBR(date) : t("portal.scheduling.field.date.placeholder")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -233,18 +241,18 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">
-                  Disponível apenas de segunda a quinta-feira.
+                  {t("portal.scheduling.field.date.hint")}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium">
                   <Clock className="w-4 h-4 text-[#2d5a27]" />
-                  Horário
+                  {t("portal.scheduling.field.time")}
                 </Label>
                 <Select value={time} onValueChange={setTime}>
                   <SelectTrigger id="time">
-                    <SelectValue placeholder="Selecione um horário" />
+                    <SelectValue placeholder={t("portal.scheduling.field.time.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TIME_SLOTS.map((slot) => (
@@ -259,11 +267,11 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
 
             <div className="space-y-2">
               <Label htmlFor="subject" className="text-sm font-medium">
-                Assunto
+                {t("portal.scheduling.field.subject")}
               </Label>
               <Input
                 id="subject"
-                placeholder="Ex.: dúvidas sobre o protocolo do processo CC 26-016"
+                placeholder={t("portal.scheduling.field.subject.placeholder")}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
               />
@@ -271,11 +279,14 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
 
             <div className="space-y-2">
               <Label htmlFor="message" className="text-sm font-medium">
-                Mensagem <span className="text-muted-foreground font-normal">(opcional)</span>
+                {t("portal.scheduling.field.message")}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {t("portal.scheduling.field.message.optional")}
+                </span>
               </Label>
               <Textarea
                 id="message"
-                placeholder="Detalhe o que gostaria de discutir na reunião."
+                placeholder={t("portal.scheduling.field.message.placeholder")}
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -288,7 +299,9 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
                 disabled={!canSubmit}
                 className="bg-[#2d5a27] hover:bg-[#1b3d19] text-white"
               >
-                {isPending ? t("portal.appointment.submitting") : "Solicitar agendamento"}
+                {isPending
+                  ? t("portal.appointment.submitting")
+                  : t("portal.scheduling.submit")}
               </Button>
             </div>
           </form>

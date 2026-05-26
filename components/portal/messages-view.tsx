@@ -7,14 +7,20 @@ import type { MessageRow } from "@/lib/db/messages"
 import { markMessageReadAction } from "@/lib/actions/messages"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/language-context"
+import { useToast } from "@/hooks/use-toast"
 
 interface MessagesViewProps {
   messages: MessageRow[]
   /**
-   * Called after the server action confirms the mark-read — the shell
-   * uses this to optimistically decrement the unread badge.
+   * Called optimistically before the server action — the shell uses this to
+   * decrement the unread badge and flip the row.
    */
   onMarkedRead: (messageId: string) => void
+  /**
+   * Called when the server action fails — rolls back the optimistic update.
+   */
+  onMarkReadFailed: (messageId: string) => void
 }
 
 function formatMessageDate(value: string | Date | null) {
@@ -33,7 +39,13 @@ function formatMessageDate(value: string | Date | null) {
   }
 }
 
-export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
+export function MessagesView({
+  messages,
+  onMarkedRead,
+  onMarkReadFailed,
+}: MessagesViewProps) {
+  const { t } = useLanguage()
+  const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
 
   // Ascending order — thread-style, most recent at the bottom.
@@ -46,20 +58,34 @@ export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
   function handleClick(msg: MessageRow) {
     if (msg.read || msg.direction === "outbound") return
     // Optimistic: tell the parent to bump the counter immediately, then
-    // run the mutation. If it fails we leave the optimistic state alone
-    // (next nav reconciles) — this is a low-stakes UX op.
+    // run the mutation. If it fails we roll back via `onMarkReadFailed`
+    // and surface a toast (with a correlation ref for server errors).
     onMarkedRead(msg.id)
     startTransition(async () => {
-      await markMessageReadAction(msg.id)
+      const result = await markMessageReadAction(msg.id)
+      if (!result.ok) {
+        onMarkReadFailed(msg.id)
+        const description =
+          result.code === "server_error" && result.ref
+            ? `${t("portal.messages.error.server.description")} (ref ${result.ref})`
+            : t("portal.messages.error.server.description")
+        toast({
+          variant: "destructive",
+          title: t("portal.messages.error.server.title"),
+          description,
+        })
+      }
     })
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mensagens</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.messages.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Conversa entre você e a equipe Sustentec, vinculada ao seu e-mail cadastrado.
+          {t("portal.messages.subtitle")}
         </p>
       </div>
 
@@ -67,9 +93,11 @@ export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
         <Card className="bg-white">
           <CardContent className="py-16 text-center">
             <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-lg font-medium text-foreground">Nenhuma mensagem ainda</p>
+            <p className="text-lg font-medium text-foreground">
+              {t("portal.messages.empty.title")}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Você verá aqui as respostas enviadas pela equipe Sustentec.
+              {t("portal.messages.empty.description")}
             </p>
           </CardContent>
         </Card>
@@ -109,7 +137,7 @@ export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base font-semibold text-foreground">
-                            {msg.subject ?? "(sem assunto)"}
+                            {msg.subject ?? t("portal.messages.noSubject")}
                           </CardTitle>
                           <Badge
                             variant={isOutbound ? "default" : "secondary"}
@@ -121,29 +149,31 @@ export function MessagesView({ messages, onMarkedRead }: MessagesViewProps) {
                             {isOutbound ? (
                               <span className="inline-flex items-center gap-1">
                                 <ArrowUpRight className="w-3 h-3" />
-                                Você enviou
+                                {t("portal.messages.badge.outbound")}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1">
                                 <ArrowDownLeft className="w-3 h-3" />
-                                Recebida
+                                {t("portal.messages.badge.inbound")}
                               </span>
                             )}
                           </Badge>
                           {isUnread && (
                             <Badge className="text-[10px] bg-[#2d5a27] text-white">
-                              Não lida
+                              {t("portal.messages.badge.unread")}
                             </Badge>
                           )}
                         </div>
                         {msg.from_addr && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            De: <span className="font-medium">{msg.from_addr}</span>
+                            {t("portal.messages.from")}{" "}
+                            <span className="font-medium">{msg.from_addr}</span>
                           </p>
                         )}
                         {msg.to_addr && (
                           <p className="text-xs text-muted-foreground">
-                            Para: <span className="font-medium">{msg.to_addr}</span>
+                            {t("portal.messages.to")}{" "}
+                            <span className="font-medium">{msg.to_addr}</span>
                           </p>
                         )}
                       </div>

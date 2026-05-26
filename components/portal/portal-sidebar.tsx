@@ -5,6 +5,7 @@ import Link from "next/link"
 import { signOut } from "@/app/portal/actions"
 import type { ProcessRow } from "@/lib/db/processes"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/language-context"
 import {
   Leaf,
   LayoutDashboard,
@@ -41,6 +42,7 @@ export function PortalSidebar({
 }: PortalSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
+  const { t } = useLanguage()
 
   const unreadMessages = unreadCount
 
@@ -50,16 +52,16 @@ export function PortalSidebar({
     icon: typeof LayoutDashboard
     badge?: number
   }> = [
-    { id: "painel", label: "Painel Principal", icon: LayoutDashboard },
-    { id: "processos", label: "Meus Processos", icon: FolderKanban },
+    { id: "painel", label: t("portal.sidebar.menu.painel"), icon: LayoutDashboard },
+    { id: "processos", label: t("portal.sidebar.menu.processos"), icon: FolderKanban },
     {
       id: "mensagens",
-      label: "Mensagens",
+      label: t("portal.sidebar.menu.mensagens"),
       icon: MessageSquare,
       badge: unreadMessages > 0 ? unreadMessages : undefined,
     },
-    { id: "agendamentos", label: "Agendamentos", icon: Calendar },
-    { id: "dados", label: "Dados Cadastrais", icon: User },
+    { id: "agendamentos", label: t("portal.sidebar.menu.agendamentos"), icon: Calendar },
+    { id: "dados", label: t("portal.sidebar.menu.dados"), icon: User },
   ]
 
   const totalPendencias = processes.reduce(
@@ -78,7 +80,7 @@ export function PortalSidebar({
             <span className="text-lg font-bold text-white">
               Susten<span className="text-[#8bc34a]">tec</span>
             </span>
-            <p className="text-xs text-white/70">Portal do Cliente</p>
+            <p className="text-xs text-white/70">{t("portal.sidebar.tagline")}</p>
           </div>
         </Link>
       </div>
@@ -171,8 +173,9 @@ export function PortalSidebar({
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        <p className="text-xs text-white/60 mb-3">Responsável técnico de Sustentec-Engenharia</p>
+        <p className="text-xs text-white/60 mb-3">{t("portal.sidebar.tech.heading")}</p>
         <div className="flex items-center gap-3 mb-3">
+          {/* TODO(#9): per-tenant tech resolution when Notion adapter lands */}
           <Avatar className="h-10 w-10 border-2 border-white/20">
             <AvatarImage src="/responsavel-ivon.jpg" alt="Dra. Ivón Oristela Benítez González" />
             <AvatarFallback className="bg-[#4caf50] text-white text-sm">IO</AvatarFallback>
@@ -195,7 +198,7 @@ export function PortalSidebar({
             rel="noopener noreferrer"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
-            Falar no WhatsApp
+            {t("portal.sidebar.tech.whatsapp")}
           </a>
         </Button>
       </div>
@@ -207,7 +210,7 @@ export function PortalSidebar({
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Sair do Portal
+            {t("portal.sidebar.signOut")}
           </button>
         </form>
       </div>

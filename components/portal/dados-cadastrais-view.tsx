@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building, User, Mail, Phone, MapPin, FileText } from "lucide-react"
 import type { Client } from "@/lib/db/clients"
+import { useLanguage } from "@/lib/language-context"
 
 interface DadosCadastraisViewProps {
   client: Client
@@ -17,26 +18,34 @@ function formatCnpj(raw: string | null | undefined): string {
 }
 
 export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
+  const { t } = useLanguage()
+
   const fields: ReadonlyArray<{
     icon: typeof Building
     label: string
     value: string
   }> = [
-    { icon: FileText, label: "CNPJ", value: formatCnpj(client.notion_cnpj_filter) },
+    {
+      icon: FileText,
+      label: t("portal.dados.field.cnpj"),
+      value: formatCnpj(client.notion_cnpj_filter),
+    },
     // TODO(#19): clients schema lacks this field — placeholder until cadastral
     // columns (responsible_name, contact_email, phone, address) ship.
-    { icon: User, label: "Responsável legal", value: "—" },
-    { icon: Mail, label: "E-mail", value: "—" }, // TODO(#19): clients schema lacks this field
-    { icon: Phone, label: "Telefone", value: "—" }, // TODO(#19): clients schema lacks this field
-    { icon: MapPin, label: "Endereço", value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: User, label: t("portal.dados.field.responsibleLegal"), value: "—" },
+    { icon: Mail, label: t("portal.dados.field.email"), value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: Phone, label: t("portal.dados.field.phone"), value: "—" }, // TODO(#19): clients schema lacks this field
+    { icon: MapPin, label: t("portal.dados.field.address"), value: "—" }, // TODO(#19): clients schema lacks this field
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Dados Cadastrais</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {t("portal.dados.title")}
+        </h2>
         <p className="text-muted-foreground">
-          Informações do cliente registradas no portal.
+          {t("portal.dados.subtitle")}
         </p>
       </div>
 
@@ -46,7 +55,7 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
             <div className="p-1.5 bg-[#f5f1e6] border border-[#e5dcc5] rounded-lg">
               <Building className="w-4 h-4 text-[#2d5a27]" />
             </div>
-            CLIENTE
+            {t("portal.dados.section.client")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -56,7 +65,7 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
             </div>
             <div>
               <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27]/70">
-                Cliente
+                {t("portal.dados.section.client.eyebrow")}
               </p>
               <p className="text-2xl font-bold text-foreground leading-tight">
                 {client.name}
