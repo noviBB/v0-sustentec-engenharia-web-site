@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
 import { signOut } from "@/app/portal/actions"
-import { getMessagesForEmail } from "@/lib/portal-data"
+import type { ProcessRow } from "@/lib/db/processes"
 import { cn } from "@/lib/utils"
 import {
   Leaf,
@@ -23,21 +22,13 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
-interface Process {
-  id: string
-  code: string
-  name: string
-  location: string
-  status: string
-  pendencias: number
-}
-
 interface PortalSidebarProps {
   activeItem: string
   onItemChange: (item: string) => void
   selectedProcess: string | null
   onProcessChange: (processId: string) => void
-  processes: Process[]
+  processes: ProcessRow[]
+  unreadCount: number
 }
 
 export function PortalSidebar({
@@ -46,13 +37,12 @@ export function PortalSidebar({
   selectedProcess,
   onProcessChange,
   processes,
+  unreadCount,
 }: PortalSidebarProps) {
-  const { user } = useAuth()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
 
-  const messages = getMessagesForEmail(user.email)
-  const unreadMessages = messages.filter(m => !m.read).length
+  const unreadMessages = unreadCount
 
   const menuItems: Array<{
     id: string
@@ -72,7 +62,10 @@ export function PortalSidebar({
     { id: "dados", label: "Dados Cadastrais", icon: User },
   ]
 
-  const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
+  const totalPendencias = processes.reduce(
+    (acc, p) => acc + (p.pendencias_count ?? 0),
+    0,
+  )
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#2d5a27]">
@@ -157,14 +150,16 @@ export function PortalSidebar({
                     )}
                   >
                     <div className="flex-1 text-left min-w-0">
-                      <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
-                        {process.code}
-                      </p>
-                      <p className="truncate text-xs">{process.name}</p>
+                      {process.code && (
+                        <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
+                          {process.code}
+                        </p>
+                      )}
+                      <p className="truncate text-xs">{process.name ?? "—"}</p>
                     </div>
-                    {process.pendencias > 0 && (
+                    {process.pendencias_count > 0 && (
                       <Badge className="h-4 min-w-4 flex items-center justify-center text-[10px] rounded-full bg-amber-500 text-white">
-                        {process.pendencias}
+                        {process.pendencias_count}
                       </Badge>
                     )}
                   </button>

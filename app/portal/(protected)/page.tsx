@@ -1,77 +1,56 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { getClientForUser } from "@/lib/auth/tenant"
+import { listProcessesForClient } from "@/lib/db/processes"
+import {
+  countUnreadForClient,
+  listMessagesForClient,
+} from "@/lib/db/messages"
+import { getClientById } from "@/lib/db/clients"
+import { listActiveResponsibleTechs } from "@/lib/db/responsibleTechs"
+import { PortalShell } from "@/components/portal/portal-shell"
 
-import { useState } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { getProcessesForEmail } from "@/lib/portal-data"
-import { PortalSidebar } from "@/components/portal/portal-sidebar"
-import { PortalHeader } from "@/components/portal/portal-header"
-import { DashboardContent } from "@/components/portal/dashboard-content"
-import { ProcessDetail } from "@/components/portal/process-detail"
-import { SchedulingView } from "@/components/portal/scheduling-view"
-import { DadosCadastraisView } from "@/components/portal/dados-cadastrais-view"
-import { MessagesView } from "@/components/portal/messages-view"
-
-export default function PortalPage() {
-  const { user } = useAuth()
-  const clientProcesses = getProcessesForEmail(user.email)
-
-  const [activeItem, setActiveItem] = useState("painel")
-  const [selectedProcess, setSelectedProcess] = useState<string | null>(null)
-
-  const handleProcessSelect = (processId: string) => {
-    setSelectedProcess(processId)
-    // TODO: replace synthetic id with real /portal/processos/[id] route in #7
-    setActiveItem("processo-detalhe")
+/**
+ * Portal entry — server component. The protected layout has already verified
+ * the user/profile/tenant, but RSCs cannot read context, so we re-resolve the
+ * tenant here in order to issue the tenant-scoped Drizzle queries this page
+ * needs (`listProcessesForClient` etc.). The fetched data + `client` row are
+ * passed to `<PortalShell>`, a `"use client"` component that owns the in-page
+ * navigation state.
+ */
+export default async function PortalPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/portal/login")
   }
 
-  const renderContent = () => {
-    if (activeItem === "processo-detalhe" && selectedProcess) {
-      return <ProcessDetail processId={selectedProcess} />
-    }
+  const tenant = await getClientForUser(user.id)
+  if (!tenant) {
+    redirect("/portal/login?reason=no_tenant")
+  }
 
-    switch (activeItem) {
-      case "painel":
-        return (
-          <DashboardContent
-            processes={clientProcesses}
-            onSelectProcess={handleProcessSelect}
-          />
-        )
-      case "mensagens":
-        return <MessagesView />
-      case "agendamentos":
-        return <SchedulingView />
-      case "dados":
-        return <DadosCadastraisView />
-      default:
-        return (
-          <DashboardContent
-            processes={clientProcesses}
-            onSelectProcess={handleProcessSelect}
-          />
-        )
-    }
+  const [client, processes, messages, unreadCount, techs] = await Promise.all([
+    getClientById(tenant.id),
+    listProcessesForClient(tenant.id),
+    listMessagesForClient(tenant.id),
+    countUnreadForClient(tenant.id),
+    listActiveResponsibleTechs(),
+  ])
+
+  if (!client) {
+    redirect("/portal/login?reason=no_tenant")
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7f5]">
-      <PortalSidebar
-        activeItem={activeItem}
-        onItemChange={setActiveItem}
-        selectedProcess={selectedProcess}
-        onProcessChange={setSelectedProcess}
-        processes={clientProcesses}
-      />
-
-      <div className="lg:ml-72">
-        <div className="pt-16 lg:pt-0">
-          <PortalHeader onItemChange={setActiveItem} />
-
-          <main className="p-4 md:p-6">
-            {renderContent()}
-          </main>
-        </div>
-      </div>
-    </div>
+    <PortalShell
+      client={client}
+      processes={processes}
+      messages={messages}
+      unreadCount={unreadCount}
+      techs={techs}
+    />
   )
 }

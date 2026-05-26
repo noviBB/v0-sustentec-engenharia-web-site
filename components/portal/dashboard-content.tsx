@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-import type { ProcessBucket } from "@/lib/portal-data"
+import type { ProcessRow } from "@/lib/db/processes"
 import {
   FolderKanban,
   ArrowRight,
@@ -17,42 +17,56 @@ import {
   Eye,
 } from "lucide-react"
 
-interface Process {
-  id: string
-  code: string
-  name: string
-  location: string
-  status: string
-  pendencias: number
-  progress: number
-  bucket: ProcessBucket
-}
+type Bucket = "andamento" | "acompanhamento" | "finalizado"
 
 interface DashboardContentProps {
-  processes: Process[]
+  processes: ProcessRow[]
+  unreadCount: number
   onSelectProcess: (processId: string) => void
 }
 
-const BUCKET_LABELS: Record<ProcessBucket, string> = {
+// TODO(#19): once cadastral fields land on `clients`, drop these PT defaults
+// and read them from translations like the rest of the portal.
+const BUCKET_LABELS: Record<Bucket, string> = {
   andamento: "Em andamento",
   acompanhamento: "Em acompanhamento",
   finalizado: "Finalizado",
 }
 
-export function DashboardContent({ processes, onSelectProcess }: DashboardContentProps) {
+export function DashboardContent({
+  processes,
+  unreadCount,
+  onSelectProcess,
+}: DashboardContentProps) {
   const { displayName } = useAuth()
-  const firstName = displayName.trim().split(/[\s@]/)[0]
+  const firstName = displayName.trim().split(/[\s@]/)[0] || displayName
+
+  const buckets: Record<Bucket, ProcessRow[]> = {
+    andamento: [],
+    acompanhamento: [],
+    finalizado: [],
+  }
+  for (const p of processes) {
+    // `arquivado` is hidden from the portal upstream — skip if it slips
+    // through.
+    if (p.status === "andamento" || p.status === "acompanhamento" || p.status === "finalizado") {
+      buckets[p.status].push(p)
+    }
+  }
 
   const totalProcesses = processes.length
-  const inProgress = processes.filter(p => p.bucket === "andamento").length
-  const inAccompaniment = processes.filter(p => p.bucket === "acompanhamento").length
-  const finalized = processes.filter(p => p.bucket === "finalizado").length
-  const totalPendencias = processes.reduce((acc, p) => acc + p.pendencias, 0)
+  const inProgress = buckets.andamento.length
+  const inAccompaniment = buckets.acompanhamento.length
+  const finalized = buckets.finalizado.length
+  const totalPendencias = processes.reduce(
+    (acc, p) => acc + (p.pendencias_count ?? 0),
+    0,
+  )
 
-  const groupedProcesses: Array<{ bucket: ProcessBucket; items: Process[] }> = [
-    { bucket: "andamento", items: processes.filter(p => p.bucket === "andamento") },
-    { bucket: "acompanhamento", items: processes.filter(p => p.bucket === "acompanhamento") },
-    { bucket: "finalizado", items: processes.filter(p => p.bucket === "finalizado") },
+  const groupedProcesses: Array<{ bucket: Bucket; items: ProcessRow[] }> = [
+    { bucket: "andamento", items: buckets.andamento },
+    { bucket: "acompanhamento", items: buckets.acompanhamento },
+    { bucket: "finalizado", items: buckets.finalizado },
   ]
 
   return (
@@ -62,6 +76,11 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
         <p className="text-muted-foreground">
           Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.
         </p>
+        {unreadCount > 0 && (
+          <p className="text-sm text-[#2d5a27] mt-1">
+            Você tem {unreadCount} {unreadCount === 1 ? "mensagem não lida" : "mensagens não lidas"}.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -139,89 +158,103 @@ export function DashboardContent({ processes, onSelectProcess }: DashboardConten
           <CardTitle className="text-sm font-semibold tracking-wide">MEUS PROCESSOS</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {groupedProcesses.map(group => (
-              <div key={group.bucket}>
-                <h4 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
-                  {BUCKET_LABELS[group.bucket]}
-                </h4>
-                {group.items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic px-1 py-2">
-                    Nenhum processo nesta categoria.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {group.items.map(process => (
-                      <div
-                        key={process.id}
-                        className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => onSelectProcess(process.id)}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${
-                              process.bucket === "finalizado"
-                                ? "bg-[#e8f5e9]"
-                                : process.bucket === "acompanhamento"
-                                ? "bg-amber-100"
-                                : "bg-blue-100"
+          {processes.length === 0 ? (
+            <div className="text-center py-12">
+              <FolderKanban className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-lg font-medium text-foreground">
+                Nenhum processo cadastrado ainda
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Quando a equipe Sustentec cadastrar processos para você, eles aparecerão aqui.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedProcesses.map(group => (
+                <div key={group.bucket}>
+                  <h4 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                    {BUCKET_LABELS[group.bucket]}
+                  </h4>
+                  {group.items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic px-1 py-2">
+                      Nenhum processo nesta categoria.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {group.items.map(process => (
+                        <div
+                          key={process.id}
+                          className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => onSelectProcess(process.id)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-lg ${
+                                process.status === "finalizado"
+                                  ? "bg-[#e8f5e9]"
+                                  : process.status === "acompanhamento"
+                                  ? "bg-amber-100"
+                                  : "bg-blue-100"
+                              }`}>
+                                {process.status === "finalizado" ? (
+                                  <CheckCircle className="w-5 h-5 text-[#4caf50]" />
+                                ) : process.status === "acompanhamento" ? (
+                                  <Eye className="w-5 h-5 text-amber-600" />
+                                ) : (
+                                  <FileSearch className="w-5 h-5 text-blue-600" />
+                                )}
+                              </div>
+                              <div>
+                                {process.code && (
+                                  <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
+                                    {process.code}
+                                  </span>
+                                )}
+                                <p className="font-semibold text-foreground">{process.name ?? "—"}</p>
+                                {process.city && (
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {process.city}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 mt-4 md:mt-0">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{process.progress_percent}%</span>
+                            </div>
+
+                            <Badge className={`${
+                              process.status === "finalizado"
+                                ? "bg-[#e8f5e9] text-[#2d5a27]"
+                                : process.status === "acompanhamento"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-blue-100 text-blue-800"
                             }`}>
-                              {process.bucket === "finalizado" ? (
-                                <CheckCircle className="w-5 h-5 text-[#4caf50]" />
-                              ) : process.bucket === "acompanhamento" ? (
-                                <Eye className="w-5 h-5 text-amber-600" />
-                              ) : (
-                                <FileSearch className="w-5 h-5 text-blue-600" />
-                              )}
-                            </div>
-                            <div>
-                              <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
-                                {process.code}
-                              </span>
-                              <p className="font-semibold text-foreground">{process.name}</p>
-                              {process.location && (
-                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                  <MapPin className="w-3 h-3" />
-                                  {process.location}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 mt-4 md:mt-0">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{process.progress}%</span>
-                          </div>
-
-                          <Badge className={`${
-                            process.bucket === "finalizado"
-                              ? "bg-[#e8f5e9] text-[#2d5a27]"
-                              : process.bucket === "acompanhamento"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-blue-100 text-blue-800"
-                          }`}>
-                            {process.status}
-                          </Badge>
-
-                          {process.pendencias > 0 && (
-                            <Badge className="bg-amber-100 text-amber-800">
-                              {process.pendencias} pendencia{process.pendencias > 1 ? "s" : ""}
+                              {process.status_label ?? BUCKET_LABELS[group.bucket]}
                             </Badge>
-                          )}
 
-                          <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
-                            Ver detalhes <ArrowRight className="w-4 h-4 ml-1" />
-                          </Button>
+                            {process.pendencias_count > 0 && (
+                              <Badge className="bg-amber-100 text-amber-800">
+                                {process.pendencias_count} pendencia{process.pendencias_count > 1 ? "s" : ""}
+                              </Badge>
+                            )}
+
+                            <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
+                              Ver detalhes <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
