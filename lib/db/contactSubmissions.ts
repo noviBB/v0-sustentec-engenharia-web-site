@@ -2,13 +2,10 @@ import 'server-only';
 import { db } from './index';
 import { contactSubmissions } from './schema';
 
-export interface NewContactSubmission {
-  name: string;
-  email: string;
-  phone?: string | null;
-  message: string;
-  ip_hash?: string | null;
-}
+export type NewContactSubmission = Pick<
+  typeof contactSubmissions.$inferInsert,
+  'name' | 'email' | 'phone' | 'message' | 'ip_hash' | 'source' | 'user_agent'
+>;
 
 export async function insertContactSubmission(input: NewContactSubmission) {
   const [row] = await db
@@ -19,6 +16,8 @@ export async function insertContactSubmission(input: NewContactSubmission) {
       phone: input.phone ?? null,
       message: input.message,
       ip_hash: input.ip_hash ?? null,
+      source: input.source ?? 'marketing_site',
+      user_agent: input.user_agent ?? null,
     })
     .returning({ id: contactSubmissions.id });
 
