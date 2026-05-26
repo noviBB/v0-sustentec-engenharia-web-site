@@ -56,3 +56,7 @@ This pushes the *local* state to production and **bypasses any v0-side review**.
 - No pre-commit hooks (no husky, no lint-staged).
 - No test runner (Vitest/Playwright deferred — see [roadmap.md](roadmap.md)).
 - `pnpm lint` is currently broken: see [roadmap.md](roadmap.md).
+
+## Database migrations
+
+Database migrations run from a dev machine via `pnpm db:migrate` against the shared Supabase project before merging the PR. Vercel only builds the Next.js app — it does not run migrations.
