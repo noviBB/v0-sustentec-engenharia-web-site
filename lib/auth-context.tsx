@@ -1,79 +1,60 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { useRouter } from "next/navigation"
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import type { User } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 
 interface AuthContextType {
+  /** The Supabase auth user, or `null` when unauthenticated. */
   user: User | null
+  /** `true` while we wait for the first `getUser()` call to resolve. */
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Demo-only mock auth. There is no backend; these credentials are bundled into
-// the client and gate access to mock data only. Replace with a real auth backend
-// before wiring up any real client data.
-const MOCK_USERS: Record<string, { user: User; password: string }> = {
-  "cliente@exemplo.com": {
-    user: { id: "1", name: "Engeprat", email: "cliente@exemplo.com" },
-    password: "123456",
-  },
-  "victorf@sustentec-engenharia.com.br": {
-    user: {
-      id: "2",
-      name: "Victor Leonardo Ferreira Coutinho",
-      email: "victorf@sustentec-engenharia.com.br",
-    },
-    password: "sustentec1",
-  },
-}
-
+/**
+ * Reactive client-side subscriber to the Supabase auth session.
+ *
+ * The previous mock-auth implementation was removed in #6. The session
+ * itself lives in HttpOnly cookies managed by `@supabase/ssr`; this provider
+ * just exposes a React-friendly handle so components that need to react to
+ * sign-in/sign-out events (e.g. updating an avatar) can do so without
+ * round-tripping the server.
+ *
+ * Server components should read the session from `lib/supabase/server.ts`
+ * instead — that is the source of truth.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("sustentec_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+    const supabase = createClient()
+
+    let cancelled = false
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return
+      setUser(data.user ?? null)
+      setIsLoading(false)
+    })
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+      },
+    )
+
+    return () => {
+      cancelled = true
+      subscription.subscription.unsubscribe()
     }
-    setIsLoading(false)
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true)
-
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    const entry = MOCK_USERS[email.toLowerCase().trim()]
-    if (entry && entry.password === password) {
-      setUser(entry.user)
-      localStorage.setItem("sustentec_user", JSON.stringify(entry.user))
-      setIsLoading(false)
-      return true
-    }
-
-    setIsLoading(false)
-    return false
-  }
-
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("sustentec_user")
-    router.push("/portal/login")
-  }
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

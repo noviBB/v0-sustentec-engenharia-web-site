@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,15 +23,22 @@ export default function LoginPage() {
     setError("")
     setIsSubmitting(true)
 
-    const success = await login(email, password)
-    
-    if (success) {
-      router.push("/portal")
-    } else {
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+
+    if (signInError) {
       setError("E-mail ou senha incorretos. Tente novamente.")
+      setIsSubmitting(false)
+      return
     }
-    
-    setIsSubmitting(false)
+
+    // Force a full server-side navigation so the protected layout (server
+    // component) re-runs with the freshly-set session cookie.
+    router.push("/portal")
+    router.refresh()
   }
 
   return (

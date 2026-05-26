@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
+import { signOut } from "@/app/portal/actions"
 import { Bell, ChevronDown, Leaf } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +19,13 @@ interface PortalHeaderProps {
 }
 
 export function PortalHeader({ onItemChange }: PortalHeaderProps) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
+  const displayName =
+    (user?.user_metadata?.display_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "Cliente"
+  const initial = displayName.trim().charAt(0).toUpperCase() || "C"
 
   return (
     <header className="h-auto bg-card border-b border-border">
@@ -69,19 +76,29 @@ export function PortalHeader({ onItemChange }: PortalHeaderProps) {
               <Avatar className="h-7 w-7">
                 <AvatarImage src="/placeholder-user.jpg" />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                  {user?.name?.charAt(0) || "C"}
+                  {initial}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:block">{user?.name || "Engeprat"}</span>
+              <span className="text-sm font-medium hidden sm:flex flex-col items-start leading-tight">
+                <span>{displayName}</span>
+                {user?.email && displayName !== user.email && (
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                )}
+              </span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => onItemChange("dados")}>Meu Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configuracoes</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive">
-                Sair
-              </DropdownMenuItem>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="w-full text-left text-destructive text-sm px-2 py-1.5 rounded-sm hover:bg-accent"
+                >
+                  Sair
+                </button>
+              </form>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
