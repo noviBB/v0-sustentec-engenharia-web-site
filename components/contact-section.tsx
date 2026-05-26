@@ -15,7 +15,7 @@ import { submitContact } from "@/lib/actions/contact"
 import {
   contactSubmissionSchema,
   type ContactSubmissionInput,
-} from "@/lib/actions/contact-schema"
+} from "@/lib/schemas/contact"
 
 export function ContactSection() {
   const { t } = useLanguage()
@@ -29,6 +29,7 @@ export function ContactSection() {
     formState: { errors },
   } = useForm<ContactSubmissionInput>({
     resolver: zodResolver(contactSubmissionSchema),
+    mode: "onBlur",
     defaultValues: { name: "", email: "", phone: "", message: "" },
   })
 
@@ -46,10 +47,10 @@ export function ContactSection() {
       }
 
       const description =
-        result.code === "rate_limited"
-          ? t("contact.error.rateLimited")
-          : result.code === "validation"
+        result.code === "validation"
           ? t("contact.error.validation")
+          : result.ref
+          ? `${t("contact.error.server")} (ref: ${result.ref})`
           : t("contact.error.server")
 
       toast({
@@ -104,7 +105,7 @@ export function ContactSection() {
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">
-                    {t("contact.validation.nameRequired")}
+                    {t(errors.name?.message ?? "")}
                   </p>
                 )}
               </div>
@@ -121,7 +122,7 @@ export function ContactSection() {
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">
-                      {t("contact.validation.emailInvalid")}
+                      {t(errors.email?.message ?? "")}
                     </p>
                   )}
                 </div>
@@ -147,7 +148,7 @@ export function ContactSection() {
                 />
                 {errors.message && (
                   <p className="text-sm text-destructive">
-                    {t("contact.validation.messageRequired")}
+                    {t(errors.message?.message ?? "")}
                   </p>
                 )}
               </div>
