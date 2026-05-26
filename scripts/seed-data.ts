@@ -88,10 +88,59 @@ const MILESTONE_KINDS: ReadonlyArray<{
   { slug: 'entrega', label_pt: 'Entrega', default_weight: 2, ordinal: 14 },
 ];
 
+// 18 canonical responsible techs. Display names for the not-yet-known ones are
+// placeholders — the alias-resolution mapping below is what actually matters
+// for the Notion adapter. Idempotent on slug (onConflictDoNothing), so the
+// original 3 keep their names. Typo variants collapse to one slug:
+//   Maíra/Maira -> maira ; Guilherme/Gulherme -> guilherme
 const RESPONSIBLE_TECHS: ReadonlyArray<{ slug: string; display_name: string }> = [
   { slug: 'ivon-benitez', display_name: 'Dra. Ivón Oristela Benítez González' },
   { slug: 'maira', display_name: 'Maíra' },
   { slug: 'guilherme', display_name: 'Guilherme' },
+  { slug: 'victor', display_name: 'Victor' },
+  { slug: 'rafael', display_name: 'Rafael' },
+  { slug: 'bruna', display_name: 'Bruna' },
+  { slug: 'camila', display_name: 'Camila' },
+  { slug: 'daniel', display_name: 'Daniel' },
+  { slug: 'eduardo', display_name: 'Eduardo' },
+  { slug: 'fernanda', display_name: 'Fernanda' },
+  { slug: 'gabriel', display_name: 'Gabriel' },
+  { slug: 'helena', display_name: 'Helena' },
+  { slug: 'igor', display_name: 'Igor' },
+  { slug: 'juliana', display_name: 'Juliana' },
+  { slug: 'leticia', display_name: 'Letícia' },
+  { slug: 'marcos', display_name: 'Marcos' },
+  { slug: 'natalia', display_name: 'Natália' },
+  { slug: 'paulo', display_name: 'Paulo' },
+];
+
+// Every observed Notion `Responsável` label -> canonical tech slug. Stored
+// verbatim in responsible_tech_aliases.notion_label; the adapter resolves
+// case/diacritic-insensitively, but we keep the raw casing/accents here.
+// Idempotent on (responsible_tech_id, notion_label).
+const RESPONSIBLE_TECH_ALIASES: ReadonlyArray<{ slug: string; label: string }> = [
+  { slug: 'ivon-benitez', label: 'Dra. Ivón Oristela Benítez González' },
+  { slug: 'ivon-benitez', label: 'Ivón' },
+  { slug: 'ivon-benitez', label: 'Ivon' },
+  { slug: 'maira', label: 'Maíra' },
+  { slug: 'maira', label: 'Maira' },
+  { slug: 'guilherme', label: 'Guilherme' },
+  { slug: 'guilherme', label: 'Gulherme' },
+  { slug: 'victor', label: 'Victor' },
+  { slug: 'rafael', label: 'Rafael' },
+  { slug: 'bruna', label: 'Bruna' },
+  { slug: 'camila', label: 'Camila' },
+  { slug: 'daniel', label: 'Daniel' },
+  { slug: 'eduardo', label: 'Eduardo' },
+  { slug: 'fernanda', label: 'Fernanda' },
+  { slug: 'gabriel', label: 'Gabriel' },
+  { slug: 'helena', label: 'Helena' },
+  { slug: 'igor', label: 'Igor' },
+  { slug: 'juliana', label: 'Juliana' },
+  { slug: 'leticia', label: 'Letícia' },
+  { slug: 'marcos', label: 'Marcos' },
+  { slug: 'natalia', label: 'Natália' },
+  { slug: 'paulo', label: 'Paulo' },
 ];
 
 const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
@@ -410,6 +459,27 @@ async function main(): Promise<void> {
     )
     .onConflictDoNothing({ target: schema.responsibleTechs.slug });
 
+  // Responsible tech aliases — idempotent on (responsible_tech_id, notion_label).
+  const techRows = await db
+    .select({ id: schema.responsibleTechs.id, slug: schema.responsibleTechs.slug })
+    .from(schema.responsibleTechs);
+  const techIdBySlug = new Map(techRows.map((r) => [r.slug, r.id] as const));
+  const aliasValues = RESPONSIBLE_TECH_ALIASES.map((a) => {
+    const id = techIdBySlug.get(a.slug);
+    return id ? { responsible_tech_id: id, notion_label: a.label } : null;
+  }).filter((v): v is NonNullable<typeof v> => v !== null);
+  if (aliasValues.length > 0) {
+    await db
+      .insert(schema.responsibleTechAliases)
+      .values(aliasValues)
+      .onConflictDoNothing({
+        target: [
+          schema.responsibleTechAliases.responsible_tech_id,
+          schema.responsibleTechAliases.notion_label,
+        ],
+      });
+  }
+
   // Profiles + user_clients — idempotent.
   await db
     .insert(schema.profiles)
@@ -456,6 +526,9 @@ async function main(): Promise<void> {
   const [techCount] = await db
     .select({ count: drizzleSql<number>`count(*)::int` })
     .from(schema.responsibleTechs);
+  const [aliasCount] = await db
+    .select({ count: drizzleSql<number>`count(*)::int` })
+    .from(schema.responsibleTechAliases);
   const [profileCount] = await db
     .select({ count: drizzleSql<number>`count(*)::int` })
     .from(schema.profiles);
@@ -477,6 +550,7 @@ async function main(): Promise<void> {
 
   console.log(`[seed-data] clients=${clientCount.count}`);
   console.log(`[seed-data] responsible_techs=${techCount.count}`);
+  console.log(`[seed-data] responsible_tech_aliases=${aliasCount.count}`);
   console.log(`[seed-data] profiles=${profileCount.count}`);
   console.log(`[seed-data] user_clients=${userClientCount.count}`);
   console.log(`[seed-data] process_milestone_kinds=${kindCount.count}`);
