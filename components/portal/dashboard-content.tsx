@@ -3,8 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/lib/auth-context"
-import type { ProcessRow } from "@/lib/db/processes"
+import type { ProcessRow, ProcessBuckets } from "@/lib/db/processes"
+import { useLanguage } from "@/lib/language-context"
 import {
   FolderKanban,
   ArrowRight,
@@ -20,40 +20,27 @@ import {
 type Bucket = "andamento" | "acompanhamento" | "finalizado"
 
 interface DashboardContentProps {
-  processes: ProcessRow[]
+  /** Tenant display name — shown in the greeting. */
+  displayName: string
+  /** Pre-bucketed processes from `listBuckets`. */
+  buckets: ProcessBuckets
   unreadCount: number
   onSelectProcess: (processId: string) => void
 }
 
-// TODO(#19): once cadastral fields land on `clients`, drop these PT defaults
-// and read them from translations like the rest of the portal.
-const BUCKET_LABELS: Record<Bucket, string> = {
-  andamento: "Em andamento",
-  acompanhamento: "Em acompanhamento",
-  finalizado: "Finalizado",
-}
-
 export function DashboardContent({
-  processes,
+  displayName,
+  buckets,
   unreadCount,
   onSelectProcess,
 }: DashboardContentProps) {
-  const { displayName } = useAuth()
-  const firstName = displayName.trim().split(/[\s@]/)[0] || displayName
+  const { t } = useLanguage()
 
-  const buckets: Record<Bucket, ProcessRow[]> = {
-    andamento: [],
-    acompanhamento: [],
-    finalizado: [],
-  }
-  for (const p of processes) {
-    // `arquivado` is hidden from the portal upstream — skip if it slips
-    // through.
-    if (p.status === "andamento" || p.status === "acompanhamento" || p.status === "finalizado") {
-      buckets[p.status].push(p)
-    }
-  }
-
+  const processes: ProcessRow[] = [
+    ...buckets.andamento,
+    ...buckets.acompanhamento,
+    ...buckets.finalizado,
+  ]
   const totalProcesses = processes.length
   const inProgress = buckets.andamento.length
   const inAccompaniment = buckets.acompanhamento.length
@@ -69,24 +56,33 @@ export function DashboardContent({
     { bucket: "finalizado", items: buckets.finalizado },
   ]
 
+  const bucketLabel = (b: Bucket) => t(`portal.dashboard.bucket.${b}`)
+
+  const unreadLine =
+    unreadCount === 1
+      ? t("portal.dashboard.unread.one").replace("{count}", String(unreadCount))
+      : t("portal.dashboard.unread.other").replace("{count}", String(unreadCount))
+
+  const greeting = t("portal.dashboard.greeting").replace("{name}", displayName)
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Olá, {firstName}!</h2>
+        <h2 className="text-2xl font-bold text-foreground">{greeting}</h2>
         <p className="text-muted-foreground">
-          Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.
+          {t("portal.dashboard.subtitle")}
         </p>
         {unreadCount > 0 && (
-          <p className="text-sm text-[#2d5a27] mt-1">
-            Você tem {unreadCount} {unreadCount === 1 ? "mensagem não lida" : "mensagens não lidas"}.
-          </p>
+          <p className="text-sm text-[#2d5a27] mt-1">{unreadLine}</p>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">TOTAL DE PROCESSOS</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+              {t("portal.dashboard.stat.total")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
@@ -95,7 +91,9 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{totalProcesses}</p>
-                <p className="text-xs text-muted-foreground">processos cadastrados</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("portal.dashboard.stat.total.label")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -103,7 +101,9 @@ export function DashboardContent({
 
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">EM ANDAMENTO</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+              {t("portal.dashboard.stat.inProgress")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
@@ -112,7 +112,9 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{inProgress}</p>
-                <p className="text-xs text-muted-foreground">processos ativos</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("portal.dashboard.stat.inProgress.label")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -120,7 +122,9 @@ export function DashboardContent({
 
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">EM ACOMPANHAMENTO</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+              {t("portal.dashboard.stat.accompaniment")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
@@ -129,7 +133,9 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{inAccompaniment}</p>
-                <p className="text-xs text-muted-foreground">em acompanhamento</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("portal.dashboard.stat.accompaniment.label")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -137,7 +143,9 @@ export function DashboardContent({
 
         <Card className="bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">FINALIZADOS</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+              {t("portal.dashboard.stat.finalized")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
@@ -146,7 +154,9 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{finalized}</p>
-                <p className="text-xs text-muted-foreground">licenças emitidas</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("portal.dashboard.stat.finalized.label")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -155,17 +165,19 @@ export function DashboardContent({
 
       <Card className="bg-white">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-semibold tracking-wide">MEUS PROCESSOS</CardTitle>
+          <CardTitle className="text-sm font-semibold tracking-wide">
+            {t("portal.dashboard.processes.title")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {processes.length === 0 ? (
             <div className="text-center py-12">
               <FolderKanban className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-lg font-medium text-foreground">
-                Nenhum processo cadastrado ainda
+                {t("portal.dashboard.processes.empty.title")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Quando a equipe Sustentec cadastrar processos para você, eles aparecerão aqui.
+                {t("portal.dashboard.processes.empty.description")}
               </p>
             </div>
           ) : (
@@ -173,82 +185,89 @@ export function DashboardContent({
               {groupedProcesses.map(group => (
                 <div key={group.bucket}>
                   <h4 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
-                    {BUCKET_LABELS[group.bucket]}
+                    {bucketLabel(group.bucket)}
                   </h4>
                   {group.items.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic px-1 py-2">
-                      Nenhum processo nesta categoria.
+                      {t("portal.dashboard.bucket.empty")}
                     </p>
                   ) : (
                     <div className="space-y-3">
-                      {group.items.map(process => (
-                        <div
-                          key={process.id}
-                          className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => onSelectProcess(process.id)}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-lg ${
+                      {group.items.map(process => {
+                        const pendencias = process.pendencias_count ?? 0
+                        const pendenciasLabel =
+                          pendencias === 1
+                            ? t("portal.dashboard.pendencias.one").replace("{count}", String(pendencias))
+                            : t("portal.dashboard.pendencias.other").replace("{count}", String(pendencias))
+                        return (
+                          <div
+                            key={process.id}
+                            className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => onSelectProcess(process.id)}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded-lg ${
+                                  process.status === "finalizado"
+                                    ? "bg-[#e8f5e9]"
+                                    : process.status === "acompanhamento"
+                                    ? "bg-amber-100"
+                                    : "bg-blue-100"
+                                }`}>
+                                  {process.status === "finalizado" ? (
+                                    <CheckCircle className="w-5 h-5 text-[#4caf50]" />
+                                  ) : process.status === "acompanhamento" ? (
+                                    <Eye className="w-5 h-5 text-amber-600" />
+                                  ) : (
+                                    <FileSearch className="w-5 h-5 text-blue-600" />
+                                  )}
+                                </div>
+                                <div>
+                                  {process.code && (
+                                    <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
+                                      {process.code}
+                                    </span>
+                                  )}
+                                  <p className="font-semibold text-foreground">{process.name ?? "—"}</p>
+                                  {process.city && (
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {process.city}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 mt-4 md:mt-0">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{process.progress_percent}%</span>
+                              </div>
+
+                              <Badge className={`${
                                 process.status === "finalizado"
-                                  ? "bg-[#e8f5e9]"
+                                  ? "bg-[#e8f5e9] text-[#2d5a27]"
                                   : process.status === "acompanhamento"
-                                  ? "bg-amber-100"
-                                  : "bg-blue-100"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-blue-100 text-blue-800"
                               }`}>
-                                {process.status === "finalizado" ? (
-                                  <CheckCircle className="w-5 h-5 text-[#4caf50]" />
-                                ) : process.status === "acompanhamento" ? (
-                                  <Eye className="w-5 h-5 text-amber-600" />
-                                ) : (
-                                  <FileSearch className="w-5 h-5 text-blue-600" />
-                                )}
-                              </div>
-                              <div>
-                                {process.code && (
-                                  <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
-                                    {process.code}
-                                  </span>
-                                )}
-                                <p className="font-semibold text-foreground">{process.name ?? "—"}</p>
-                                {process.city && (
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {process.city}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 mt-4 md:mt-0">
-                            <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">{process.progress_percent}%</span>
-                            </div>
-
-                            <Badge className={`${
-                              process.status === "finalizado"
-                                ? "bg-[#e8f5e9] text-[#2d5a27]"
-                                : process.status === "acompanhamento"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-blue-100 text-blue-800"
-                            }`}>
-                              {process.status_label ?? BUCKET_LABELS[group.bucket]}
-                            </Badge>
-
-                            {process.pendencias_count > 0 && (
-                              <Badge className="bg-amber-100 text-amber-800">
-                                {process.pendencias_count} pendencia{process.pendencias_count > 1 ? "s" : ""}
+                                {process.status_label ?? bucketLabel(group.bucket)}
                               </Badge>
-                            )}
 
-                            <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
-                              Ver detalhes <ArrowRight className="w-4 h-4 ml-1" />
-                            </Button>
+                              {pendencias > 0 && (
+                                <Badge className="bg-amber-100 text-amber-800">
+                                  {pendenciasLabel}
+                                </Badge>
+                              )}
+
+                              <Button variant="ghost" size="sm" className="text-[#2d5a27] hover:text-[#1b3d19] hover:bg-[#e8f5e9]">
+                                {t("portal.dashboard.viewDetails")} <ArrowRight className="w-4 h-4 ml-1" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -265,8 +284,12 @@ export function DashboardContent({
               <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
                 <Clock className="w-6 h-6 text-[#2d5a27]" />
               </div>
-              <p className="font-semibold text-foreground">Agendar Reunião</p>
-              <p className="text-sm text-muted-foreground mt-1">Marque uma reunião com seu responsável técnico</p>
+              <p className="font-semibold text-foreground">
+                {t("portal.dashboard.shortcut.schedule.title")}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("portal.dashboard.shortcut.schedule.description")}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -277,8 +300,12 @@ export function DashboardContent({
               <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
                 <FolderKanban className="w-6 h-6 text-[#2d5a27]" />
               </div>
-              <p className="font-semibold text-foreground">Novo Processo</p>
-              <p className="text-sm text-muted-foreground mt-1">Solicite um novo processo de licenciamento</p>
+              <p className="font-semibold text-foreground">
+                {t("portal.dashboard.shortcut.newProcess.title")}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("portal.dashboard.shortcut.newProcess.description")}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -289,9 +316,14 @@ export function DashboardContent({
               <div className="p-3 bg-amber-100 rounded-xl w-fit mx-auto mb-3">
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
               </div>
-              <p className="font-semibold text-foreground">Resolver Pendências</p>
+              <p className="font-semibold text-foreground">
+                {t("portal.dashboard.shortcut.pendencias.title")}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Você tem {totalPendencias} {totalPendencias === 1 ? "item pendente" : "itens pendentes"}
+                {(totalPendencias === 1
+                  ? t("portal.dashboard.shortcut.pendencias.one")
+                  : t("portal.dashboard.shortcut.pendencias.other")
+                ).replace("{count}", String(totalPendencias))}
               </p>
             </div>
           </CardContent>

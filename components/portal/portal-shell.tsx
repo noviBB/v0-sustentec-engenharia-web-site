@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { Client } from "@/lib/db/clients"
-import type { ProcessRow } from "@/lib/db/processes"
+import type { ProcessBuckets, ProcessRow } from "@/lib/db/processes"
 import type { MessageRow } from "@/lib/db/messages"
 import type { ResponsibleTechOption } from "@/lib/db/responsibleTechs"
 import { PortalSidebar } from "@/components/portal/portal-sidebar"
@@ -15,7 +15,7 @@ import { MessagesView } from "@/components/portal/messages-view"
 
 interface PortalShellProps {
   client: Client
-  processes: ProcessRow[]
+  buckets: ProcessBuckets
   messages: MessageRow[]
   unreadCount: number
   techs: ResponsibleTechOption[]
@@ -28,7 +28,7 @@ interface PortalShellProps {
  */
 export function PortalShell({
   client,
-  processes,
+  buckets,
   messages: initialMessages,
   unreadCount: initialUnread,
   techs,
@@ -39,6 +39,17 @@ export function PortalShell({
   )
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
   const [unreadCount, setUnreadCount] = useState<number>(initialUnread)
+
+  // Flattened view of all bucketed processes — the sidebar + selection
+  // lookups still need a single list.
+  const processes: ProcessRow[] = useMemo(
+    () => [
+      ...buckets.andamento,
+      ...buckets.acompanhamento,
+      ...buckets.finalizado,
+    ],
+    [buckets],
+  )
 
   const selectedProcess = useMemo(
     () =>
@@ -60,6 +71,13 @@ export function PortalShell({
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
+  function handleMessageMarkReadFailed(messageId: string) {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, read: false } : m)),
+    )
+    setUnreadCount((prev) => prev + 1)
+  }
+
   function renderContent() {
     if (activeItem === "processo-detalhe" && selectedProcess) {
       return <ProcessDetail process={selectedProcess} />
@@ -69,7 +87,8 @@ export function PortalShell({
       case "painel":
         return (
           <DashboardContent
-            processes={processes}
+            displayName={client.name}
+            buckets={buckets}
             unreadCount={unreadCount}
             onSelectProcess={handleProcessSelect}
           />
@@ -79,6 +98,7 @@ export function PortalShell({
           <MessagesView
             messages={messages}
             onMarkedRead={handleMessageMarkedRead}
+            onMarkReadFailed={handleMessageMarkReadFailed}
           />
         )
       case "agendamentos":
@@ -88,7 +108,8 @@ export function PortalShell({
       default:
         return (
           <DashboardContent
-            processes={processes}
+            displayName={client.name}
+            buckets={buckets}
             unreadCount={unreadCount}
             onSelectProcess={handleProcessSelect}
           />
