@@ -39,17 +39,27 @@ const sql = postgres(DATABASE_URL, { prepare: false, max: 1 });
 const db = drizzle(sql, { schema });
 
 async function getAuthUserId(email: string): Promise<string> {
-  const url: string = `${baseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`;
-  const res: Response = await fetch(url, { headers: adminHeaders });
-  if (!res.ok) {
-    const body: string = await res.text();
-    throw new Error(`[seed-data] GET ${url} failed: ${res.status} ${body}`);
+  // GoTrue's /admin/users ignores ?email — must list and match client-side.
+  const perPage = 200;
+  let page = 1;
+  for (;;) {
+    const url: string = `${baseUrl}/auth/v1/admin/users?page=${page}&per_page=${perPage}`;
+    const res: Response = await fetch(url, { headers: adminHeaders });
+    if (!res.ok) {
+      const body: string = await res.text();
+      throw new Error(`[seed-data] GET ${url} failed: ${res.status} ${body}`);
+    }
+    const data = (await res.json()) as AdminUsersListResponse;
+    if (!Array.isArray(data.users) || data.users.length === 0) {
+      throw new Error(`[seed-data] no auth user found for ${email} — run \`pnpm seed:auth\` first`);
+    }
+    const found = data.users.find((u) => u.email === email);
+    if (found) return found.id;
+    if (data.users.length < perPage) {
+      throw new Error(`[seed-data] no auth user found for ${email} — run \`pnpm seed:auth\` first`);
+    }
+    page += 1;
   }
-  const data = (await res.json()) as AdminUsersListResponse;
-  if (!Array.isArray(data.users) || data.users.length === 0) {
-    throw new Error(`[seed-data] no auth user found for ${email} — run \`pnpm seed:auth\` first`);
-  }
-  return data.users[0].id;
 }
 
 async function upsertClient(name: string, cnpjFilter: string | null): Promise<string> {
