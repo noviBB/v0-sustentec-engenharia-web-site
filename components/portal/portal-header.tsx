@@ -1,8 +1,9 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
+import { useLanguage } from "@/lib/language-context"
 import { signOut } from "@/app/portal/actions"
-import { Bell, ChevronDown, Leaf } from "lucide-react"
+import { Bell, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -19,12 +20,8 @@ interface PortalHeaderProps {
 }
 
 export function PortalHeader({ onItemChange }: PortalHeaderProps) {
-  const { user } = useAuth()
-  const displayName =
-    (user?.user_metadata?.display_name as string | undefined) ||
-    (user?.user_metadata?.name as string | undefined) ||
-    user?.email ||
-    "Cliente"
+  const { user, displayName } = useAuth()
+  const { t } = useLanguage()
   const initial = displayName.trim().charAt(0).toUpperCase() || "C"
 
   return (
@@ -88,15 +85,15 @@ export function PortalHeader({ onItemChange }: PortalHeaderProps) {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onItemChange("dados")}>Meu Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configuracoes</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onItemChange("dados")}>{t("portal.menu.profile")}</DropdownMenuItem>
+              <DropdownMenuItem>{t("portal.menu.settings")}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <form action={signOut}>
                 <button
                   type="submit"
                   className="w-full text-left text-destructive text-sm px-2 py-1.5 rounded-sm hover:bg-accent"
                 >
-                  Sair
+                  {t("portal.menu.signOut")}
                 </button>
               </form>
             </DropdownMenuContent>

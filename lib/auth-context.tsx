@@ -3,58 +3,71 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-
-interface AuthContextType {
-  /** The Supabase auth user, or `null` when unauthenticated. */
-  user: User | null
-  /** `true` while we wait for the first `getUser()` call to resolve. */
-  isLoading: boolean
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+import type { Profile } from "@/lib/db/profiles"
+import type { Client } from "@/lib/auth/tenant"
 
 /**
- * Reactive client-side subscriber to the Supabase auth session.
+ * Server-resolved portal context.
  *
- * The previous mock-auth implementation was removed in #6. The session
- * itself lives in HttpOnly cookies managed by `@supabase/ssr`; this provider
- * just exposes a React-friendly handle so components that need to react to
- * sign-in/sign-out events (e.g. updating an avatar) can do so without
- * round-tripping the server.
- *
- * Server components should read the session from `lib/supabase/server.ts`
- * instead — that is the source of truth.
+ * The protected layout fetches `user`, `profile`, and `client` server-side
+ * (single source of truth) and seeds this provider via `initial`. The client
+ * subscribes to `onAuthStateChange` so other-tab sign-outs / token rotations
+ * still propagate, but it never re-fetches `getUser()` itself — that would
+ * just race with the server-resolved state.
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export type PortalContext = {
+  user: User
+  profile: Profile
+  client: Client
+}
+
+interface AuthContextValue extends PortalContext {
+  /** Convenience accessor: `profile.display_name ?? user.email`. */
+  displayName: string
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+
+export function AuthProvider({
+  initial,
+  children,
+}: {
+  initial: PortalContext
+  children: ReactNode
+}) {
+  const [user, setUser] = useState<User>(initial.user)
 
   useEffect(() => {
     const supabase = createClient()
 
-    let cancelled = false
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (cancelled) return
-      setUser(data.user ?? null)
-      setIsLoading(false)
-    })
-
+    // Subscribe so client-side reactivity (e.g. another tab signs out)
+    // still works. We deliberately do NOT call `getUser()` on mount —
+    // the server already resolved the user and passed it in via `initial`.
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null)
-        setIsLoading(false)
+        if (session?.user) {
+          setUser(session.user)
+        }
+        // No-op on SIGNED_OUT: middleware will redirect on the next nav.
       },
     )
 
     return () => {
-      cancelled = true
       subscription.subscription.unsubscribe()
     }
   }, [])
 
+  const displayName = initial.profile.display_name ?? user.email ?? ""
+
   return (
-    <AuthContext.Provider value={{ user, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile: initial.profile,
+        client: initial.client,
+        displayName,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

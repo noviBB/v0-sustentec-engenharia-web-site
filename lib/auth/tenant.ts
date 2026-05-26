@@ -1,7 +1,7 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
-import { db } from './index';
-import { clients, userClients } from './schema';
+import { db } from '@/lib/db';
+import { clients, userClients } from '@/lib/db/schema';
 
 export type Client = typeof clients.$inferSelect;
 
@@ -15,6 +15,10 @@ export type Client = typeof clients.$inferSelect;
  * Per-tenant scoping (the `db('rls', session)` factory in the issue body) is
  * deferred to #7. For now we use the single Drizzle instance from
  * `lib/db/index.ts` and lean on RLS at the database layer.
+ *
+ * Lives in `lib/auth/` (not `lib/db/`) because it bridges Supabase auth
+ * identity to the application's tenant model — it is consumed by the portal
+ * layout's auth gate, not by generic DB code.
  */
 export async function getClientForUser(
   userId: string,

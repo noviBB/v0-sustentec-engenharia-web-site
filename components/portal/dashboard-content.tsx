@@ -40,12 +40,7 @@ const BUCKET_LABELS: Record<ProcessBucket, string> = {
 }
 
 export function DashboardContent({ processes, onSelectProcess }: DashboardContentProps) {
-  const { user } = useAuth()
-  const displayName =
-    (user?.user_metadata?.display_name as string | undefined) ||
-    (user?.user_metadata?.name as string | undefined) ||
-    user?.email ||
-    "Cliente"
+  const { displayName } = useAuth()
   const firstName = displayName.trim().split(/[\s@]/)[0]
 
   const totalProcesses = processes.length

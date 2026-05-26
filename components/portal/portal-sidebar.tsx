@@ -51,7 +51,7 @@ export function PortalSidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
 
-  const messages = getMessagesForEmail(user?.email)
+  const messages = getMessagesForEmail(user.email)
   const unreadMessages = messages.filter(m => !m.read).length
 
   const menuItems: Array<{
@@ -125,7 +125,7 @@ export function PortalSidebar({
                   )}
                 </>
               )}
-              {item.badge && item.id !== "processos" && (
+              {item.badge != null && item.id !== "processos" && (
                 <Badge
                   className={cn(
                     "h-5 min-w-5 flex items-center justify-center text-xs rounded-full",
