@@ -20,4 +20,5 @@ export enum AuditEvent {
 /** Values written to the `audit_log.action` column. */
 export enum AuditAction {
   NotionSyncClient = 'notion.sync_client',
+  NotionExportClient = 'notion.export_client',
 }
