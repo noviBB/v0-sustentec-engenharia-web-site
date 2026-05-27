@@ -83,4 +83,23 @@ export default tseslint.config(
       ],
     },
   },
+  // Closed sets of values (result codes, event names, statuses) MUST be real
+  // string `enum`s — never an `as const` object literal masquerading as one.
+  // See docs/conventions.md. This guard flags `... as const` in the modules
+  // that own those sets so the rule stays enforceable.
+  {
+    files: ['lib/constants/**', 'lib/actions/**', 'lib/schemas/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "TSAsExpression > TSTypeReference > Identifier[name='const']",
+          message:
+            'Do not use `as const` here. Closed sets of values (result codes, ' +
+            'event names, statuses) MUST be a string `enum` (see lib/constants/ ' +
+            'and docs/conventions.md).',
+        },
+      ],
+    },
+  },
 );
