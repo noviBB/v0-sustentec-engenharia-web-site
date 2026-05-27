@@ -56,6 +56,15 @@ Never concatenate Tailwind classes with template strings or `${a} ${b}` — conf
 - Prefer the `@/...` alias over relative `../../` paths.
 - Group imports: external packages first, then `@/...`, then relative.
 
+## Configuration
+
+All environment access goes through the central configuration service in [lib/config.ts](../lib/config.ts). **Never read `process.env` directly** (except framework constants like `NODE_ENV`).
+
+- `lib/config.ts` is the single source of truth for ALL env vars (public + server). It is Zod-validated and build-safe (NO `import 'server-only'`), so scripts (`scripts/*.ts` via tsx) and `drizzle.config.ts` import it directly.
+- Read public values via `config.public.*`, server secrets via `config.server.*` (each slice is validated lazily on first access).
+- **Client/secret boundary:** client components must import `lib/env.ts` (public slice only), never `lib/config.ts`. `lib/env.server.ts` re-exports `config.server` and keeps its `import 'server-only'` guard — that guard is the real enforcement that secrets can't be bundled into a `"use client"` file.
+- `NOTION_INTEGRATION_TOKEN` and `DATABASE_DIRECT_URL` are optional, so `pnpm build` succeeds without them; the Notion token is read lazily at sync time.
+
 ## Notion adapter boundary
 
 The Notion adapter lives under [lib/notion/](../lib/notion/) and is the **sole writer** of process data into Supabase. The portal reads only from Supabase.

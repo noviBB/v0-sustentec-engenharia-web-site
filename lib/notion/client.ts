@@ -2,6 +2,7 @@ import 'server-only';
 
 import { Client } from '@notionhq/client';
 
+import { config } from '@/lib/config';
 import { NotionTokenMissingError, type NotionPage } from './types';
 
 /**
@@ -51,7 +52,9 @@ export interface NotionClient {
  * when the token is absent — call this only inside a sync, never at import.
  */
 export function createNotionClient(token?: string): NotionClient {
-  const auth = token ?? process.env.NOTION_INTEGRATION_TOKEN;
+  // Lazy: config.server is read only here (at sync time), never at import, so
+  // `pnpm build` succeeds with an empty NOTION_INTEGRATION_TOKEN.
+  const auth = token ?? config.server.NOTION_INTEGRATION_TOKEN;
   if (!auth || auth.trim().length === 0) {
     throw new NotionTokenMissingError();
   }
