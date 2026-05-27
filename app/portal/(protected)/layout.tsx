@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { AuthProvider } from "@/lib/auth-context"
 import { createClient } from "@/lib/supabase/server"
-import { getClientForUser } from "@/lib/auth/tenant"
+import { getClientForUser } from "@/lib/db/tenants"
 import { getProfileByUserId } from "@/lib/db/profiles"
 
 /**
