@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { MessageRow } from "@/lib/db/messages"
 import { markMessageReadAction } from "@/lib/actions/messages"
+import { ResultCode } from "@/lib/constants/result-codes"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/lib/language-context"
@@ -66,7 +67,7 @@ export function MessagesView({
       if (!result.ok) {
         onMarkReadFailed(msg.id)
         const description =
-          result.code === "server_error" && result.ref
+          result.code === ResultCode.ServerError && result.ref
             ? `${t("portal.messages.error.server.description")} (ref ${result.ref})`
             : t("portal.messages.error.server.description")
         toast({

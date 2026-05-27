@@ -1,6 +1,7 @@
 'use server';
 
 import { requireClient } from '@/lib/auth/tenant';
+import { ResultCode } from '@/lib/constants/result-codes';
 import { createAppointment } from '@/lib/db/appointments';
 import {
   createAppointmentSchema,
@@ -22,12 +23,12 @@ export async function createAppointmentAction(
 ): Promise<CreateAppointmentResult> {
   const ctx = await requireClient();
   if (!ctx.ok) {
-    return { ok: false, code: 'unauthorized' };
+    return { ok: false, code: ResultCode.Unauthorized };
   }
 
   const parsed = createAppointmentSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, code: 'validation' };
+    return { ok: false, code: ResultCode.Validation };
   }
   const data: CreateAppointmentInput = parsed.data;
 

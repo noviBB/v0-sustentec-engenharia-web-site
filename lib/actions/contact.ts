@@ -5,6 +5,8 @@
 import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'node:crypto';
 
+import { AuditEvent } from '@/lib/constants/audit-events';
+import { ResultCode } from '@/lib/constants/result-codes';
 import { insertContactSubmission } from '@/lib/db/contactSubmissions';
 import {
   contactSubmissionSchema,
@@ -20,7 +22,7 @@ export async function submitContact(
 ): Promise<ContactSubmissionResult> {
   const parsed = contactSubmissionSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, code: 'validation' };
+    return { ok: false, code: ResultCode.Validation };
   }
 
   const data = parsed.data;
@@ -52,11 +54,11 @@ export async function submitContact(
     const ref = randomUUID().slice(0, 8);
     console.error(
       JSON.stringify({
-        event: 'contact_submit_failed',
+        event: AuditEvent.ContactSubmitFailed,
         ref,
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return { ok: false, code: 'server_error', ref };
+    return { ok: false, code: ResultCode.ServerError, ref };
   }
 }

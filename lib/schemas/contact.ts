@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ResultCode } from '@/lib/constants/result-codes';
+
 /**
  * Shared Zod schema for the marketing contact form.
  *
@@ -41,4 +43,8 @@ export type ContactSubmissionInput = z.infer<typeof contactSubmissionSchema>;
 
 export type ContactSubmissionResult =
   | { ok: true }
-  | { ok: false; code: 'validation' | 'server_error'; ref?: string };
+  | {
+      ok: false;
+      code: ResultCode.Validation | ResultCode.ServerError;
+      ref?: string;
+    };
