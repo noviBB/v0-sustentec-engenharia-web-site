@@ -45,6 +45,15 @@ export interface NotionClient {
   ): Promise<NotionPage[]>;
   /** Retrieves a single page (used to resolve TAREFAS relations). */
   retrievePage(pageId: string): Promise<NotionPage>;
+  /**
+   * Writes properties back to an existing Notion page (DB -> Notion export).
+   * `properties` is the Notion property map produced by `exportToNotion`.
+   * Same lazy-token gate as the read methods.
+   */
+  updatePage(
+    pageId: string,
+    properties: Record<string, unknown>,
+  ): Promise<void>;
 }
 
 /**
@@ -134,6 +143,17 @@ export function createNotionClient(token?: string): NotionClient {
         notion.pages.retrieve({ page_id: pageId }),
       );
       return res as unknown as NotionPage;
+    },
+
+    async updatePage(pageId, properties) {
+      await withRetry(() =>
+        notion.pages.update({
+          page_id: pageId,
+          // The @notionhq typings are stricter than our loose property map;
+          // the shapes are validated by the reverse-mapper unit tests.
+          properties: properties as never,
+        }),
+      );
     },
   };
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { getClientForUser } from "@/lib/auth/tenant"
+import { getClientForUser } from "@/lib/db/tenants"
 import { listBuckets } from "@/lib/db/processes"
 import {
   countUnreadForClient,

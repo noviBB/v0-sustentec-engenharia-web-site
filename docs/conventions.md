@@ -78,6 +78,41 @@ All environment access goes through the central configuration service in [lib/co
 
 The Notion adapter lives under [lib/notion/](../lib/notion/) and is the **sole writer** of process data into Supabase. The portal reads only from Supabase.
 
-- Import the adapter **only** via its public surface `@/lib/notion` (re-exports `syncClient`, `syncOne`, `listForClient`, `handleWebhook`, `exportToNotion` + public types/errors).
+- Import the adapter **only** via its public surface `@/lib/notion` (re-exports `syncClient`, `syncOne`, `listForClient`, `exportClient`, `handleWebhook`, `exportToNotion` + public types/errors).
 - The internal modules (`client`, `property-map`, `parsers`, `repository`, `bucketing`, `types`, `export`) and `@notionhq/client` are **off-limits outside `lib/notion/**`**. This is enforced by `no-restricted-imports` in [eslint.config.mjs](../eslint.config.mjs) — importing them elsewhere fails `pnpm lint`.
 - `NOTION_INTEGRATION_TOKEN` is validated **lazily** (inside `lib/notion/client.ts`, at sync time) — never at module load or build time, so `pnpm build` succeeds with an empty token.
+
+### Sync direction
+
+The adapter is **bidirectional**:
+
+- **Notion → DB (import)** — the primary path. `syncClient` / `syncOne` query a client's Notion data source, parse each page through the canonical [property-map.ts](../lib/notion/property-map.ts), and write the canonical Supabase rows via the transactional [repository.ts](../lib/notion/repository.ts) (`importFromNotion`). The portal-facing read counterpart is `listForClient` (the portal reads Supabase, never Notion).
+- **DB → Notion (export)** — `exportToNotion` (in [export.ts](../lib/notion/export.ts)) is **now implemented**: it applies the canonical property-map *in reverse* (DB columns → Notion properties) to build a `NotionPropertyPayload`. It re-emits the preserved raw `status_label` for `Situação` so the team's casing survives the round-trip, and maps license types, milestone checkboxes, and tasks back to their Notion shapes. The adapter's `exportClient` orchestrates the live write-back via `client.ts`'s `updatePage` (`pages.update`), behind the same lazy-token gate.
+
+**Triggers:**
+
+- `POST /api/notion/sync-now?client=<id>` (Bearer `CRON_SECRET`) — import only.
+- `pnpm notion:sync --client=<id> [--direction=import|export]` — the CLI ([scripts/notion-sync.ts](../scripts/notion-sync.ts)); `import` (default) wraps `syncClient`, `export` wraps `exportClient`. The CLI runs outside the Next runtime, so it stubs the (Next-only) `server-only` guard via a `paths` mapping in [scripts/tsconfig.json](../scripts/tsconfig.json) → [scripts/server-only-shim.ts](../scripts/server-only-shim.ts), and reads the token through `lib/config.ts`, refusing to run on an empty/placeholder token.
+
+> Live write-back is only exercised with a real `NOTION_INTEGRATION_TOKEN`. The reverse mapping itself is verified by fixtures in [lib/notion/__tests__/export.test.ts](../lib/notion/__tests__/export.test.ts).
+
+## Repository architecture
+
+Data access is layered. **Only repositories touch the Drizzle `db` instance.**
+
+```
+services  (server actions, the Notion adapter, route handlers)
+   │  call repository functions — never `db` directly
+   ▼
+repositories  (lib/db/*: clients, processes, tenants, auditLog, messages, …)
+   │  the ONLY modules that import `db`
+   ▼
+db  (lib/db/index.ts — the single Drizzle instance)
+```
+
+- **Repositories** live in [lib/db/](../lib/db/) (one file per aggregate: `clients.ts`, `processes.ts`, `tenants.ts`, `auditLog.ts`, …). They `import { db } from './index'` and expose typed read/write functions. They never import auth/Supabase concerns.
+- **Services** (`lib/actions/*`, `lib/notion/adapter.ts`, route handlers) compose repository calls. They must not `import { db }` or call `db.select/insert/update/transaction` directly.
+- **Auth** (`lib/auth/*`) bridges Supabase identity to the tenant model. `requireClient` is an auth concern, but its DB read delegates to the `lib/db/tenants.ts` repository (`getClientForUser`) — it does not touch `db`.
+- **Exception:** [lib/notion/repository.ts](../lib/notion/repository.ts) is itself a repository — it owns the multi-table transactional Notion *import* writer and legitimately uses `db.transaction`. It lives under `lib/notion/` (not `lib/db/`) because it is internal to the adapter boundary, but it plays the repository role.
+
+**Invariant (grep):** outside `lib/db/*` and `lib/notion/repository.ts`, no service module imports `db` or calls `db.{insert,select,update,transaction}`.

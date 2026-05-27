@@ -12,7 +12,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed-data.ts",
-    "seed:auth": "tsx scripts/seed-auth.ts"
+    "seed:auth": "tsx scripts/seed-auth.ts",
+    "notion:sync": "tsx --tsconfig scripts/tsconfig.json scripts/notion-sync.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

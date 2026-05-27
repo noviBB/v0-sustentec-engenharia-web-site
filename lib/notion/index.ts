@@ -9,13 +9,15 @@ import 'server-only';
  * bucketing / types / export) or `@notionhq/client` from outside lib/notion/**.
  *
  * Exposed:
- *   - syncClient, syncOne, listForClient, handleWebhook  (adapter.ts)
- *   - exportToNotion                                     (export.ts, stub)
+ *   - syncClient, syncOne, listForClient, handleWebhook  (adapter.ts, import)
+ *   - exportClient                                       (adapter.ts, export)
+ *   - exportToNotion                                     (export.ts, reverse map)
  */
 export {
   syncClient,
   syncOne,
   listForClient,
+  exportClient,
   handleWebhook,
 } from './adapter';
 export { exportToNotion } from './export';
@@ -29,6 +31,8 @@ export {
 export type {
   SyncResult,
   NotionPropertyPayload,
+  NotionTaskPayload,
   ProcessWithRelations,
+  ExportTask,
 } from './types';
-export type { ProcessListItem } from './adapter';
+export type { ProcessListItem, ExportResult } from './adapter';

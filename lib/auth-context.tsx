@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile } from "@/lib/db/profiles"
-import type { Client } from "@/lib/auth/tenant"
+import type { Client } from "@/lib/db/tenants"
 
 /**
  * Server-resolved portal context.

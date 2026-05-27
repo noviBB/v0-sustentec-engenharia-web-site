@@ -1,11 +1,16 @@
 import 'server-only';
 
-import { and, eq, isNull } from 'drizzle-orm';
-
 import { AuditAction } from '@/lib/constants/audit-events';
-import { db } from '@/lib/db';
-import { auditLog, clients, processes } from '@/lib/db/schema';
+import { insertAuditLog } from '@/lib/db/auditLog';
+import { getClientById } from '@/lib/db/clients';
+import {
+  getProcessForExport,
+  listProcessIdsForClient,
+  listProcessSyncItemsForClient,
+  type ProcessSyncItem,
+} from '@/lib/db/processes';
 import { createNotionClient, type NotionClient } from './client';
+import { exportToNotion } from './export';
 import { parseProcess, taskRelationIds } from './property-map';
 import {
   importFromNotion,
@@ -45,12 +50,7 @@ export async function syncClient(
   clientId: string,
   opts: SyncOptions = {},
 ): Promise<SyncResult> {
-  const clientRows = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deleted_at)))
-    .limit(1);
-  const client = clientRows[0];
+  const client = await getClientById(clientId);
   if (!client) {
     throw new Error(`client ${clientId} not found`);
   }
@@ -110,7 +110,7 @@ export async function syncClient(
     pages_soft_deleted: soft,
   };
 
-  await db.insert(auditLog).values({
+  await insertAuditLog({
     action: AuditAction.NotionSyncClient,
     entity_type: 'client',
     entity_id: clientId,
@@ -150,12 +150,7 @@ export async function syncOne(
   notionPageId: string,
   opts: SyncOptions = {},
 ): Promise<{ created: boolean; unchanged: boolean }> {
-  const clientRows = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deleted_at)))
-    .limit(1);
-  const client = clientRows[0];
+  const client = await getClientById(clientId);
   if (!client) throw new Error(`client ${clientId} not found`);
 
   const notion = await resolveNotionClient(client, opts);
@@ -169,35 +164,89 @@ export async function syncOne(
   return { created: outcome.created, unchanged: outcome.unchanged };
 }
 
-export interface ProcessListItem {
-  id: string;
-  code: string | null;
-  name: string | null;
-  status: string;
-  status_label: string | null;
-  notion_page_id: string | null;
-  notion_synced_at: Date | null;
-}
+export type ProcessListItem = ProcessSyncItem;
 
 /**
  * Lists the (non-deleted) processes for a client from Supabase. Read path —
- * the portal reads from Supabase, never from Notion directly.
+ * the portal reads from Supabase, never from Notion directly. Delegates to the
+ * `lib/db/processes` repository; the adapter never touches `db` directly.
  */
 export async function listForClient(
   clientId: string,
 ): Promise<ProcessListItem[]> {
-  return db
-    .select({
-      id: processes.id,
-      code: processes.code,
-      name: processes.name,
-      status: processes.status,
-      status_label: processes.status_label,
-      notion_page_id: processes.notion_page_id,
-      notion_synced_at: processes.notion_synced_at,
-    })
-    .from(processes)
-    .where(and(eq(processes.client_id, clientId), isNull(processes.deleted_at)));
+  return listProcessSyncItemsForClient(clientId);
+}
+
+export interface ExportResult {
+  client_id: string;
+  processes_total: number;
+  processes_written: number;
+  processes_skipped: number;
+  tasks_written: number;
+}
+
+/**
+ * Reverse sync (DB -> Notion): reads each of a client's processes from the
+ * repository, maps it to Notion property payloads via `exportToNotion`, and
+ * writes them back with the client's `updatePage`. Processes (and tasks) that
+ * are not yet linked to a Notion page (`notion_page_id == null`) are skipped —
+ * there is nothing to write back to.
+ *
+ * Lazily validates the Notion token (throws NotionTokenMissingError if absent).
+ */
+export async function exportClient(
+  clientId: string,
+  opts: SyncOptions = {},
+): Promise<ExportResult> {
+  const client = await getClientById(clientId);
+  if (!client) {
+    throw new Error(`client ${clientId} not found`);
+  }
+
+  const notion = await resolveNotionClient(client, opts);
+  const ids = await listProcessIdsForClient(clientId);
+
+  let written = 0;
+  let skipped = 0;
+  let tasksWritten = 0;
+
+  for (const id of ids) {
+    const process = await getProcessForExport(clientId, id);
+    if (!process) continue;
+    const payload = exportToNotion(process);
+    if (!payload.page_id) {
+      skipped += 1;
+      continue;
+    }
+    await notion.updatePage(payload.page_id, payload.properties);
+    written += 1;
+
+    for (const task of payload.tasks) {
+      if (!task.page_id) continue;
+      await notion.updatePage(task.page_id, task.properties);
+      tasksWritten += 1;
+    }
+  }
+
+  await insertAuditLog({
+    action: AuditAction.NotionExportClient,
+    entity_type: 'client',
+    entity_id: clientId,
+    after: {
+      processes_total: ids.length,
+      processes_written: written,
+      processes_skipped: skipped,
+      tasks_written: tasksWritten,
+    },
+  });
+
+  return {
+    client_id: clientId,
+    processes_total: ids.length,
+    processes_written: written,
+    processes_skipped: skipped,
+    tasks_written: tasksWritten,
+  };
 }
 
 /**
