@@ -22,6 +22,7 @@ import {
   Info,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { ResultCode } from "@/lib/constants/result-codes"
 import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
 import { createAppointmentAction } from "@/lib/actions/appointments"
@@ -116,21 +117,21 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
       }
 
       switch (result.code) {
-        case "double_booked":
+        case ResultCode.DoubleBooked:
           toast({
             variant: "destructive",
             title: t("portal.appointment.error.doubleBooked.title"),
             description: t("portal.appointment.error.doubleBooked.description"),
           })
           break
-        case "validation":
+        case ResultCode.Validation:
           toast({
             variant: "destructive",
             title: t("portal.appointment.error.validation.title"),
             description: t("portal.appointment.error.validation.description"),
           })
           break
-        case "unauthorized":
+        case ResultCode.Unauthorized:
           toast({
             variant: "destructive",
             title: t("portal.appointment.error.unauthorized.title"),

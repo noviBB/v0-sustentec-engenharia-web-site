@@ -2,6 +2,7 @@ import 'server-only';
 
 import { and, eq, isNull } from 'drizzle-orm';
 
+import { AuditAction } from '@/lib/constants/audit-events';
 import { db } from '@/lib/db';
 import { auditLog, clients, processes } from '@/lib/db/schema';
 import { createNotionClient, type NotionClient } from './client';
@@ -110,7 +111,7 @@ export async function syncClient(
   };
 
   await db.insert(auditLog).values({
-    action: 'notion.sync_client',
+    action: AuditAction.NotionSyncClient,
     entity_type: 'client',
     entity_id: clientId,
     after: {

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { AuditEvent } from '@/lib/constants/audit-events';
+import { NotionRouteError } from '@/lib/constants/result-codes';
 import { serverEnv } from '@/lib/env.server';
 import { syncClient, NotionTokenMissingError } from '@/lib/notion';
 
@@ -21,7 +23,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const auth = request.headers.get('authorization') ?? '';
   const expected = `Bearer ${serverEnv.CRON_SECRET}`;
   if (auth !== expected) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: NotionRouteError.Unauthorized },
+      { status: 401 },
+    );
   }
 
   const clientId = new URL(request.url).searchParams.get('client');
@@ -38,20 +43,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   } catch (e) {
     if (e instanceof NotionTokenMissingError) {
       return NextResponse.json(
-        { error: 'notion_token_missing', message: e.message },
+        { error: NotionRouteError.NotionTokenMissing, message: e.message },
         { status: 503 },
       );
     }
     const message = e instanceof Error ? e.message : String(e);
     console.error(
       JSON.stringify({
-        event: 'notion_sync_now_failed',
+        event: AuditEvent.NotionSyncNowFailed,
         client_id: clientId,
         error: message,
       }),
     );
     return NextResponse.json(
-      { error: 'sync_failed', message },
+      { error: NotionRouteError.SyncFailed, message },
       { status: 500 },
     );
   }

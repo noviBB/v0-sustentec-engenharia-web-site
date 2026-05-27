@@ -1,6 +1,8 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
+import { AuditEvent } from '@/lib/constants/audit-events';
+import { ResultCode } from '@/lib/constants/result-codes';
 import { db } from './index';
 import { messages } from './schema';
 
@@ -8,8 +10,8 @@ export type MessageRow = typeof messages.$inferSelect;
 
 export type MarkMessageReadResult =
   | { ok: true }
-  | { ok: false; code: 'not_found' }
-  | { ok: false; code: 'server_error'; ref: string };
+  | { ok: false; code: ResultCode.NotFound }
+  | { ok: false; code: ResultCode.ServerError; ref: string };
 
 /**
  * Per-tenant list of messages, newest first. Messages with a NULL `sent_at`
@@ -60,20 +62,20 @@ export async function markMessageRead(
       .where(and(eq(messages.id, messageId), eq(messages.client_id, clientId)))
       .returning({ id: messages.id });
     if (updated.length === 0) {
-      return { ok: false, code: 'not_found' };
+      return { ok: false, code: ResultCode.NotFound };
     }
     return { ok: true };
   } catch (err) {
     const ref = randomUUID().slice(0, 8);
     console.error(
       JSON.stringify({
-        event: 'mark_message_read_failed',
+        event: AuditEvent.MarkMessageReadFailed,
         ref,
         clientId,
         messageId,
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return { ok: false, code: 'server_error', ref };
+    return { ok: false, code: ResultCode.ServerError, ref };
   }
 }

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { useLanguage } from "@/lib/language-context"
 import { useToast } from "@/hooks/use-toast"
 import { submitContact } from "@/lib/actions/contact"
+import { ResultCode } from "@/lib/constants/result-codes"
 import {
   contactSubmissionSchema,
   type ContactSubmissionInput,
@@ -47,7 +48,7 @@ export function ContactSection() {
       }
 
       const description =
-        result.code === "validation"
+        result.code === ResultCode.Validation
           ? t("contact.error.validation")
           : result.ref
           ? `${t("contact.error.server")} (ref: ${result.ref})`

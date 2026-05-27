@@ -6,6 +6,15 @@
 - Path alias `@/*` resolves to the repo root.
 - `next.config.mjs` sets `typescript.ignoreBuildErrors: true`. This means a broken type **won't** block `pnpm build`. **Type errors should still be fixed** — the flag is a v0 safety net, not a license to commit broken types. Run `pnpm dlx tsc --noEmit` locally to validate.
 
+## Enums (closed sets of values)
+
+Closed sets of values (result codes, event names, statuses) **MUST** be a TypeScript `enum` (string-valued). Emulating an enum with an `as const` object literal or a bare string-union is **NOT** allowed. Postgres enums use Drizzle `pgEnum` — a separate concern.
+
+- App-level codes live in [lib/constants/](../lib/constants/): `ResultCode` and `NotionRouteError` in [result-codes.ts](../lib/constants/result-codes.ts); `AuditEvent` and `AuditAction` in [audit-events.ts](../lib/constants/audit-events.ts).
+- Use **string enums** (members assigned string values) — they are plain strings at runtime, so a returned `code` stays serialization-safe across the server-action → client boundary and a component can compare it with `=== ResultCode.DoubleBooked`. Do **not** use numeric enums.
+- An ESLint `no-restricted-syntax` guard in [eslint.config.mjs](../eslint.config.mjs) flags `... as const` inside `lib/constants/**`, `lib/actions/**`, and `lib/schemas/**` to keep the rule enforceable.
+- Drizzle `pgEnum` in [lib/db/enums.ts](../lib/db/enums.ts) is the correct tool for **Postgres column** enums and is out of scope for this rule.
+
 ## React / Next.js
 
 - App Router only. There is no `pages/` directory.

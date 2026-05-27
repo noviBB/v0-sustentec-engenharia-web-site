@@ -1,6 +1,8 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gte, lt, ne } from 'drizzle-orm';
+import { AuditEvent } from '@/lib/constants/audit-events';
+import { ResultCode } from '@/lib/constants/result-codes';
 import { db } from './index';
 import { appointments } from './schema';
 
@@ -18,8 +20,8 @@ export type NewAppointment = Pick<
 
 export type CreateAppointmentResult =
   | { ok: true; id: string }
-  | { ok: false; code: 'double_booked' }
-  | { ok: false; code: 'server_error'; ref: string };
+  | { ok: false; code: ResultCode.DoubleBooked }
+  | { ok: false; code: ResultCode.ServerError; ref: string };
 
 export async function listAppointmentsForClient(
   clientId: string,
@@ -85,12 +87,12 @@ export async function createAppointment(
     // postgres-js surfaces Postgres errors with a `code` property.
     const code = (err as { code?: string } | null)?.code;
     if (code === '23505') {
-      return { ok: false, code: 'double_booked' };
+      return { ok: false, code: ResultCode.DoubleBooked };
     }
     const ref = randomUUID().slice(0, 8);
     console.error(
       JSON.stringify({
-        event: 'appointment_create_failed',
+        event: AuditEvent.AppointmentCreateFailed,
         ref,
         clientId,
         techId: payload.responsible_tech_id,
@@ -101,6 +103,6 @@ export async function createAppointment(
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return { ok: false, code: 'server_error', ref };
+    return { ok: false, code: ResultCode.ServerError, ref };
   }
 }

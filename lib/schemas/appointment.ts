@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ResultCode } from '@/lib/constants/result-codes';
+
 /**
  * Zod schema for creating an appointment via the scheduling form.
  *
@@ -36,6 +38,10 @@ export type CreateAppointmentResult =
   | { ok: true; id: string }
   | {
       ok: false;
-      code: 'validation' | 'unauthorized' | 'double_booked' | 'server_error';
+      code:
+        | ResultCode.Validation
+        | ResultCode.Unauthorized
+        | ResultCode.DoubleBooked
+        | ResultCode.ServerError;
       ref?: string;
     };
