@@ -381,3 +381,108 @@ function parseUrlOrRichText(
 export function taskRelationIds(page: NotionPage): string[] {
   return parseRelation(page.properties?.[SCALAR_PROPERTIES.tasks]);
 }
+
+// ===========================================================================
+// Reverse direction (DB -> Notion). Used by `exportToNotion`.
+//
+// The canonical map above is intentionally lossy in places (several Notion
+// INSTRUMENTO labels fold to `outros`/`renovacao`; status folds many labels
+// to one enum value). For write-back we therefore prefer the PRESERVED raw
+// label where we have one (status_label) and use a best-effort canonical label
+// otherwise. We never invent richer labels we can't recover.
+// ===========================================================================
+
+/** process_tipologia enum -> Notion TIPOLOGIA select label (title-cased). */
+export const TIPOLOGIA_REVERSE: Record<ProcessTipologia, string> = {
+  licenciamento: 'Licenciamento',
+  consultoria: 'Consultoria',
+  laudo: 'Laudo',
+  monitoramento: 'Monitoramento',
+  outros: 'Outros',
+};
+
+/**
+ * process_license_type enum -> Notion INSTRUMENTO multi_select label.
+ * Only the values that have a stable 1:1 Notion label round-trip cleanly;
+ * `renovacao`/`outros` re-emit a generic label (the original richer label was
+ * not preserved on import).
+ */
+export const LICENSE_TYPE_REVERSE: Record<ProcessLicenseType, string> = {
+  LP: 'LP',
+  LI: 'LI',
+  LO: 'LO',
+  LAS: 'LAS',
+  LMA: 'LMA',
+  renovacao: 'Renovação',
+  outros: 'Outros',
+};
+
+/** process_task_status enum -> Notion task Status label. */
+export const TASK_STATUS_REVERSE: Record<ProcessTaskStatus, string> = {
+  aberta: 'A Fazer',
+  em_andamento: 'Em andamento',
+  aguardando_cliente: 'Aguardando cliente',
+  concluida: 'Concluída',
+  arquivada: 'Arquivada',
+};
+
+/** process_task_priority enum -> Notion task Prioridade label. */
+export const TASK_PRIORITY_REVERSE: Record<ProcessTaskPriority, string> = {
+  baixa: 'Baixa',
+  media: 'Média',
+  alta: 'Alta',
+  urgente: 'Urgente',
+};
+
+/** kind slug -> Notion weighted-checkbox property label (inverse of MAP). */
+export const MILESTONE_SLUG_TO_LABEL: Record<string, string> = Object.entries(
+  MILESTONE_KIND_MAP,
+).reduce<Record<string, string>>((acc, [label, slug]) => {
+  acc[slug] = label;
+  return acc;
+}, {});
+
+// --- Notion property value builders (the @notionhq write shapes) ---
+export function notionTitle(value: string | null): { title: unknown[] } {
+  return {
+    title: value ? [{ type: 'text', text: { content: value } }] : [],
+  };
+}
+
+export function notionRichText(value: string | null): { rich_text: unknown[] } {
+  return {
+    rich_text: value ? [{ type: 'text', text: { content: value } }] : [],
+  };
+}
+
+export function notionUrl(value: string | null): { url: string | null } {
+  return { url: value && value.length > 0 ? value : null };
+}
+
+export function notionSelect(
+  name: string | null,
+): { select: { name: string } | null } {
+  return { select: name ? { name } : null };
+}
+
+export function notionStatus(
+  name: string | null,
+): { status: { name: string } | null } {
+  return { status: name ? { name } : null };
+}
+
+export function notionMultiSelect(
+  names: string[],
+): { multi_select: { name: string }[] } {
+  return { multi_select: names.map((name) => ({ name })) };
+}
+
+export function notionDate(
+  start: string | null,
+): { date: { start: string } | null } {
+  return { date: start ? { start } : null };
+}
+
+export function notionCheckbox(checked: boolean): { checkbox: boolean } {
+  return { checkbox: checked };
+}

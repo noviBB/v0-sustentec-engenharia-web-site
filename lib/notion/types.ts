@@ -110,16 +110,60 @@ export interface SyncResult {
 }
 
 // ---------------------------------------------------------------------------
-// Export payload (issue: exportToNotion is a stub for #11+).
+// Export payload (DB -> Notion). `exportToNotion` builds this from a
+// ProcessWithRelations; the client write method (`pages.update`) consumes the
+// `properties` map. `page_id` is the target Notion page (null = not yet linked
+// to Notion, so there's nothing to write back).
 // ---------------------------------------------------------------------------
-export interface NotionPropertyPayload {
+export interface NotionTaskPayload {
+  page_id: string | null;
   properties: Record<string, unknown>;
 }
 
+export interface NotionPropertyPayload {
+  page_id: string | null;
+  properties: Record<string, unknown>;
+  /** Per-task Notion property payloads (TAREFAS sub-pages). */
+  tasks: NotionTaskPayload[];
+}
+
+/** One task as held in the DB, ready to be re-emitted to Notion. */
+export interface ExportTask {
+  notion_page_id: string | null;
+  title: string;
+  summary: string | null;
+  status: ProcessTaskStatus;
+  priority: ProcessTaskPriority;
+  due_date: string | null;
+}
+
+/**
+ * The fully-hydrated canonical process the reverse mapper consumes. Mirrors
+ * `ProcessForExport` from `lib/db/processes.ts` (the repository read shape).
+ */
 export interface ProcessWithRelations {
   id: string;
   notion_page_id: string | null;
-  [key: string]: unknown;
+  code: string | null;
+  name: string | null;
+  process_number: string | null;
+  objective: string | null;
+  observation: string | null;
+  links: string | null;
+  city: string | null;
+  environmental_agency: string | null;
+  status: ProcessStatus;
+  status_label: string | null;
+  tipologia: ProcessTipologia | null;
+  client_cnpj: string | null;
+  applicant_cnpj: string | null;
+  started_at: string | null;
+  due_date: string | null;
+  finished_at: string | null;
+  license_types: ProcessLicenseType[];
+  /** kind slug -> checked. */
+  milestones: Record<string, boolean>;
+  tasks: ExportTask[];
 }
 
 // ---------------------------------------------------------------------------
