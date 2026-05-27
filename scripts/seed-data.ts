@@ -2,6 +2,9 @@
 import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+// Central config service — `lib/config.ts` has no `import 'server-only'`, so
+// it's safe to import from a tsx script (outside the Next.js runtime).
+import { config } from '../lib/config';
 import * as schema from '../lib/db/schema';
 
 interface AuthUser {
@@ -13,29 +16,15 @@ interface AdminUsersListResponse {
   users: AuthUser[];
 }
 
-const SUPABASE_URL: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY: string | undefined = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const DATABASE_URL: string | undefined = process.env.DATABASE_URL;
-
-if (!SUPABASE_URL) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
-}
-if (!SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
-}
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is required');
-}
-
-const baseUrl: string = SUPABASE_URL;
-const serviceKey: string = SERVICE_ROLE_KEY;
+const baseUrl: string = config.public.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey: string = config.server.SUPABASE_SERVICE_ROLE_KEY;
 
 const adminHeaders: Record<string, string> = {
   Authorization: `Bearer ${serviceKey}`,
   apikey: serviceKey,
 };
 
-const sql = postgres(DATABASE_URL, { prepare: false, max: 1 });
+const sql = postgres(config.server.DATABASE_URL, { prepare: false, max: 1 });
 const db = drizzle(sql, { schema });
 
 type ProcessStatus = (typeof schema.processStatus.enumValues)[number];

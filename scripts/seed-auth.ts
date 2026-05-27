@@ -1,3 +1,7 @@
+// Central config service — `lib/config.ts` has no `import 'server-only'`, so
+// it's safe to import from a tsx script (outside the Next.js runtime).
+import { config } from '../lib/config';
+
 interface AuthUser {
   id: string;
   email?: string;
@@ -7,18 +11,8 @@ interface AdminUsersListResponse {
   users: AuthUser[];
 }
 
-const SUPABASE_URL: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY: string | undefined = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
-}
-if (!SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
-}
-
-const baseUrl: string = SUPABASE_URL;
-const serviceKey: string = SERVICE_ROLE_KEY;
+const baseUrl: string = config.public.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey: string = config.server.SUPABASE_SERVICE_ROLE_KEY;
 
 const adminHeaders: Record<string, string> = {
   Authorization: `Bearer ${serviceKey}`,

@@ -2,14 +2,12 @@
 import { sql as drizzleSql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+// Central config service — `lib/config.ts` has no `import 'server-only'`, so
+// it's safe to import from a tsx script (outside the Next.js runtime).
+import { config } from '../../lib/config';
 import * as schema from '../../lib/db/schema';
 
-const DATABASE_URL: string | undefined = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is required');
-}
-
-const sql = postgres(DATABASE_URL, { prepare: false, max: 1 });
+const sql = postgres(config.server.DATABASE_URL, { prepare: false, max: 1 });
 const db = drizzle(sql, { schema });
 
 async function main(): Promise<void> {

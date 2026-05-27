@@ -6,13 +6,14 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
-const directUrl: string | undefined = process.env.DATABASE_DIRECT_URL;
-const pooledUrl: string | undefined = process.env.DATABASE_URL;
+// Central config service — `lib/config.ts` has no `import 'server-only'`, so
+// it's safe to import from a tsx script (outside the Next.js runtime).
+import { config } from '../lib/config';
 
-const connectionUrl: string | undefined = directUrl ?? pooledUrl;
-if (!connectionUrl) {
-  throw new Error('DATABASE_DIRECT_URL or DATABASE_URL is required');
-}
+const directUrl: string | undefined = config.server.DATABASE_DIRECT_URL;
+const pooledUrl: string = config.server.DATABASE_URL;
+
+const connectionUrl: string = directUrl ?? pooledUrl;
 
 // Pooled connections (PgBouncer in transaction/session mode) require prepare:false
 const usingPooled: boolean = !directUrl;
