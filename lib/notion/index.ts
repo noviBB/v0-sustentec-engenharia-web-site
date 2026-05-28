@@ -35,4 +35,4 @@ export type {
   ProcessWithRelations,
   ExportTask,
 } from './types';
-export type { ProcessListItem, ExportResult } from './adapter';
+export type { ProcessListItem, ExportResult, WebhookOutcome } from './adapter';

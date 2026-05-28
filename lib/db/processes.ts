@@ -322,6 +322,42 @@ export async function getProcessForExport(
 }
 
 /**
+ * Lookup row for the Notion webhook handler: maps an incoming `page.updated`
+ * payload back to the canonical process (and the client that owns it) so the
+ * adapter can decide whether to dedup or call `syncOne`. Service mode — the
+ * webhook runs without a user session.
+ *
+ * Returns `null` when no live row tracks the given `notion_page_id`; the
+ * webhook handler treats this as "unknown page" and no-ops idempotently.
+ */
+export type ProcessNotionLookup = {
+  id: string;
+  client_id: string;
+  notion_etag: string | null;
+};
+
+export async function getProcessByNotionPageId(
+  notionPageId: string,
+): Promise<ProcessNotionLookup | null> {
+  const db = getDbService();
+  const rows = await db
+    .select({
+      id: processes.id,
+      client_id: processes.client_id,
+      notion_etag: processes.notion_etag,
+    })
+    .from(processes)
+    .where(
+      and(
+        eq(processes.notion_page_id, notionPageId),
+        isNull(processes.deleted_at),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
  * Lists the ids of non-deleted processes for a client (export iteration).
  * Service mode.
  */
