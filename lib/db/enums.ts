@@ -65,3 +65,9 @@ export const contactSubmissionStatus = pgEnum('contact_submission_status', [
 ]);
 
 export const userRole = pgEnum('user_role', ['client', 'staff', 'admin']);
+
+export const paymentStatus = pgEnum('payment_status', [
+  'pending',
+  'paid',
+  'overdue',
+]);

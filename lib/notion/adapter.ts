@@ -29,6 +29,13 @@ import { NotImplementedError, type NotionPage, type SyncResult } from './types';
 interface SyncOptions {
   /** Inject a client for tests; otherwise built lazily from the token. */
   notion?: NotionClient;
+  /**
+   * Incremental cutoff. When set, the underlying `queryDatabaseAll` ships a
+   * Notion-side filter on `last_edited_time > since` so the API only returns
+   * pages edited after this instant. Omitted = full pull (the existing
+   * default — additive change, existing callers keep working).
+   */
+  since?: Date;
 }
 
 async function resolveNotionClient(
@@ -64,7 +71,18 @@ export async function syncClient(
   const caches = await loadSyncCaches();
   const resolveResponsible = makeResponsibleResolver(caches);
 
-  const pages = await notion.queryDatabaseAll(client.notion_database_id);
+  // When `opts.since` is provided, ship a Notion-side filter so the API only
+  // returns pages edited after that instant. Untouched pages don't paginate.
+  const sinceFilter = opts.since
+    ? {
+        timestamp: 'last_edited_time' as const,
+        last_edited_time: { after: opts.since.toISOString() },
+      }
+    : undefined;
+  const pages = await notion.queryDatabaseAll(
+    client.notion_database_id,
+    sinceFilter,
+  );
 
   let created = 0;
   let updated = 0;
@@ -98,7 +116,12 @@ export async function syncClient(
     }
   }
 
-  const soft = await softDeleteMissing(clientId, liveIds);
+  // softDeleteMissing assumes `liveIds` is the COMPLETE set of pages currently
+  // present in Notion. With an incremental `since` filter we only see recently
+  // edited pages, so the "live set" is incomplete and would wrongly soft-delete
+  // every untouched page. Skip soft-delete in incremental mode — soft-deletion
+  // is handled by the full migration runs (`pnpm db:notion:migrate`) instead.
+  const soft = opts.since ? 0 : await softDeleteMissing(clientId, liveIds);
 
   const result: SyncResult = {
     client_id: clientId,

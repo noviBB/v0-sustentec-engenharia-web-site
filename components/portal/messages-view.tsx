@@ -3,6 +3,11 @@
 import { useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { MessageRow } from "@/lib/db/messages"
 import { markMessageReadAction } from "@/lib/actions/messages"
 import { ResultCode } from "@/lib/constants/result-codes"
@@ -32,6 +37,26 @@ function formatMessageDate(value: string | Date | null) {
       day: "2-digit",
       month: "long",
       year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  } catch {
+    return String(value)
+  }
+}
+
+/**
+ * Compact DD/MM HH:mm formatter for the read-receipt tooltip. The longer
+ * `formatMessageDate` reads as a paragraph; the read receipt sits inside a
+ * tiny tooltip so it gets its own tight format.
+ */
+function formatReadAt(value: string | Date | null) {
+  if (!value) return ""
+  try {
+    const d = value instanceof Date ? value : new Date(value)
+    return d.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     })
@@ -121,20 +146,45 @@ export function MessagesView({
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          "p-2 rounded-lg",
-                          isOutbound ? "bg-[#2d5a27]/10" : "bg-[#e8f5e9]"
-                        )}
-                      >
-                        {isOutbound ? (
-                          <ArrowUpRight className="w-5 h-5 text-[#2d5a27]" />
-                        ) : msg.read ? (
-                          <MailOpen className="w-5 h-5 text-[#2d5a27]" />
-                        ) : (
-                          <Mail className="w-5 h-5 text-[#2d5a27]" />
-                        )}
-                      </div>
+                      {!isOutbound && msg.read && msg.read_at ? (
+                        // Tooltip wraps just the read-state icon so the rest
+                        // of the row remains clickable for re-marking, etc.
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                "p-2 rounded-lg cursor-help bg-[#e8f5e9]",
+                              )}
+                              aria-label={t(
+                                "portal.messages.readAt",
+                              ).replace("{date}", formatReadAt(msg.read_at))}
+                            >
+                              <MailOpen className="w-5 h-5 text-[#2d5a27]" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {t("portal.messages.readAt").replace(
+                              "{date}",
+                              formatReadAt(msg.read_at),
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <div
+                          className={cn(
+                            "p-2 rounded-lg",
+                            isOutbound ? "bg-[#2d5a27]/10" : "bg-[#e8f5e9]",
+                          )}
+                        >
+                          {isOutbound ? (
+                            <ArrowUpRight className="w-5 h-5 text-[#2d5a27]" />
+                          ) : msg.read ? (
+                            <MailOpen className="w-5 h-5 text-[#2d5a27]" />
+                          ) : (
+                            <Mail className="w-5 h-5 text-[#2d5a27]" />
+                          )}
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base font-semibold text-foreground">

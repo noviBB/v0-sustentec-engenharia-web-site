@@ -37,6 +37,13 @@ interface SeedProcess {
   status_label: string;
   /** Mock-derived target percentage. Used to pick milestones to mark checked. */
   progress: number;
+  /**
+   * São Paulo metro area coordinates so the dashboard map renders pins on the
+   * seed dataset. Stored as strings to match the numeric(10,7) Drizzle column
+   * inferred type.
+   */
+  latitude: string;
+  longitude: string;
 }
 
 interface SeedMessage {
@@ -52,7 +59,7 @@ interface SeedMessage {
 }
 
 const ENGEPRAT_EMAIL = 'cliente@exemplo.com';
-const VICTORF_EMAIL = 'victorf@sustentec-engenharia.com.br';
+const VICTORF_EMAIL = 'victorfr2026ok@gmail.com';
 const SUSTENTEC_EMAIL = 'contato@sustentec-engenharia.com.br';
 
 const MILESTONE_KINDS: ReadonlyArray<{
@@ -132,6 +139,8 @@ const RESPONSIBLE_TECH_ALIASES: ReadonlyArray<{ slug: string; label: string }> =
   { slug: 'paulo', label: 'Paulo' },
 ];
 
+// São Paulo city center as a reference — each process pin is offset by a
+// small delta so the dashboard map shows them spread out instead of stacked.
 const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
   {
     code: 'CC 26-004',
@@ -140,6 +149,8 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     status: 'andamento',
     status_label: 'Em analise',
     progress: 65,
+    latitude: '-23.5505000',
+    longitude: '-46.6333000',
   },
   {
     code: 'CC 26-016',
@@ -148,6 +159,8 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     status: 'andamento',
     status_label: 'Aguardando docs',
     progress: 25,
+    latitude: '-23.5805000',
+    longitude: '-46.6633000',
   },
   {
     code: 'CC 26-017',
@@ -156,19 +169,102 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     status: 'finalizado',
     status_label: 'Concluido',
     progress: 100,
+    latitude: '-23.5205000',
+    longitude: '-46.6033000',
   },
 ];
 
 const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
-  { code: 'CC 26-021', name: 'Fazenda Sapucay', city: null, status: 'andamento', status_label: 'Em andamento', progress: 50 },
-  { code: 'CC 24-016', name: 'Hydroen', city: null, status: 'andamento', status_label: 'Em andamento', progress: 50 },
-  { code: 'CC 24-015', name: 'IF Hydroen', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 24-017', name: 'ASV Fluminense Industrial', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 24-044', name: 'Demarcação de Faixa - Fluminense Industrial', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 24-061', name: 'Programas Ambientais LI Hydroen', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 25-072', name: 'LO Hydroen', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 25-073', name: 'Renovação LO - Fazenda Sapucay', city: null, status: 'acompanhamento', status_label: 'Em acompanhamento', progress: 0 },
-  { code: 'CC 25-119', name: 'Laudo Maraú', city: null, status: 'finalizado', status_label: 'Concluido', progress: 100 },
+  {
+    code: 'CC 26-021',
+    name: 'Fazenda Sapucay',
+    city: null,
+    status: 'andamento',
+    status_label: 'Em andamento',
+    progress: 50,
+    latitude: '-23.5605000',
+    longitude: '-46.6433000',
+  },
+  {
+    code: 'CC 24-016',
+    name: 'Hydroen',
+    city: null,
+    status: 'andamento',
+    status_label: 'Em andamento',
+    progress: 50,
+    latitude: '-23.5405000',
+    longitude: '-46.6233000',
+  },
+  {
+    code: 'CC 24-015',
+    name: 'IF Hydroen',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5705000',
+    longitude: '-46.6533000',
+  },
+  {
+    code: 'CC 24-017',
+    name: 'ASV Fluminense Industrial',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5305000',
+    longitude: '-46.6133000',
+  },
+  {
+    code: 'CC 24-044',
+    name: 'Demarcação de Faixa - Fluminense Industrial',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5905000',
+    longitude: '-46.6733000',
+  },
+  {
+    code: 'CC 24-061',
+    name: 'Programas Ambientais LI Hydroen',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5105000',
+    longitude: '-46.5933000',
+  },
+  {
+    code: 'CC 25-072',
+    name: 'LO Hydroen',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5505000',
+    longitude: '-46.5833000',
+  },
+  {
+    code: 'CC 25-073',
+    name: 'Renovação LO - Fazenda Sapucay',
+    city: null,
+    status: 'acompanhamento',
+    status_label: 'Em acompanhamento',
+    progress: 0,
+    latitude: '-23.5505000',
+    longitude: '-46.6833000',
+  },
+  {
+    code: 'CC 25-119',
+    name: 'Laudo Maraú',
+    city: null,
+    status: 'finalizado',
+    status_label: 'Concluido',
+    progress: 100,
+    latitude: '-23.5805000',
+    longitude: '-46.6033000',
+  },
 ];
 
 const ENGEPRAT_MESSAGES: ReadonlyArray<SeedMessage> = [
@@ -259,18 +355,41 @@ async function getAuthUserId(email: string): Promise<string> {
   }
 }
 
-async function upsertClient(name: string, cnpjFilter: string | null): Promise<string> {
+/** Optional cadastral payload — anything provided is patched on every run so
+ * adjusting the seed values re-populates existing rows. */
+interface SeedClientCadastral {
+  contact_name?: string;
+  contact_role?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  address_postal_code?: string;
+}
+
+async function upsertClient(
+  name: string,
+  cnpjFilter: string | null,
+  cadastral?: SeedClientCadastral,
+): Promise<string> {
   const existing = await db
     .select({ id: schema.clients.id })
     .from(schema.clients)
     .where(eq(schema.clients.name, name))
     .limit(1);
   if (existing.length > 0) {
+    if (cadastral) {
+      await db
+        .update(schema.clients)
+        .set({ ...cadastral, updated_at: drizzleSql`now()` })
+        .where(eq(schema.clients.id, existing[0].id));
+    }
     return existing[0].id;
   }
   const inserted = await db
     .insert(schema.clients)
-    .values({ name, notion_cnpj_filter: cnpjFilter })
+    .values({ name, notion_cnpj_filter: cnpjFilter, ...cadastral })
     .returning({ id: schema.clients.id });
   return inserted[0].id;
 }
@@ -325,6 +444,15 @@ async function seedProcessesForClient(
     let processId: string;
     if (existing.length > 0) {
       processId = existing[0].id;
+      // Keep lat/long in sync if the seed table is tweaked.
+      await db
+        .update(schema.processes)
+        .set({
+          latitude: row.latitude,
+          longitude: row.longitude,
+          updated_at: drizzleSql`now()`,
+        })
+        .where(eq(schema.processes.id, processId));
     } else {
       const ins = await db
         .insert(schema.processes)
@@ -335,6 +463,8 @@ async function seedProcessesForClient(
           city: row.city,
           status: row.status,
           status_label: row.status_label,
+          latitude: row.latitude,
+          longitude: row.longitude,
         })
         .returning({ id: schema.processes.id });
       processId = ins[0].id;
@@ -419,8 +549,34 @@ async function main(): Promise<void> {
   const engepratAuthId: string = await getAuthUserId(ENGEPRAT_EMAIL);
   const victorAuthId: string = await getAuthUserId(VICTORF_EMAIL);
 
-  const engepratClientId: string = await upsertClient('Engeprat', '03314057000153');
-  const victorClientId: string = await upsertClient('Victor Leonardo Ferreira Coutinho', null);
+  const engepratClientId: string = await upsertClient(
+    'Engeprat',
+    '03314057000153',
+    {
+      contact_name: 'Maria Silva',
+      contact_role: 'Diretora Técnica',
+      contact_email: ENGEPRAT_EMAIL,
+      contact_phone: '+55 11 3000-0000',
+      address_street: 'Av. Paulista, 1000',
+      address_city: 'São Paulo',
+      address_state: 'SP',
+      address_postal_code: '01310-100',
+    },
+  );
+  const victorClientId: string = await upsertClient(
+    'Victor Leonardo Ferreira Coutinho',
+    null,
+    {
+      contact_name: 'Victor Leonardo Ferreira Coutinho',
+      contact_role: 'Responsável Legal',
+      contact_email: VICTORF_EMAIL,
+      contact_phone: '+55 11 3100-0000',
+      address_street: 'Rua Augusta, 500',
+      address_city: 'São Paulo',
+      address_state: 'SP',
+      address_postal_code: '01304-000',
+    },
+  );
 
   // Milestone kinds — idempotent on slug.
   await db

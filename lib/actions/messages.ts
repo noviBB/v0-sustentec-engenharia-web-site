@@ -12,7 +12,8 @@ export type MarkMessageReadResult =
 /**
  * Server action — marks one of the signed-in user's messages as read.
  * Tenant-scoped via `requireClient`; cross-tenant message ids return
- * `not_found` rather than leaking the difference.
+ * `not_found` rather than leaking the difference. The UPDATE runs under
+ * the caller's RLS session.
  */
 export async function markMessageReadAction(
   messageId: string,
@@ -27,5 +28,5 @@ export async function markMessageReadAction(
     return { ok: false, code: ResultCode.Unauthorized };
   }
 
-  return markMessageRead(ctx.client.id, messageId);
+  return markMessageRead(ctx.session, ctx.client.id, messageId);
 }

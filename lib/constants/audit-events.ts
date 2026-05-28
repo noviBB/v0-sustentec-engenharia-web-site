@@ -15,10 +15,19 @@ export enum AuditEvent {
   AppointmentCreateFailed = 'appointment_create_failed',
   MarkMessageReadFailed = 'mark_message_read_failed',
   ContactSubmitFailed = 'contact_submit_failed',
+  ClientUpdateFailed = 'client_update_failed',
+  PaymentOverdueCronFailed = 'payment_overdue_cron_failed',
+  PaymentOverdueEmailFailed = 'payment_overdue_email_failed',
 }
 
 /** Values written to the `audit_log.action` column. */
 export enum AuditAction {
   NotionSyncClient = 'notion.sync_client',
   NotionExportClient = 'notion.export_client',
+  NotionInitialMigration = 'notion.initial_migration',
+  NotionCronSync = 'notion.cron_sync',
+  ClientUpdated = 'client.updated',
+  PaymentOverdueCronRun = 'payment.cron_overdue',
+  PaymentOverdueEmailSent = 'payment.overdue_email_sent',
+  PaymentOverdueEmailFailed = 'payment.overdue_email_failed',
 }

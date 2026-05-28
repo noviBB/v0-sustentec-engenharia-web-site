@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/notion-sync", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/payment-overdue", "schedule": "0 9 * * *" }
+  ]
+}

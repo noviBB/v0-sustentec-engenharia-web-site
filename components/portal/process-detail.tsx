@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import type { ProcessRow } from "@/lib/db/processes"
+import type { PaymentRow } from "@/lib/db/payments"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,10 +22,16 @@ import {
   TrendingUp,
   FolderOpen,
   AlertCircle,
+  CreditCard,
+  Download,
 } from "lucide-react"
+import { PaymentsView } from "@/components/portal/payments-view"
+import { ProjectMap } from "@/components/portal/project-map"
+import { ProjectStatusBadge } from "@/components/portal/project-status-badge"
 
 interface ProcessDetailProps {
   process: ProcessRow
+  payments?: PaymentRow[]
 }
 
 function formatBRDate(iso: string | null | undefined): string {
@@ -40,10 +47,9 @@ function formatBRDate(iso: string | null | undefined): string {
   }
 }
 
-export function ProcessDetail({ process }: ProcessDetailProps) {
+export function ProcessDetail({ process, payments = [] }: ProcessDetailProps) {
   const [activeTab, setActiveTab] = useState("resumo")
 
-  const isFinalized = process.status === "finalizado" || process.progress_percent === 100
   const statusBadgeText = process.status_label ?? process.status
 
   return (
@@ -64,13 +70,10 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
             </p>
           )}
         </div>
-        <Badge
-          className={`text-sm px-4 py-1.5 self-start ${
-            isFinalized ? "bg-[#4caf50] text-white" : "bg-[#e8f5e9] text-[#2d5a27]"
-          }`}
-        >
-          {statusBadgeText}
-        </Badge>
+        <ProjectStatusBadge
+          status={process.status}
+          className="text-sm px-4 py-1.5 self-start"
+        />
       </div>
 
       {/* Status Cards */}
@@ -132,7 +135,7 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 gap-2 bg-transparent p-0 h-auto">
+        <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
           <TabsTrigger
             value="resumo"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
@@ -165,6 +168,20 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
                 {process.pendencias_count}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="pagamentos"
+            className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
+          >
+            <CreditCard className="w-4 h-4" />
+            Pagamentos
+          </TabsTrigger>
+          <TabsTrigger
+            value="mapa"
+            className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
+          >
+            <MapPin className="w-4 h-4" />
+            Mapa
           </TabsTrigger>
         </TabsList>
 
@@ -264,7 +281,8 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
           </Card>
         </TabsContent>
 
-        {/* Documentos Tab — TODO(#13) */}
+        {/* Documentos Tab — download-only (upload affordance removed; future
+            uploads are handled outside the portal). */}
         <TabsContent value="documentos">
           <Card className="bg-white">
             <CardHeader>
@@ -272,13 +290,13 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
-                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <Download className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                 <p className="text-lg font-medium text-foreground">
                   Documentos em breve
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {/* TODO(#13): integrate document storage */}
-                  O envio e a visualização de documentos serão habilitados em uma próxima atualização.
+                  {/* TODO(#13): list downloadable documents tied to this process */}
+                  Em breve você poderá visualizar e baixar os documentos do seu processo.
                 </p>
               </div>
             </CardContent>
@@ -312,6 +330,20 @@ export function ProcessDetail({ process }: ProcessDetailProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Pagamentos Tab */}
+        <TabsContent value="pagamentos">
+          <PaymentsView payments={payments} />
+        </TabsContent>
+
+        {/* Mapa Tab */}
+        <TabsContent value="mapa">
+          <ProjectMap
+            latitude={process.latitude}
+            longitude={process.longitude}
+            label={process.name}
+          />
         </TabsContent>
       </Tabs>
 

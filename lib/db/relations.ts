@@ -3,6 +3,7 @@ import {
   appointments,
   clients,
   messages,
+  payments,
   processLicenseTypes,
   processMilestoneKinds,
   processMilestones,
@@ -41,6 +42,14 @@ export const processesRelations = relations(processes, ({ one, many }) => ({
   license_types: many(processLicenseTypes),
   messages: many(messages),
   appointments: many(appointments),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  process: one(processes, {
+    fields: [payments.process_id],
+    references: [processes.id],
+  }),
 }));
 
 export const processLicenseTypesRelations = relations(

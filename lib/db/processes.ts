@@ -1,6 +1,6 @@
 import 'server-only';
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { db } from './index';
+import { dbRls, getDbService, type SessionLike } from './index';
 import {
   processes,
   processLicenseTypes,
@@ -60,48 +60,57 @@ export type ProcessRow = {
  * view so callers receive `progress_percent` + `pendencias_count` without
  * a second roundtrip.
  *
- * Application-layer scoping — `WHERE client_id = $clientId` is the
- * isolation boundary until RLS lands in #22 (RLS section). Defaults to `LIMIT 200` so a
- * runaway list doesn't blow up the RSC payload; callers can paginate later
- * via `{ limit, offset }`.
+ * Isolation is RLS-first: `dbRls(session, ...)` runs the query as
+ * `authenticated` with the caller's JWT claims propagated, and the
+ * `processes` policy bounds the visible rows to the user's tenants. The
+ * explicit `WHERE client_id = ?` filter stays as a seatbelt — pinning the
+ * query to one tenant when a user has multiple.
+ *
+ * Defaults to `LIMIT 200` so a runaway list doesn't blow up the RSC payload;
+ * callers can paginate later via `{ limit, offset }`.
  */
 export async function listProcessesForClient(
+  session: SessionLike,
   clientId: string,
   opts: { limit?: number; offset?: number } = {},
 ): Promise<ProcessRow[]> {
   const limit = opts.limit ?? 200;
   const offset = opts.offset ?? 0;
-  return db
-    .select()
-    .from(vProcessesWithProgress)
-    .where(
-      and(
-        eq(vProcessesWithProgress.client_id, clientId),
-        isNull(vProcessesWithProgress.deleted_at),
-      ),
-    )
-    .orderBy(desc(vProcessesWithProgress.created_at))
-    .limit(limit)
-    .offset(offset);
+  return dbRls(session, async (tx) =>
+    tx
+      .select()
+      .from(vProcessesWithProgress)
+      .where(
+        and(
+          eq(vProcessesWithProgress.client_id, clientId),
+          isNull(vProcessesWithProgress.deleted_at),
+        ),
+      )
+      .orderBy(desc(vProcessesWithProgress.created_at))
+      .limit(limit)
+      .offset(offset),
+  );
 }
 
 export async function getProcessById(
+  session: SessionLike,
   clientId: string,
   processId: string,
 ): Promise<ProcessRow | null> {
-  const rows = await db
-    .select()
-    .from(vProcessesWithProgress)
-    .where(
-      and(
-        eq(vProcessesWithProgress.client_id, clientId),
-        eq(vProcessesWithProgress.id, processId),
-        isNull(vProcessesWithProgress.deleted_at),
-      ),
-    )
-    .limit(1);
-
-  return rows[0] ?? null;
+  return dbRls(session, async (tx) => {
+    const rows = await tx
+      .select()
+      .from(vProcessesWithProgress)
+      .where(
+        and(
+          eq(vProcessesWithProgress.client_id, clientId),
+          eq(vProcessesWithProgress.id, processId),
+          isNull(vProcessesWithProgress.deleted_at),
+        ),
+      )
+      .limit(1);
+    return rows[0] ?? null;
+  });
 }
 
 export type ProcessBuckets = {
@@ -115,8 +124,11 @@ export type ProcessBuckets = {
  * keeping the DB query to a single trip. Rows with status `arquivado`
  * are dropped — they're not surfaced to the portal.
  */
-export async function listBuckets(clientId: string): Promise<ProcessBuckets> {
-  const rows = await listProcessesForClient(clientId);
+export async function listBuckets(
+  session: SessionLike,
+  clientId: string,
+): Promise<ProcessBuckets> {
+  const rows = await listProcessesForClient(session, clientId);
   const buckets: ProcessBuckets = {
     andamento: [],
     acompanhamento: [],
@@ -133,6 +145,13 @@ export async function listBuckets(clientId: string): Promise<ProcessBuckets> {
   }
   return buckets;
 }
+
+// ---------------------------------------------------------------------------
+// SERVICE-MODE: sync / export read paths. These run from the Notion adapter
+// and cron jobs, which iterate across all tenants and intentionally bypass
+// RLS. Kept as separate functions (suffix-free, distinct from the portal
+// helpers above) so a caller can't accidentally pick the wrong scope.
+// ---------------------------------------------------------------------------
 
 /**
  * Lightweight sync-listing row: the columns the Notion adapter / export path
@@ -153,10 +172,14 @@ export type ProcessSyncItem = {
  * Lists the (non-deleted) processes for a client with just the columns needed
  * for sync/export. The Notion adapter's `listForClient` delegates here so the
  * adapter never touches `db` directly.
+ *
+ * Service mode — the adapter runs as service_role and iterates across all
+ * tenants.
  */
 export async function listProcessSyncItemsForClient(
   clientId: string,
 ): Promise<ProcessSyncItem[]> {
+  const db = getDbService();
   return db
     .select({
       id: processes.id,
@@ -214,11 +237,14 @@ export type ProcessForExport = {
  * Loads one non-deleted process for a client, fully hydrated with its license
  * types, milestone checkbox states (keyed by kind slug), and non-deleted
  * tasks. Returns `null` when the process is absent or cross-tenant.
+ *
+ * Service mode — sync/export caller.
  */
 export async function getProcessForExport(
   clientId: string,
   processId: string,
 ): Promise<ProcessForExport | null> {
+  const db = getDbService();
   const rows = await db
     .select()
     .from(processes)
@@ -295,10 +321,14 @@ export async function getProcessForExport(
   };
 }
 
-/** Lists the ids of non-deleted processes for a client (export iteration). */
+/**
+ * Lists the ids of non-deleted processes for a client (export iteration).
+ * Service mode.
+ */
 export async function listProcessIdsForClient(
   clientId: string,
 ): Promise<string[]> {
+  const db = getDbService();
   const rows = await db
     .select({ id: processes.id })
     .from(processes)
