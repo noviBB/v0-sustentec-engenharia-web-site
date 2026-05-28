@@ -14,7 +14,10 @@
     "db:seed": "tsx scripts/seed-data.ts",
     "seed:auth": "tsx scripts/seed-auth.ts",
     "notion:sync": "tsx --tsconfig scripts/tsconfig.json scripts/notion-sync.ts",
-    "db:notion:migrate": "tsx --tsconfig scripts/tsconfig.json scripts/migrate-notion.ts"
+    "db:notion:migrate": "tsx --tsconfig scripts/tsconfig.json scripts/migrate-notion.ts",
+    "dev:db:up": "supabase start",
+    "dev:db:down": "supabase stop",
+    "dev:db:reset": "supabase db reset && pnpm db:migrate && pnpm db:seed && pnpm seed:auth"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
