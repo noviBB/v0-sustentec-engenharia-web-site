@@ -4,6 +4,7 @@ import { AuditAction } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { getClientById } from '@/lib/db/clients';
 import {
+  getProcessByNotionPageId,
   getProcessForExport,
   listProcessIdsForClient,
   listProcessSyncItemsForClient,
@@ -18,7 +19,7 @@ import {
   makeResponsibleResolver,
   softDeleteMissing,
 } from './repository';
-import { NotImplementedError, type NotionPage, type SyncResult } from './types';
+import { type NotionPage, type SyncResult } from './types';
 
 /**
  * Public adapter surface. The portal must import ONLY from `lib/notion`
@@ -273,9 +274,74 @@ export async function exportClient(
 }
 
 /**
- * Webhook handler stub. Real-time Notion webhooks land in #11. Typed no-op for
- * now so callers can wire the route without a behavioral change.
+ * Result returned by `handleWebhook`. Pure data — the route layer turns this
+ * into the audit-log entry and JSON envelope.
+ *
+ * `deduped: true` covers two distinct no-op cases:
+ *   - `unknown_page` — no live `processes` row tracks this `notion_page_id`
+ *     (deleted, never imported, or a page from a database we don't own).
+ *   - `unchanged`    — the row's `notion_etag` matches Notion's current
+ *     `last_edited_time`, so this is a replay (or a write we already
+ *     observed via the cron).
  */
-export async function handleWebhook(_payload: unknown): Promise<never> {
-  throw new NotImplementedError('Notion webhook handling (#11)');
+export interface WebhookOutcome {
+  deduped: boolean;
+  reason?: 'unknown_page' | 'unchanged';
+  synced?: boolean;
+  client_id?: string;
+  process_id?: string;
+}
+
+/**
+ * Real-time Notion webhook handler. Resolves the canonical process by
+ * `notion_page_id`, dedups against the stored `notion_etag`
+ * (Notion's `last_edited_time`), and delegates the actual write to `syncOne`.
+ *
+ * Pure-async — no HTTP / audit-log concerns; the route handler at
+ * `app/api/notion/webhook/route.ts` writes audit rows at the boundary.
+ *
+ * Lazily validates the Notion token via `syncOne` (throws
+ * `NotionTokenMissingError` if absent).
+ */
+export async function handleWebhook(
+  pageId: string,
+  opts: SyncOptions = {},
+): Promise<WebhookOutcome> {
+  const row = await getProcessByNotionPageId(pageId);
+  if (!row) {
+    return { deduped: true, reason: 'unknown_page' };
+  }
+
+  const client = await getClientById(row.client_id);
+  if (!client) {
+    // Defensive: the FK should make this impossible. Treat as unknown.
+    return { deduped: true, reason: 'unknown_page' };
+  }
+
+  const notion = await resolveNotionClient(client, opts);
+  const page = await notion.retrievePage(pageId);
+
+  // notion_etag stores Notion's `last_edited_time` string verbatim. If it
+  // matches, this webhook is a replay (or we already imported this version
+  // via the cron). No write, no audit row from the adapter side.
+  if (
+    row.notion_etag != null &&
+    page.last_edited_time != null &&
+    row.notion_etag === page.last_edited_time
+  ) {
+    return {
+      deduped: true,
+      reason: 'unchanged',
+      client_id: row.client_id,
+      process_id: row.id,
+    };
+  }
+
+  await syncOne(row.client_id, pageId, opts);
+  return {
+    deduped: false,
+    synced: true,
+    client_id: row.client_id,
+    process_id: row.id,
+  };
 }

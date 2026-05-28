@@ -41,6 +41,10 @@ const serverEnvSchema = z.object({
   // validated LAZILY inside lib/notion/client.ts when a sync actually runs, so
   // `pnpm build` succeeds with an empty token.
   NOTION_INTEGRATION_TOKEN: z.string().optional(),
+  // Notion webhook signing secret. Optional at boot — validated lazily inside
+  // `/api/notion/webhook` (returns 503 when unset, so Notion stops retrying).
+  // The 15-min cron remains the backstop on webhook outages.
+  NOTION_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type ServerConfig = z.infer<typeof serverEnvSchema>;
@@ -56,6 +60,7 @@ function getServerConfig(): ServerConfig {
     DATABASE_DIRECT_URL: process.env.DATABASE_DIRECT_URL,
     CRON_SECRET: process.env.CRON_SECRET,
     NOTION_INTEGRATION_TOKEN: process.env.NOTION_INTEGRATION_TOKEN,
+    NOTION_WEBHOOK_SECRET: process.env.NOTION_WEBHOOK_SECRET,
   });
   if (!parsed.success) {
     const issues = parsed.error.issues

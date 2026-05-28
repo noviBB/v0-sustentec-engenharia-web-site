@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
 import { insertContactSubmission } from '@/lib/db/contactSubmissions';
+import { checkContactRateLimit } from '@/lib/rate-limit';
 import {
   contactSubmissionSchema,
   type ContactSubmissionResult,
@@ -18,6 +19,11 @@ import {
 
 function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex');
+}
+
+function hashEmail(email: string): string {
+  // Normalize (lowercase + trim) so casing/whitespace variants share a key.
+  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
 }
 
 export async function submitContact(
@@ -40,7 +46,11 @@ export async function submitContact(
   const ipHash = ip === 'unknown' ? null : hashIp(ip);
   const userAgent = hdrs.get('user-agent');
 
-  // TODO(#22, rate limiting): re-introduce rate limiting with Upstash
+  const emailHash = hashEmail(data.email);
+  const rateLimit = await checkContactRateLimit({ ipHash, emailHash });
+  if (!rateLimit.ok) {
+    return { ok: false, code: ResultCode.RateLimited };
+  }
 
   try {
     await insertContactSubmission({

@@ -50,6 +50,8 @@ export function ContactSection() {
       const description =
         result.code === ResultCode.Validation
           ? t("contact.error.validation")
+          : result.code === ResultCode.RateLimited
+          ? t("contact.error.rateLimited")
           : result.ref
           ? `${t("contact.error.server")} (ref: ${result.ref})`
           : t("contact.error.server")

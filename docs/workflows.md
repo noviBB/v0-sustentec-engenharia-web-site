@@ -134,6 +134,24 @@ The canonical DB is populated from Notion in a fixed sequence. Skipping a step r
 
 Insert a row in `clients` with `name`, `notion_cnpj_filter` (digits-only string), and optionally a per-client `notion_integration_token` if the client uses their own Notion workspace. No deploy needed; the next cron tick imports their data.
 
+## Notion webhooks
+
+The `POST /api/notion/webhook` endpoint is the real-time path on top of the 15-minute cron from #10. Notion calls it on `page.updated` events; the handler verifies an HMAC-SHA256 signature, dedups against the stored `notion_etag`, and delegates to the same `syncOne` the manual sync uses. The cron at `/api/cron/notion-sync` remains the backstop — if a webhook is dropped, retried beyond Notion's window, or the endpoint is temporarily unset, the next tick reconciles within 15 minutes.
+
+### Register the webhook
+
+1. In Notion's [Webhooks](https://developers.notion.com/reference/webhooks) section of the integration, add a subscription pointing at `https://<vercel-domain>/api/notion/webhook` and select the `page.updated` event for the configured database(s).
+2. Copy the signing secret Notion generates and paste it into the Vercel project env var `NOTION_WEBHOOK_SECRET` (preview + production).
+3. Trigger a benign change in Notion; confirm a `notion.webhook_received` row in `audit_log` and a `notion.webhook_synced_page` row for the first real change.
+
+### Idempotency
+
+Webhook replays produce a single sync per real change. The handler reads the row's `notion_etag` (Notion's `last_edited_time`) and short-circuits when it matches the incoming page's `last_edited_time` — no write, no audit row from `syncOne`. The `notion.webhook_received` row is still written so operators can reconstruct the timeline.
+
+### Disabling
+
+To roll back to cron-only, either delete the webhook in Notion's UI **or** unset `NOTION_WEBHOOK_SECRET` in Vercel. The handler returns 503 when the secret is unset; Notion treats consecutive 503s as a backoff signal and stops retrying. The cron continues to reconcile data every 15 minutes.
+
 ## Secrets and rotation
 
 Vercel project env vars (preview + production):
@@ -145,6 +163,7 @@ Vercel project env vars (preview + production):
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser-side Supabase client | When the Supabase project is reprovisioned. |
 | `CRON_SECRET` | `/api/cron/notion-sync`, `/api/cron/payment-overdue`, `/api/notion/sync-now` | Quarterly, or any time the value leaks. Update Vercel cron headers if Vercel's auto-injection ever fails. |
 | `NOTION_INTEGRATION_TOKEN` | Notion adapter (fallback when `clients.notion_integration_token` is null) | When the Notion integration is rotated. Validated lazily at sync time. |
+| `NOTION_WEBHOOK_SECRET` | `/api/notion/webhook` (HMAC verification) | When the Notion integration is rotated (re-issued alongside the integration token). Validated lazily at request time — handler returns 503 when unset, so Notion stops retrying. |
 | `RESEND_API_KEY` | Overdue-payment email sender | When Resend rotates the project key. Validated lazily at send time — overdue cron tolerates an empty value (logs `PaymentOverdueEmailFailed`, doesn't crash). |
 
 ## Row-level security
