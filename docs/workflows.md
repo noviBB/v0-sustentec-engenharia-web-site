@@ -24,11 +24,51 @@ Notes:
 ## Local dev loop
 
 ```bash
-pnpm install        # one-time, per worktree
-pnpm dev            # http://localhost:3000
+pnpm install                                  # one-time, per worktree
+cp .env.local.example .env.local              # then fill it in (see below)
+pnpm dev:db:up                                # local Supabase stack (Docker)
+pnpm db:migrate && pnpm db:seed && pnpm seed:auth
+pnpm dev                                      # http://localhost:3000
 ```
 
-Environment: only `NODE_ENV` is referenced today, by [app/layout.tsx](../app/layout.tsx) to gate Vercel Analytics on production. There is no `.env.example` and no other env vars are wired.
+### Local Supabase stack
+
+The portal needs `auth.uid()` to resolve server-side (it's referenced by every RLS policy in [drizzle/custom/0005_rls.sql](../drizzle/custom/0005_rls.sql)), so `pnpm dev` cannot work against a bare Postgres. Use Supabase's local CLI to run the full stack (Postgres + Auth + Storage + Studio) in Docker.
+
+**Prerequisites (one-time)**:
+
+- Docker Desktop (macOS / Windows) or Docker Engine (Linux).
+- Supabase CLI on PATH:
+  - **macOS** — `brew install supabase/tap/supabase`
+  - **Windows** — `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git && scoop install supabase`
+  - **Linux** — extract the tarball into a directory on PATH:
+    ```bash
+    mkdir -p "$HOME/.local/share/supabase"
+    curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+      | tar -xzf - -C "$HOME/.local/share/supabase"
+    # add to PATH (one of):
+    echo 'export PATH="$HOME/.local/share/supabase:$PATH"' >> ~/.bashrc
+    ```
+  - Verify with `supabase --version` (≥ 2.x).
+
+**First-time setup** (only needed once per machine — `supabase/config.toml` is already committed):
+
+1. `pnpm dev:db:up` — boots Postgres (`127.0.0.1:54322`), the REST API (`127.0.0.1:54321`), Studio (`http://127.0.0.1:54323`), and Auth. First run pulls Docker images (~1–2 min); subsequent boots are ~5 s.
+2. Copy the printed `anon key` and `service_role key` into your `.env.local` under `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. The `*_URL` and `DATABASE_*` lines already match `supabase start`'s defaults (see [.env.local.example](../.env.local.example)).
+3. `pnpm db:migrate` — applies every Drizzle migration in `drizzle/migrations/*.sql` and every custom SQL file in `drizzle/custom/*.sql` (including the RLS policies) to the local DB.
+4. `pnpm db:seed && pnpm seed:auth` — seeds the canonical client/process/payments data and the auth users (Engeprat + Victor).
+5. `pnpm dev` — portal at http://localhost:3000; Studio at http://127.0.0.1:54323.
+
+**Day-to-day**:
+
+- `pnpm dev:db:up` at the start of the session, `pnpm dev:db:down` at the end. The DB volume persists across stops/starts.
+- After a `git pull` that brings new migrations, run `pnpm db:migrate`. If the schema churn was destructive (e.g. column rename), use `pnpm dev:db:reset` to drop + recreate the DB and re-apply everything from scratch (this also re-runs the seed scripts).
+
+**Migrations stay owned by Drizzle.** Supabase CLI is just the local Postgres + Auth host — `drizzle/migrations/*.sql` and `drizzle/custom/*.sql` remain the single source of truth. Don't run `supabase db diff` or `supabase migration new` against this repo.
+
+### Fallback: hosted Supabase project
+
+If Docker isn't available, create a personal Supabase project at https://supabase.com/dashboard/new and paste its keys into `.env.local`. `pnpm dev:db:*` scripts are inert in that mode — `pnpm db:migrate` still works directly against the hosted Postgres via `DATABASE_URL`.
 
 ## Branch → PR → deploy
 
