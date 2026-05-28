@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import type { Client } from "@/lib/db/clients"
 import type { ProcessBuckets, ProcessRow } from "@/lib/db/processes"
 import type { MessageRow } from "@/lib/db/messages"
+import type { PaymentWithProcess } from "@/lib/db/payments"
 import type { ResponsibleTechOption } from "@/lib/db/responsibleTechs"
 import { PortalSidebar } from "@/components/portal/portal-sidebar"
 import { PortalHeader } from "@/components/portal/portal-header"
@@ -19,6 +20,8 @@ interface PortalShellProps {
   messages: MessageRow[]
   unreadCount: number
   techs: ResponsibleTechOption[]
+  /** All payments for the tenant, prefetched on the server. */
+  payments: PaymentWithProcess[]
 }
 
 /**
@@ -32,6 +35,7 @@ export function PortalShell({
   messages: initialMessages,
   unreadCount: initialUnread,
   techs,
+  payments,
 }: PortalShellProps) {
   const [activeItem, setActiveItem] = useState("painel")
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(
@@ -39,6 +43,26 @@ export function PortalShell({
   )
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
   const [unreadCount, setUnreadCount] = useState<number>(initialUnread)
+
+  // Total still owed = pending + overdue. Recomputed locally so future
+  // "mark paid" actions could update it without a server roundtrip.
+  const paymentsTotalDue = useMemo(
+    () =>
+      payments
+        .filter((p) => p.status === "pending" || p.status === "overdue")
+        .reduce((acc, p) => acc + Number(p.amount ?? 0), 0),
+    [payments],
+  )
+
+  const paymentsByProcess = useMemo(() => {
+    const map = new Map<string, PaymentWithProcess[]>()
+    for (const p of payments) {
+      const list = map.get(p.process_id) ?? []
+      list.push(p)
+      map.set(p.process_id, list)
+    }
+    return map
+  }, [payments])
 
   // Flattened view of all bucketed processes — the sidebar + selection
   // lookups still need a single list.
@@ -80,7 +104,12 @@ export function PortalShell({
 
   function renderContent() {
     if (activeItem === "processo-detalhe" && selectedProcess) {
-      return <ProcessDetail process={selectedProcess} />
+      return (
+        <ProcessDetail
+          process={selectedProcess}
+          payments={paymentsByProcess.get(selectedProcess.id) ?? []}
+        />
+      )
     }
 
     switch (activeItem) {
@@ -90,6 +119,7 @@ export function PortalShell({
             displayName={client.name}
             buckets={buckets}
             unreadCount={unreadCount}
+            paymentsTotalDue={paymentsTotalDue}
             onSelectProcess={handleProcessSelect}
           />
         )
@@ -111,6 +141,7 @@ export function PortalShell({
             displayName={client.name}
             buckets={buckets}
             unreadCount={unreadCount}
+            paymentsTotalDue={paymentsTotalDue}
             onSelectProcess={handleProcessSelect}
           />
         )

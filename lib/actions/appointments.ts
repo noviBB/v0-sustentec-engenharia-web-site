@@ -32,7 +32,7 @@ export async function createAppointmentAction(
   }
   const data: CreateAppointmentInput = parsed.data;
 
-  const result = await createAppointment(ctx.client.id, {
+  const result = await createAppointment(ctx.session, ctx.client.id, {
     responsible_tech_id: data.responsible_tech_id,
     title: data.subject,
     description: data.notes ?? null,

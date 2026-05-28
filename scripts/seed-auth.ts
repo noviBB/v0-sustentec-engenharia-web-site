@@ -21,7 +21,7 @@ const adminHeaders: Record<string, string> = {
 
 const seedUsers: ReadonlyArray<{ email: string; password: string }> = [
   { email: 'cliente@exemplo.com', password: '123456' },
-  { email: 'victorf@sustentec-engenharia.com.br', password: 'sustentec1' },
+  { email: 'victorfr2026ok@gmail.com', password: 'sustentec1' },
 ];
 
 async function findUserByEmail(email: string): Promise<AuthUser | null> {

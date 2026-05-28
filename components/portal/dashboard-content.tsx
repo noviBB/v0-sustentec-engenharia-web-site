@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { ProcessRow, ProcessBuckets } from "@/lib/db/processes"
 import { useLanguage } from "@/lib/language-context"
+import { PaymentsDashboardCard } from "@/components/portal/payments-dashboard-card"
+import { DashboardMap } from "@/components/portal/dashboard-map"
 import {
   FolderKanban,
   ArrowRight,
@@ -25,6 +27,8 @@ interface DashboardContentProps {
   /** Pre-bucketed processes from `listBuckets`. */
   buckets: ProcessBuckets
   unreadCount: number
+  /** Sum of pending + overdue payment amounts across the client's projects. */
+  paymentsTotalDue: number
   onSelectProcess: (processId: string) => void
 }
 
@@ -32,6 +36,7 @@ export function DashboardContent({
   displayName,
   buckets,
   unreadCount,
+  paymentsTotalDue,
   onSelectProcess,
 }: DashboardContentProps) {
   const { t } = useLanguage()
@@ -77,7 +82,7 @@ export function DashboardContent({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
@@ -161,7 +166,11 @@ export function DashboardContent({
             </div>
           </CardContent>
         </Card>
+
+        <PaymentsDashboardCard total={paymentsTotalDue} />
       </div>
+
+      <DashboardMap processes={processes} />
 
       <Card className="bg-white">
         <CardHeader className="flex flex-row items-center justify-between">

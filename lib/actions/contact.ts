@@ -1,7 +1,5 @@
 'use server';
 
-// TODO: switch to db('anon') once the factory exists — currently uses the elevated db instance and bypasses RLS.
-
 import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'node:crypto';
 
@@ -12,6 +10,11 @@ import {
   contactSubmissionSchema,
   type ContactSubmissionResult,
 } from '@/lib/schemas/contact';
+
+// `insertContactSubmission` runs under `dbAnon` — see lib/db/contactSubmissions.ts.
+// The marketing form is unauthenticated, so we want an anon-role INSERT
+// against the `contact_submissions` RLS policy (which permits INSERT for
+// everyone, SELECT only for staff).
 
 function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex');

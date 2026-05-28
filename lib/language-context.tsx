@@ -31,7 +31,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Stats
     "stats.years": "anos de experiência",
     "stats.yearsDesc": "Referência em engenharia e meio ambiente.",
-    "stats.processes": "processos conduzidos",
+    "stats.processes": "projetos conduzidos",
     "stats.processesDesc": "Atuação em diversos segmentos e portes de empreendimento.",
     "stats.coverage": "Atuação em todo o estado do RJ",
     "stats.coverageDesc": "Conhecimento técnico e relacionamento com os principais órgãos.",
@@ -66,7 +66,7 @@ const translations: Record<Language, Record<string, string>> = {
     "tracker.description":
       "Portal exclusivo para clientes acompanharem cada etapa do licenciamento ambiental em tempo real.",
     "tracker.feature1.title": "Transparência total",
-    "tracker.feature1.desc": "Acompanhe cada etapa do seu processo em tempo real.",
+    "tracker.feature1.desc": "Acompanhe cada etapa do seu projeto em tempo real.",
     "tracker.feature2.title": "Agilidade",
     "tracker.feature2.desc": "Monitoramento contínuo e comunicação rápida.",
     "tracker.feature3.title": "Segurança",
@@ -142,7 +142,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — login
     "portal.login.tagline": "Portal do Cliente",
     "portal.login.welcome": "Bem-vindo de volta",
-    "portal.login.description": "Acesse sua conta para acompanhar seu processo",
+    "portal.login.description": "Acesse sua conta para acompanhar seu projeto",
     "portal.login.email": "E-mail",
     "portal.login.emailPlaceholder": "seu@email.com",
     "portal.login.password": "Senha",
@@ -224,7 +224,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.scheduling.field.time.placeholder": "Selecione um horário",
     "portal.scheduling.field.subject": "Assunto",
     "portal.scheduling.field.subject.placeholder":
-      "Ex.: dúvidas sobre o protocolo do processo CC 26-016",
+      "Ex.: dúvidas sobre o protocolo do projeto CC 26-016",
     "portal.scheduling.field.message": "Mensagem",
     "portal.scheduling.field.message.optional": "(opcional)",
     "portal.scheduling.field.message.placeholder":
@@ -234,37 +234,37 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — dashboard
     "portal.dashboard.greeting": "Olá, {name}!",
     "portal.dashboard.subtitle":
-      "Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus processos ambientais.",
+      "Bem-vindo ao seu portal. Acompanhe aqui o andamento dos seus projetos ambientais.",
     "portal.dashboard.unread.one":
       "Você tem {count} mensagem não lida.",
     "portal.dashboard.unread.other":
       "Você tem {count} mensagens não lidas.",
-    "portal.dashboard.stat.total": "TOTAL DE PROCESSOS",
-    "portal.dashboard.stat.total.label": "processos cadastrados",
+    "portal.dashboard.stat.total": "TOTAL DE PROJETOS",
+    "portal.dashboard.stat.total.label": "projetos cadastrados",
     "portal.dashboard.stat.inProgress": "EM ANDAMENTO",
-    "portal.dashboard.stat.inProgress.label": "processos ativos",
+    "portal.dashboard.stat.inProgress.label": "projetos ativos",
     "portal.dashboard.stat.accompaniment": "EM ACOMPANHAMENTO",
     "portal.dashboard.stat.accompaniment.label": "em acompanhamento",
     "portal.dashboard.stat.finalized": "FINALIZADOS",
     "portal.dashboard.stat.finalized.label": "licenças emitidas",
-    "portal.dashboard.processes.title": "MEUS PROCESSOS",
+    "portal.dashboard.processes.title": "MEUS PROJETOS",
     "portal.dashboard.processes.empty.title":
-      "Nenhum processo cadastrado ainda",
+      "Nenhum projeto cadastrado ainda",
     "portal.dashboard.processes.empty.description":
-      "Quando a equipe Sustentec cadastrar processos para você, eles aparecerão aqui.",
+      "Quando a equipe Sustentec cadastrar projetos para você, eles aparecerão aqui.",
     "portal.dashboard.bucket.andamento": "Em andamento",
     "portal.dashboard.bucket.acompanhamento": "Em acompanhamento",
     "portal.dashboard.bucket.finalizado": "Finalizado",
-    "portal.dashboard.bucket.empty": "Nenhum processo nesta categoria.",
+    "portal.dashboard.bucket.empty": "Nenhum projeto nesta categoria.",
     "portal.dashboard.pendencias.one": "{count} pendência",
     "portal.dashboard.pendencias.other": "{count} pendências",
     "portal.dashboard.viewDetails": "Ver detalhes",
     "portal.dashboard.shortcut.schedule.title": "Agendar Reunião",
     "portal.dashboard.shortcut.schedule.description":
       "Marque uma reunião com seu responsável técnico",
-    "portal.dashboard.shortcut.newProcess.title": "Novo Processo",
+    "portal.dashboard.shortcut.newProcess.title": "Novo Projeto",
     "portal.dashboard.shortcut.newProcess.description":
-      "Solicite um novo processo de licenciamento",
+      "Solicite um novo projeto de licenciamento",
     "portal.dashboard.shortcut.pendencias.title": "Resolver Pendências",
     "portal.dashboard.shortcut.pendencias.one":
       "Você tem {count} item pendente",
@@ -281,11 +281,56 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dados.field.email": "E-mail",
     "portal.dados.field.phone": "Telefone",
     "portal.dados.field.address": "Endereço",
+    "portal.dados.field.contactName": "Nome do contato",
+    "portal.dados.field.contactRole": "Cargo",
+    "portal.dados.field.contactEmail": "E-mail do contato",
+    "portal.dados.field.contactPhone": "Telefone",
+    "portal.dados.field.addressStreet": "Endereço",
+    "portal.dados.field.addressCity": "Cidade",
+    "portal.dados.field.addressState": "Estado",
+    "portal.dados.field.addressPostalCode": "CEP",
+    "portal.dados.action.edit": "Editar",
+    "portal.dados.action.save": "Salvar",
+    "portal.dados.action.cancel": "Cancelar",
+    "portal.dados.toast.saved": "Dados cadastrais atualizados.",
+    "portal.dados.toast.error": "Não foi possível salvar. Tente novamente.",
+    "portal.dados.validation.invalidEmail": "E-mail inválido.",
+    "portal.dados.validation.required": "Campo obrigatório.",
+
+    // Portal — messages (read receipt)
+    "portal.messages.readAt": "Lida em {date}",
+
+    // Portal — payments
+    "portal.payments.title": "Pagamentos",
+    "portal.payments.installment": "Parcela {n}",
+    "portal.payments.dueDate": "Vencimento",
+    "portal.payments.amount": "Valor",
+    "portal.payments.column.status": "Status",
+    "portal.payments.status.pending": "Pendente",
+    "portal.payments.status.paid": "Pago",
+    "portal.payments.status.overdue": "Em atraso",
+    "portal.payments.paidOn": "Pago em {date}",
+    "portal.payments.dashboardTotal": "Total a pagar",
+    "portal.payments.emailSubject": "Pagamento em atraso",
+
+    // Portal — process tabs
+    "portal.process.tab.payments": "Pagamentos",
+    "portal.process.tab.map": "Mapa",
+
+    // Portal — map
+    "portal.map.title": "Localização",
+    "portal.map.noCoordinates": "Coordenadas não cadastradas",
+    "portal.map.dashboardTitle": "Projetos ativos",
+
+    // Portal — project status badge
+    "portal.status.andamento": "Em andamento",
+    "portal.status.acompanhamento": "Em acompanhamento",
+    "portal.status.finalizado": "Finalizado",
 
     // Portal — sidebar
     "portal.sidebar.tagline": "Portal do Cliente",
     "portal.sidebar.menu.painel": "Painel Principal",
-    "portal.sidebar.menu.processos": "Meus Processos",
+    "portal.sidebar.menu.processos": "Meus Projetos",
     "portal.sidebar.menu.mensagens": "Mensagens",
     "portal.sidebar.menu.agendamentos": "Agendamentos",
     "portal.sidebar.menu.dados": "Dados Cadastrais",
@@ -313,7 +358,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Stats
     "stats.years": "years of experience",
     "stats.yearsDesc": "Reference in engineering and environment.",
-    "stats.processes": "processes conducted",
+    "stats.processes": "projects conducted",
     "stats.processesDesc": "Acting in various segments and enterprise sizes.",
     "stats.coverage": "Coverage throughout Rio de Janeiro state",
     "stats.coverageDesc": "Technical knowledge and relationship with main agencies.",
@@ -348,7 +393,7 @@ const translations: Record<Language, Record<string, string>> = {
     "tracker.description":
       "Exclusive portal for clients to track each stage of environmental licensing in real time.",
     "tracker.feature1.title": "Total Transparency",
-    "tracker.feature1.desc": "Track each stage of your process in real time.",
+    "tracker.feature1.desc": "Track each stage of your project in real time.",
     "tracker.feature2.title": "Agility",
     "tracker.feature2.desc": "Continuous monitoring and fast communication.",
     "tracker.feature3.title": "Security",
@@ -424,7 +469,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — login
     "portal.login.tagline": "Client Portal",
     "portal.login.welcome": "Welcome back",
-    "portal.login.description": "Sign in to track your process",
+    "portal.login.description": "Sign in to track your project",
     "portal.login.email": "Email",
     "portal.login.emailPlaceholder": "you@email.com",
     "portal.login.password": "Password",
@@ -506,7 +551,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.scheduling.field.time.placeholder": "Pick a time",
     "portal.scheduling.field.subject": "Subject",
     "portal.scheduling.field.subject.placeholder":
-      "e.g. questions about the protocol for case CC 26-016",
+      "e.g. questions about the protocol for project CC 26-016",
     "portal.scheduling.field.message": "Message",
     "portal.scheduling.field.message.optional": "(optional)",
     "portal.scheduling.field.message.placeholder":
@@ -516,37 +561,37 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — dashboard
     "portal.dashboard.greeting": "Hi, {name}!",
     "portal.dashboard.subtitle":
-      "Welcome to your portal. Track the progress of your environmental cases here.",
+      "Welcome to your portal. Track the progress of your environmental projects here.",
     "portal.dashboard.unread.one":
       "You have {count} unread message.",
     "portal.dashboard.unread.other":
       "You have {count} unread messages.",
-    "portal.dashboard.stat.total": "TOTAL CASES",
-    "portal.dashboard.stat.total.label": "cases registered",
+    "portal.dashboard.stat.total": "TOTAL PROJECTS",
+    "portal.dashboard.stat.total.label": "projects registered",
     "portal.dashboard.stat.inProgress": "IN PROGRESS",
-    "portal.dashboard.stat.inProgress.label": "active cases",
+    "portal.dashboard.stat.inProgress.label": "active projects",
     "portal.dashboard.stat.accompaniment": "IN MONITORING",
     "portal.dashboard.stat.accompaniment.label": "in monitoring",
     "portal.dashboard.stat.finalized": "FINALIZED",
     "portal.dashboard.stat.finalized.label": "licenses issued",
-    "portal.dashboard.processes.title": "MY CASES",
+    "portal.dashboard.processes.title": "MY PROJECTS",
     "portal.dashboard.processes.empty.title":
-      "No cases registered yet",
+      "No projects registered yet",
     "portal.dashboard.processes.empty.description":
-      "Cases registered by the Sustentec team will appear here.",
+      "Projects registered by the Sustentec team will appear here.",
     "portal.dashboard.bucket.andamento": "In progress",
     "portal.dashboard.bucket.acompanhamento": "In monitoring",
     "portal.dashboard.bucket.finalizado": "Finalized",
-    "portal.dashboard.bucket.empty": "No cases in this category.",
+    "portal.dashboard.bucket.empty": "No projects in this category.",
     "portal.dashboard.pendencias.one": "{count} pending item",
     "portal.dashboard.pendencias.other": "{count} pending items",
     "portal.dashboard.viewDetails": "View details",
     "portal.dashboard.shortcut.schedule.title": "Book a Meeting",
     "portal.dashboard.shortcut.schedule.description":
       "Book a meeting with your responsible engineer",
-    "portal.dashboard.shortcut.newProcess.title": "New Case",
+    "portal.dashboard.shortcut.newProcess.title": "New Project",
     "portal.dashboard.shortcut.newProcess.description":
-      "Request a new licensing case",
+      "Request a new licensing project",
     "portal.dashboard.shortcut.pendencias.title": "Resolve Pending Items",
     "portal.dashboard.shortcut.pendencias.one":
       "You have {count} pending item",
@@ -563,11 +608,56 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dados.field.email": "Email",
     "portal.dados.field.phone": "Phone",
     "portal.dados.field.address": "Address",
+    "portal.dados.field.contactName": "Contact name",
+    "portal.dados.field.contactRole": "Role",
+    "portal.dados.field.contactEmail": "Contact email",
+    "portal.dados.field.contactPhone": "Phone",
+    "portal.dados.field.addressStreet": "Address",
+    "portal.dados.field.addressCity": "City",
+    "portal.dados.field.addressState": "State",
+    "portal.dados.field.addressPostalCode": "Postal code",
+    "portal.dados.action.edit": "Edit",
+    "portal.dados.action.save": "Save",
+    "portal.dados.action.cancel": "Cancel",
+    "portal.dados.toast.saved": "Client details updated.",
+    "portal.dados.toast.error": "Couldn't save. Try again.",
+    "portal.dados.validation.invalidEmail": "Invalid email.",
+    "portal.dados.validation.required": "Required field.",
+
+    // Portal — messages (read receipt)
+    "portal.messages.readAt": "Read on {date}",
+
+    // Portal — payments
+    "portal.payments.title": "Payments",
+    "portal.payments.installment": "Installment {n}",
+    "portal.payments.dueDate": "Due date",
+    "portal.payments.amount": "Amount",
+    "portal.payments.column.status": "Status",
+    "portal.payments.status.pending": "Pending",
+    "portal.payments.status.paid": "Paid",
+    "portal.payments.status.overdue": "Overdue",
+    "portal.payments.paidOn": "Paid on {date}",
+    "portal.payments.dashboardTotal": "Total due",
+    "portal.payments.emailSubject": "Overdue payment",
+
+    // Portal — process tabs
+    "portal.process.tab.payments": "Payments",
+    "portal.process.tab.map": "Map",
+
+    // Portal — map
+    "portal.map.title": "Location",
+    "portal.map.noCoordinates": "Coordinates not configured",
+    "portal.map.dashboardTitle": "Active projects",
+
+    // Portal — project status badge
+    "portal.status.andamento": "In progress",
+    "portal.status.acompanhamento": "In accompaniment",
+    "portal.status.finalizado": "Finalized",
 
     // Portal — sidebar
     "portal.sidebar.tagline": "Client Portal",
     "portal.sidebar.menu.painel": "Dashboard",
-    "portal.sidebar.menu.processos": "My Cases",
+    "portal.sidebar.menu.processos": "My Projects",
     "portal.sidebar.menu.mensagens": "Messages",
     "portal.sidebar.menu.agendamentos": "Scheduling",
     "portal.sidebar.menu.dados": "Account Details",

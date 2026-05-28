@@ -18,6 +18,7 @@ import {
   appointmentStatus,
   contactSubmissionStatus,
   messageDirection,
+  paymentStatus,
   processLicenseType,
   processStatus,
   processTaskPriority,
@@ -37,6 +38,17 @@ export const clients = pgTable('clients', {
   notion_cnpj_filter: text('notion_cnpj_filter'),
   notion_database_id: text('notion_database_id'),
   notion_integration_token: text('notion_integration_token'),
+  // Cadastral / contact fields surfaced in the portal's "Dados Cadastrais"
+  // view. All nullable — older rows pre-date the columns and the portal
+  // renders an em-dash when a value is missing.
+  contact_name: text('contact_name'),
+  contact_role: text('contact_role'),
+  contact_email: text('contact_email'),
+  contact_phone: text('contact_phone'),
+  address_street: text('address_street'),
+  address_city: text('address_city'),
+  address_state: text('address_state'),
+  address_postal_code: text('address_postal_code'),
   created_at: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -139,8 +151,8 @@ export const processes = pgTable(
       { onDelete: 'set null' },
     ),
     city: text('city'),
-    latitude: numeric('latitude'),
-    longitude: numeric('longitude'),
+    latitude: numeric('latitude', { precision: 10, scale: 7 }),
+    longitude: numeric('longitude', { precision: 10, scale: 7 }),
     environmental_agency: text('environmental_agency'),
     started_at: date('started_at'),
     due_date: date('due_date'),
@@ -265,6 +277,7 @@ export const messages = pgTable(
     subject: text('subject'),
     body: text('body'),
     read: boolean('read').notNull().default(false),
+    read_at: timestamp('read_at', { withTimezone: true }),
     sent_at: timestamp('sent_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -329,6 +342,38 @@ export const contactSubmissions = pgTable('contact_submissions', {
   source: text('source').notNull().default('marketing_site'),
   user_agent: text('user_agent'),
 });
+
+// ---------------------------------------------------------------------------
+// payments
+// ---------------------------------------------------------------------------
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    process_id: uuid('process_id')
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    installment_no: integer('installment_no').notNull(),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    due_date: date('due_date').notNull(),
+    paid_at: timestamp('paid_at', { withTimezone: true }),
+    status: paymentStatus('status').notNull().default('pending'),
+    notes: text('notes'),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('payments_process_installment_uniq').on(
+      t.process_id,
+      t.installment_no,
+    ),
+    index('payments_status_due_date_idx').on(t.status, t.due_date),
+  ],
+);
 
 // ---------------------------------------------------------------------------
 // audit_log

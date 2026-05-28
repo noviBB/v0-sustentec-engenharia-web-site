@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { AuthProvider } from "@/lib/auth-context"
+import { sessionForUser } from "@/lib/auth/tenant"
 import { createClient } from "@/lib/supabase/server"
 import { getClientForUser } from "@/lib/db/tenants"
 import { getProfileByUserId } from "@/lib/db/profiles"
@@ -15,9 +16,11 @@ import { getProfileByUserId } from "@/lib/db/profiles"
  * Order of checks:
  *  1. `supabase.auth.getUser()` — middleware already guards the route, but
  *     a server component must NEVER trust a client cookie blindly.
- *  2. `getProfileByUserId` — surfaces the user's display name etc.
- *  3. `getClientForUser` — the tenant. If a user has no `user_clients`
- *     link we bounce them to login with `?reason=no_tenant` rather than
+ *  2. Build a `session` from the authenticated user — this is what every
+ *     RLS-aware repository call needs.
+ *  3. `getProfileByUserId` / `getClientForUser` — surface display name and
+ *     resolve the tenant under RLS. If a user has no `user_clients` link
+ *     we bounce them to login with `?reason=no_tenant` rather than
  *     silently rendering the portal against `null`.
  */
 export default async function PortalLayout({
@@ -34,9 +37,11 @@ export default async function PortalLayout({
     redirect("/portal/login")
   }
 
+  const session = sessionForUser(user)
+
   const [profile, client] = await Promise.all([
-    getProfileByUserId(user.id),
-    getClientForUser(user.id),
+    getProfileByUserId(session, user.id),
+    getClientForUser(session, user.id),
   ])
 
   if (!profile) {
