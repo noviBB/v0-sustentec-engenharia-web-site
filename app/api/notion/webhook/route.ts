@@ -48,6 +48,50 @@ function verifyHmac(raw: string, secret: string, received: string): boolean {
   }
 }
 
+/**
+ * Best-effort audit-log writer for the internal-failure paths.
+ *
+ * The 500 / 503 internal-failure paths must surface the original error code
+ * to Notion regardless of whether the audit insert succeeds. A `pg` hiccup
+ * while writing the audit row should not turn a 503 into a 500, or mask the
+ * root cause in the response logs.
+ */
+async function tryInsertFailureAudit(
+  pageId: string,
+  after: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await insertAuditLog({
+      action: AuditAction.NotionWebhookFailed,
+      entity_type: 'notion_page',
+      entity_id: pageId,
+      after,
+    });
+  } catch (auditErr) {
+    const auditMessage =
+      auditErr instanceof Error ? auditErr.message : String(auditErr);
+    console.error(
+      JSON.stringify({
+        event: 'notion_webhook_audit_write_failed',
+        page_id: pageId,
+        error: auditMessage,
+      }),
+    );
+  }
+}
+
+/**
+ * Sanitize an exception message for the wire response.
+ *
+ * In production we collapse to a fixed string so unexpected Postgres /
+ * driver errors can't leak query or constraint internals to the webhook
+ * sender. The raw message is still preserved in `console.error` and in
+ * the `audit_log.after.error_message` column for operator triage.
+ */
+function safeMessage(message: string): string {
+  return process.env.NODE_ENV === 'production' ? 'internal_error' : message;
+}
+
 interface ParsedEvent {
   type: string;
   pageId: string | null;
@@ -82,11 +126,21 @@ function parseEvent(raw: string): ParsedEvent | null {
  *
  * Responses:
  *   - 401 — bad / missing signature.
- *   - 503 — `NOTION_WEBHOOK_SECRET` unset (Notion stops retrying; cron
- *           backstop continues).
+ *   - 503 — `NOTION_WEBHOOK_SECRET` unset, or `NotionTokenMissingError`
+ *           (Notion stops retrying; cron backstop continues).
  *   - 400 — body not parseable as the expected `{ type, data: { id } }`.
  *   - 200 — success, dedup, or unsupported event (idempotent no-op).
  *   - 500 — internal error during sync (shared error envelope).
+ *
+ * The `message` field in 500 and 503 responses is sanitized to
+ * `'internal_error'` in production to avoid surfacing query/constraint
+ * internals to the webhook sender; raw messages remain in `console.error`
+ * logs (operator-only) and in `audit_log.after.error_message`.
+ *
+ * Internal failures (the generic 500 path and the `NotionTokenMissingError`
+ * 503 path) write a `NotionWebhookFailed` audit row before responding. The
+ * audit write itself is best-effort — a DB hiccup there is logged but does
+ * not mask the original error code returned to Notion.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const secret = serverEnv.NOTION_WEBHOOK_SECRET ?? '';
@@ -169,8 +223,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: true, deduped: false, synced: true });
   } catch (e) {
     if (e instanceof NotionTokenMissingError) {
+      await tryInsertFailureAudit(event.pageId, {
+        reason: 'token_missing',
+        page_id: event.pageId,
+      });
       return NextResponse.json(
-        { error: WebhookRouteError.ServerError, message: e.message },
+        {
+          error: WebhookRouteError.ServerError,
+          message: safeMessage(e.message),
+        },
         { status: 503 },
       );
     }
@@ -182,8 +243,13 @@ export async function POST(request: Request): Promise<NextResponse> {
         error: message,
       }),
     );
+    await tryInsertFailureAudit(event.pageId, {
+      reason: 'internal_error',
+      error_message: message,
+      page_id: event.pageId,
+    });
     return NextResponse.json(
-      { error: WebhookRouteError.ServerError, message },
+      { error: WebhookRouteError.ServerError, message: safeMessage(message) },
       { status: 500 },
     );
   }

@@ -29,6 +29,7 @@ export enum AuditAction {
   NotionWebhookReceived = 'notion.webhook_received',
   NotionWebhookRejected = 'notion.webhook_rejected',
   NotionWebhookSyncedPage = 'notion.webhook_synced_page',
+  NotionWebhookFailed = 'notion.webhook_failed',
   ClientUpdated = 'client.updated',
   PaymentOverdueCronRun = 'payment.cron_overdue',
   PaymentOverdueEmailSent = 'payment.overdue_email_sent',

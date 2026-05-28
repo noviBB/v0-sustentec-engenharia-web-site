@@ -45,19 +45,20 @@ function getLimiters(): CachedLimiters | null {
   if (!url || !token) return null;
 
   const redis = new Redis({ url, token });
+  const envScope = process.env.VERCEL_ENV ?? 'local';
 
   cached = {
     byIp: new Ratelimit({
       redis,
       limiter: Ratelimit.fixedWindow(MAX_PER_WINDOW, WINDOW),
       analytics: false,
-      prefix: 'contact-form:ip',
+      prefix: `contact-form:${envScope}:ip`,
     }),
     byEmail: new Ratelimit({
       redis,
       limiter: Ratelimit.fixedWindow(MAX_PER_WINDOW, WINDOW),
       analytics: false,
-      prefix: 'contact-form:email',
+      prefix: `contact-form:${envScope}:email`,
     }),
   };
   return cached;
@@ -87,13 +88,20 @@ export async function checkContactRateLimit(opts: {
     return { ok: true };
   }
 
-  // Two parallel checks: block on EITHER match.
-  const [ipResult, emailResult] = await Promise.all([
-    limiters.byIp.limit(opts.ipHash ?? 'no-ip'),
+  // Parallel checks: block on EITHER match. Email check is always included;
+  // the IP check is skipped when ipHash is null so a degraded
+  // header-parsing path can't share a single "no-ip" key across all
+  // anonymous requests (which would create a global-lockout DoS surface).
+  // An unknown IP is a degraded data point, not a key class.
+  const checks: Promise<{ success: boolean }>[] = [
     limiters.byEmail.limit(opts.emailHash),
-  ]);
+  ];
+  if (opts.ipHash) {
+    checks.push(limiters.byIp.limit(opts.ipHash));
+  }
 
-  if (!ipResult.success || !emailResult.success) {
+  const results = await Promise.all(checks);
+  if (results.some((r) => !r.success)) {
     return { ok: false };
   }
   return { ok: true };
