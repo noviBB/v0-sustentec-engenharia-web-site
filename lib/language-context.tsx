@@ -305,12 +305,17 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.installment": "Parcela {n}",
     "portal.payments.dueDate": "Vencimento",
     "portal.payments.amount": "Valor",
+    "portal.payments.column.status": "Status",
     "portal.payments.status.pending": "Pendente",
     "portal.payments.status.paid": "Pago",
     "portal.payments.status.overdue": "Em atraso",
     "portal.payments.paidOn": "Pago em {date}",
     "portal.payments.dashboardTotal": "Total a pagar",
     "portal.payments.emailSubject": "Pagamento em atraso",
+
+    // Portal — process tabs
+    "portal.process.tab.payments": "Pagamentos",
+    "portal.process.tab.map": "Mapa",
 
     // Portal — map
     "portal.map.title": "Localização",
@@ -627,12 +632,17 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.installment": "Installment {n}",
     "portal.payments.dueDate": "Due date",
     "portal.payments.amount": "Amount",
+    "portal.payments.column.status": "Status",
     "portal.payments.status.pending": "Pending",
     "portal.payments.status.paid": "Paid",
     "portal.payments.status.overdue": "Overdue",
     "portal.payments.paidOn": "Paid on {date}",
     "portal.payments.dashboardTotal": "Total due",
     "portal.payments.emailSubject": "Overdue payment",
+
+    // Portal — process tabs
+    "portal.process.tab.payments": "Payments",
+    "portal.process.tab.map": "Map",
 
     // Portal — map
     "portal.map.title": "Location",

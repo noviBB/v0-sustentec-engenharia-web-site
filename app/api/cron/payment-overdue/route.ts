@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { inArray } from 'drizzle-orm';
 
+import { CronRouteError, requireCronAuth } from '@/app/api/cron/_shared/auth';
 import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { getClientById } from '@/lib/db/clients';
@@ -8,7 +9,6 @@ import { db } from '@/lib/db';
 import { markOverdue } from '@/lib/db/payments';
 import { processes } from '@/lib/db/schema';
 import { sendPaymentOverdueEmail } from '@/lib/email/payment-overdue';
-import { serverEnv } from '@/lib/env.server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,12 +26,9 @@ export const dynamic = 'force-dynamic';
  *
  * Response shape: `{ ok: true, updated: N, emailed: M }`.
  */
-export async function GET(request: Request): Promise<NextResponse> {
-  const auth = request.headers.get('authorization') ?? '';
-  const expected = `Bearer ${serverEnv.CRON_SECRET}`;
-  if (auth !== expected) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  }
+export async function GET(request: Request): Promise<Response> {
+  const fail = requireCronAuth(request);
+  if (fail) return fail;
 
   try {
     const flipped = await markOverdue();
@@ -109,7 +106,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       }),
     );
     return NextResponse.json(
-      { error: 'cron_failed', message },
+      { error: CronRouteError.ServerError, message },
       { status: 500 },
     );
   }

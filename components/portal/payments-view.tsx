@@ -65,7 +65,7 @@ export function PaymentsView({ payments }: PaymentsViewProps) {
                 <TableHead className="text-right">
                   {t("portal.payments.amount")}
                 </TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("portal.payments.column.status")}</TableHead>
                 <TableHead>{t("portal.payments.paidOn").replace("{date}", "")}</TableHead>
               </TableRow>
             </TableHeader>

@@ -1,8 +1,9 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gte, lt, ne } from 'drizzle-orm';
-import { AuditEvent } from '@/lib/constants/audit-events';
+import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { insertAuditLog } from './auditLog';
 import { dbRls, type SessionLike } from './index';
 import { appointments } from './schema';
 
@@ -82,6 +83,10 @@ export async function createAppointment(
   clientId: string,
   payload: NewAppointment,
 ): Promise<CreateAppointmentResult> {
+  const startsAtIso =
+    payload.starts_at instanceof Date
+      ? payload.starts_at.toISOString()
+      : String(payload.starts_at);
   try {
     const id = await dbRls(session, async (tx) => {
       const [row] = await tx
@@ -96,26 +101,69 @@ export async function createAppointment(
           ends_at: payload.ends_at ?? null,
         })
         .returning({ id: appointments.id });
+      // Same transaction: the audit row commits with the INSERT or rolls
+      // back with it.
+      await insertAuditLog(
+        {
+          action: AuditAction.AppointmentCreated,
+          entity_type: 'appointment',
+          entity_id: row.id,
+          after: {
+            client_id: clientId,
+            responsible_tech_id: payload.responsible_tech_id ?? null,
+            process_id: payload.process_id ?? null,
+            starts_at: startsAtIso,
+          },
+        },
+        { mode: 'tx', tx },
+      );
       return row.id;
     });
     return { ok: true, id };
   } catch (err) {
     // postgres-js surfaces Postgres errors with a `code` property.
-    const code = (err as { code?: string } | null)?.code;
-    if (code === '23505') {
+    const pgCode = (err as { code?: string } | null)?.code;
+    const ref = randomUUID().slice(0, 8);
+    // Audit the failure on a fresh service-mode connection — the
+    // transaction that wrapped the failed INSERT has already rolled back,
+    // so we can't reuse `tx` here. `service` mode bypasses RLS, which is
+    // fine for an internal audit row.
+    try {
+      await insertAuditLog({
+        action: AuditAction.AppointmentCreateFailed,
+        entity_type: 'appointment',
+        after: {
+          ref,
+          reason: pgCode ?? 'unknown',
+          client_id: clientId,
+          responsible_tech_id: payload.responsible_tech_id ?? null,
+          process_id: payload.process_id ?? null,
+          starts_at: startsAtIso,
+        },
+      });
+    } catch (auditErr) {
+      // Don't let an audit-log failure mask the original error — log and
+      // press on so the caller still sees the real result.
+      console.error(
+        JSON.stringify({
+          event: AuditEvent.AppointmentCreateFailed,
+          ref,
+          stage: 'audit_log_insert',
+          error:
+            auditErr instanceof Error ? auditErr.message : String(auditErr),
+        }),
+      );
+    }
+    if (pgCode === '23505') {
       return { ok: false, code: ResultCode.DoubleBooked };
     }
-    const ref = randomUUID().slice(0, 8);
     console.error(
       JSON.stringify({
         event: AuditEvent.AppointmentCreateFailed,
         ref,
         clientId,
         techId: payload.responsible_tech_id,
-        startsAt:
-          payload.starts_at instanceof Date
-            ? payload.starts_at.toISOString()
-            : String(payload.starts_at),
+        startsAt: startsAtIso,
         error: err instanceof Error ? err.message : String(err),
       }),
     );

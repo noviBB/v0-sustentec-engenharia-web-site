@@ -30,4 +30,7 @@ export enum AuditAction {
   PaymentOverdueCronRun = 'payment.cron_overdue',
   PaymentOverdueEmailSent = 'payment.overdue_email_sent',
   PaymentOverdueEmailFailed = 'payment.overdue_email_failed',
+  MessageMarkedRead = 'message.marked_read',
+  AppointmentCreated = 'appointment.created',
+  AppointmentCreateFailed = 'appointment.create_failed',
 }

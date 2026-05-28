@@ -126,18 +126,51 @@ interface ClientSummary {
  * Implementation detail: we monkey-patch `db.transaction` for the duration of
  * the call so the nested transactions inside `importFromNotion` join the
  * outer one and roll back together when we throw at the end.
+ *
+ * Hardening:
+ *   1. The pre-patch `db.transaction` value is captured BEFORE entering the
+ *      try/finally so a throw during capture can't leave a dangling patch.
+ *   2. A sentinel symbol marks the patched function so a second concurrent
+ *      call refuses to re-patch (would otherwise capture the patched
+ *      function as "original" and never restore the real one).
+ *   3. The `finally` only restores when the live `db.transaction` is still
+ *      our patch — otherwise we'd clobber whatever the other caller set.
+ *   4. The previous version captured `original` using `db.transaction.bind`,
+ *      which produces a NEW function each call. That made the
+ *      `db.transaction === patched` invariant check below impossible to
+ *      satisfy after restoration. We now snapshot the property directly.
  */
+const DRY_RUN_PATCH_MARKER = Symbol.for('migrate-notion-dry-run-patch');
+type DbTx = typeof db.transaction;
+type PatchedDbTx = DbTx & { [DRY_RUN_PATCH_MARKER]?: true };
+
 async function runWithRollback<T>(thunk: () => Promise<T>): Promise<T> {
-  const original = db.transaction.bind(db);
+  // Snapshot BEFORE the try. If this property access throws (it shouldn't,
+  // but belt-and-braces), no patch was ever installed and there's nothing
+  // to restore.
+  const original = db.transaction as PatchedDbTx;
+  if (original[DRY_RUN_PATCH_MARKER]) {
+    throw new Error(
+      'runWithRollback: db.transaction is already patched (concurrent dry-run?). Refusing to re-patch.',
+    );
+  }
+
   // Sentinel error: thrown to abort the outer transaction at the end.
   const ROLLBACK = Symbol('dry-run-rollback');
+
+  // We'll bind the patched function to a stable identity so the finally
+  // block can assert "the patch I installed is still the live value" before
+  // restoring. Declared up-front so it's in scope for the `finally`.
+  const patchHolder: { current: PatchedDbTx | null } = { current: null };
   try {
-    const result = await original(async (outerTx) => {
+    const result = await original.call(db, async (outerTx) => {
       // While the dry-run is active, every inner `db.transaction(fn)` reuses
       // the outer transaction so a single rollback at the end cancels everything.
-      (db as { transaction: typeof db.transaction }).transaction = ((
-        fn: (tx: typeof outerTx) => unknown,
-      ) => Promise.resolve(fn(outerTx))) as typeof db.transaction;
+      const patched = ((fn: (tx: typeof outerTx) => unknown) =>
+        Promise.resolve(fn(outerTx))) as PatchedDbTx;
+      patched[DRY_RUN_PATCH_MARKER] = true;
+      patchHolder.current = patched;
+      (db as { transaction: DbTx }).transaction = patched;
       const r = await thunk();
       throw { __rollback: ROLLBACK, value: r };
     });
@@ -148,7 +181,13 @@ async function runWithRollback<T>(thunk: () => Promise<T>): Promise<T> {
     }
     throw e;
   } finally {
-    (db as { transaction: typeof db.transaction }).transaction = original;
+    // Only restore if `db.transaction` is still our patch. If something
+    // else swapped it (shouldn't happen single-threaded, but the assertion
+    // catches concurrent misuse), leave that other value in place.
+    const live = db.transaction as PatchedDbTx;
+    if (patchHolder.current && live === patchHolder.current) {
+      (db as { transaction: DbTx }).transaction = original;
+    }
   }
 }
 

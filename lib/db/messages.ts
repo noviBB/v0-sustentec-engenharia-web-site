@@ -1,8 +1,9 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
-import { AuditEvent } from '@/lib/constants/audit-events';
+import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { insertAuditLog } from './auditLog';
 import { dbRls, type SessionLike } from './index';
 import { messages } from './schema';
 
@@ -69,13 +70,27 @@ export async function markMessageRead(
   messageId: string,
 ): Promise<MarkMessageReadResult> {
   try {
-    const updated = await dbRls(session, async (tx) =>
-      tx
+    const updated = await dbRls(session, async (tx) => {
+      const rows = await tx
         .update(messages)
         .set({ read: true, read_at: sql`now()` })
         .where(and(eq(messages.id, messageId), eq(messages.client_id, clientId)))
-        .returning({ id: messages.id }),
-    );
+        .returning({ id: messages.id });
+      if (rows.length > 0) {
+        // Write the audit row inside the same transaction so it commits or
+        // rolls back atomically with the UPDATE.
+        await insertAuditLog(
+          {
+            action: AuditAction.MessageMarkedRead,
+            entity_type: 'message',
+            entity_id: messageId,
+            after: { client_id: clientId },
+          },
+          { mode: 'tx', tx },
+        );
+      }
+      return rows;
+    });
     if (updated.length === 0) {
       return { ok: false, code: ResultCode.NotFound };
     }

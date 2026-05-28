@@ -28,6 +28,7 @@ import {
 import { PaymentsView } from "@/components/portal/payments-view"
 import { ProjectMap } from "@/components/portal/project-map"
 import { ProjectStatusBadge } from "@/components/portal/project-status-badge"
+import { useLanguage } from "@/lib/language-context"
 
 interface ProcessDetailProps {
   process: ProcessRow
@@ -48,6 +49,7 @@ function formatBRDate(iso: string | null | undefined): string {
 }
 
 export function ProcessDetail({ process, payments = [] }: ProcessDetailProps) {
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState("resumo")
 
   const statusBadgeText = process.status_label ?? process.status
@@ -174,14 +176,14 @@ export function ProcessDetail({ process, payments = [] }: ProcessDetailProps) {
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <CreditCard className="w-4 h-4" />
-            Pagamentos
+            {t("portal.process.tab.payments")}
           </TabsTrigger>
           <TabsTrigger
             value="mapa"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <MapPin className="w-4 h-4" />
-            Mapa
+            {t("portal.process.tab.map")}
           </TabsTrigger>
         </TabsList>
 
