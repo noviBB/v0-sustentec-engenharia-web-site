@@ -17,6 +17,16 @@ const ptDateTime = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
 });
 
+/** Subject/notes are typed by the client — never interpolate them raw. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export interface SendAppointmentCreatedEmailParams {
   clientName: string;
   techName: string | null;
@@ -33,8 +43,12 @@ export interface SendAppointmentCreatedEmailParams {
 export async function sendAppointmentCreatedEmail(
   params: SendAppointmentCreatedEmailParams,
 ): Promise<void> {
-  const { clientName, techName, startsAtIso, subject, notes } = params;
+  const { startsAtIso } = params;
   const when = ptDateTime.format(new Date(startsAtIso));
+  const clientName = escapeHtml(params.clientName);
+  const techName = params.techName ? escapeHtml(params.techName) : null;
+  const subject = params.subject ? escapeHtml(params.subject) : null;
+  const notes = params.notes ? escapeHtml(params.notes) : null;
 
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:560px;margin:auto;">

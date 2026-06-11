@@ -127,7 +127,6 @@ export function DashboardContent({
         <Card
           className={statCardClasses(false)}
           role="button"
-          aria-pressed={bucketFilter === null}
           onClick={() => setBucketFilter(null)}
         >
           <CardHeader className="pb-2">

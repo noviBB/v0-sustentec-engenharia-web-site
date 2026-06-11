@@ -224,7 +224,10 @@ export function PortalShell({
         activeItem={activeItem}
         onItemChange={setActiveItem}
         selectedProcess={selectedProcessId}
-        onProcessChange={setSelectedProcessId}
+        // Through handleProcessSelect so the detail tab resets to "resumo" —
+        // a direct setSelectedProcessId would keep a stale "pendencias" tab
+        // from an earlier Resolver Pendências / notifications jump.
+        onProcessChange={(processId) => handleProcessSelect(processId)}
         processes={processes}
         unreadCount={unreadCount}
       />
