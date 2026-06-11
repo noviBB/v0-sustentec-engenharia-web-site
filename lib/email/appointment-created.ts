@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
-import { sendEmail } from './resend';
+import { sendEmail } from './send';
 
 /**
  * Internal mailbox notified when a client books a meeting through the portal
