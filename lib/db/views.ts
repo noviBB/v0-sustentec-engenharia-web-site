@@ -15,8 +15,9 @@ import { processStatus, processTipologia } from './enums';
  * `.existing()` tells drizzle-kit to emit no DDL for this object; we declare
  * the column shape here purely so Drizzle queries are typed.
  *
- * Column list mirrors `processes.*` plus the two aggregate columns the SQL
- * view computes (`progress_percent`, `pendencias_count`).
+ * Column list mirrors `processes.*` plus the columns the SQL view computes
+ * (`responsible_tech_name`, `license_types`, `progress_percent`,
+ * `pendencias_count`).
  */
 export const vProcessesWithProgress = pgView('v_processes_with_progress', {
   id: uuid('id').notNull(),
@@ -35,6 +36,9 @@ export const vProcessesWithProgress = pgView('v_processes_with_progress', {
   latitude: numeric('latitude'),
   longitude: numeric('longitude'),
   environmental_agency: text('environmental_agency'),
+  classe_impacto: text('classe_impacto'),
+  tempo_tramitacao: text('tempo_tramitacao'),
+  atividade_licenciada: text('atividade_licenciada'),
   started_at: date('started_at'),
   due_date: date('due_date'),
   finished_at: date('finished_at'),
@@ -47,6 +51,8 @@ export const vProcessesWithProgress = pgView('v_processes_with_progress', {
   deleted_at: timestamp('deleted_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull(),
+  responsible_tech_name: text('responsible_tech_name'),
+  license_types: text('license_types').array().notNull(),
   progress_percent: integer('progress_percent').notNull(),
   pendencias_count: integer('pendencias_count').notNull(),
 }).existing();

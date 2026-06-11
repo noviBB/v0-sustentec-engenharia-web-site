@@ -1,8 +1,11 @@
 'use server';
 
 import { requireClient } from '@/lib/auth/tenant';
+import { AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
 import { createAppointment } from '@/lib/db/appointments';
+import { getResponsibleTechName } from '@/lib/db/responsibleTechs';
+import { sendAppointmentCreatedEmail } from '@/lib/email/appointment-created';
 import {
   createAppointmentSchema,
   type CreateAppointmentInput,
@@ -40,6 +43,32 @@ export async function createAppointmentAction(
     ends_at: null,
     process_id: null,
   });
+
+  if (result.ok) {
+    // Notify the team mailbox. The appointment is already committed — an
+    // email failure is audited by the helper but never changes the result.
+    try {
+      const techName = await getResponsibleTechName(
+        ctx.session,
+        data.responsible_tech_id,
+      );
+      await sendAppointmentCreatedEmail({
+        clientName: ctx.client.name,
+        techName,
+        startsAtIso: data.scheduled_for,
+        subject: data.subject,
+        notes: data.notes ?? null,
+      });
+    } catch (e) {
+      console.error(
+        JSON.stringify({
+          event: AuditEvent.AppointmentNotifyEmailFailed,
+          appointment_id: result.id,
+          error: e instanceof Error ? e.message : String(e),
+        }),
+      );
+    }
+  }
 
   return result;
 }

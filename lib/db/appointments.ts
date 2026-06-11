@@ -22,6 +22,7 @@ export type NewAppointment = Pick<
 export type CreateAppointmentResult =
   | { ok: true; id: string }
   | { ok: false; code: ResultCode.DoubleBooked }
+  | { ok: false; code: ResultCode.Unauthorized }
   | { ok: false; code: ResultCode.ServerError; ref: string };
 
 export async function listAppointmentsForClient(
@@ -156,6 +157,13 @@ export async function createAppointment(
     }
     if (pgCode === '23505') {
       return { ok: false, code: ResultCode.DoubleBooked };
+    }
+    // 42501 = insufficient_privilege: the RLS policy rejected the INSERT
+    // (e.g. a stale session whose user_clients link is gone). Surfacing it
+    // as `unauthorized` gives the user the "session expired" toast instead
+    // of a generic server error (pront 1905 "red window" hardening).
+    if (pgCode === '42501') {
+      return { ok: false, code: ResultCode.Unauthorized };
     }
     console.error(
       JSON.stringify({

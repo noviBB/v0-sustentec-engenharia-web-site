@@ -33,6 +33,12 @@ describe('parseProcess (canonical map applied to Engeprat fixture)', () => {
     expect(parsed.environmental_agency).toBe('INEA');
   });
 
+  it('maps resumo fields from select or rich_text shapes', () => {
+    expect(parsed.classe_impacto).toBe('Classe 2');
+    expect(parsed.tempo_tramitacao).toBe('8 a 12 meses');
+    expect(parsed.atividade_licenciada).toBe('Saneamento básico');
+  });
+
   it('strips markdown from process_number', () => {
     expect(parsed.process_number).toBe('EIS-PRO-2025/14072');
   });
@@ -120,6 +126,19 @@ describe('parseProcess soft errors (non-fatal)', () => {
   it('unknown instrumento folds to outros + error', () => {
     expect(parsed.license_types).toEqual(['outros']);
     expect(parsed.errors.some((e) => e.field === 'license_types')).toBe(true);
+  });
+
+  it('absent resumo properties degrade to null without errors', () => {
+    expect(parsed.classe_impacto).toBeNull();
+    expect(parsed.tempo_tramitacao).toBeNull();
+    expect(parsed.atividade_licenciada).toBeNull();
+    expect(
+      parsed.errors.some((e) =>
+        ['classe_impacto', 'tempo_tramitacao', 'atividade_licenciada'].includes(
+          e.field,
+        ),
+      ),
+    ).toBe(false);
   });
 });
 

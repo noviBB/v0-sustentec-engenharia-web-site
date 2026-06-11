@@ -23,6 +23,13 @@ export interface SendEmailParams {
   subject: string;
   html: string;
   from?: string;
+  /** Audit actions/event for this email category. Defaults to the
+   * payment-overdue values (the original call site). */
+  audit?: {
+    sent: AuditAction;
+    failed: AuditAction;
+    failedEvent: AuditEvent;
+  };
 }
 
 let cachedClient: Resend | null = null;
@@ -41,7 +48,17 @@ function getResend(): Resend {
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<void> {
-  const { to, subject, html, from = DEFAULT_FROM } = params;
+  const {
+    to,
+    subject,
+    html,
+    from = DEFAULT_FROM,
+    audit = {
+      sent: AuditAction.PaymentOverdueEmailSent,
+      failed: AuditAction.PaymentOverdueEmailFailed,
+      failedEvent: AuditEvent.PaymentOverdueEmailFailed,
+    },
+  } = params;
   try {
     const resend = getResend();
     const result = await resend.emails.send({ from, to, subject, html });
@@ -51,7 +68,7 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
       );
     }
     await insertAuditLog({
-      action: AuditAction.PaymentOverdueEmailSent,
+      action: audit.sent,
       entity_type: 'email',
       after: { to, subject, message_id: result.data?.id ?? null },
     });
@@ -59,14 +76,14 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
     const message = e instanceof Error ? e.message : String(e);
     console.error(
       JSON.stringify({
-        event: AuditEvent.PaymentOverdueEmailFailed,
+        event: audit.failedEvent,
         to,
         subject,
         error: message,
       }),
     );
     await insertAuditLog({
-      action: AuditAction.PaymentOverdueEmailFailed,
+      action: audit.failed,
       entity_type: 'email',
       after: { to, subject, error: message },
     }).catch(() => {

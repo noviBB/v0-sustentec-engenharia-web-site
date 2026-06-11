@@ -6,6 +6,9 @@ import type { ProcessBuckets, ProcessRow } from "@/lib/db/processes"
 import type { MessageRow } from "@/lib/db/messages"
 import type { PaymentWithProcess } from "@/lib/db/payments"
 import type { ResponsibleTechOption } from "@/lib/db/responsibleTechs"
+import type { MilestoneRow } from "@/lib/db/milestones"
+import type { TaskRow } from "@/lib/db/tasks"
+import type { DocumentRow } from "@/lib/db/documents"
 import { PortalSidebar } from "@/components/portal/portal-sidebar"
 import { PortalHeader } from "@/components/portal/portal-header"
 import { DashboardContent } from "@/components/portal/dashboard-content"
@@ -22,6 +25,12 @@ interface PortalShellProps {
   techs: ResponsibleTechOption[]
   /** All payments for the tenant, prefetched on the server. */
   payments: PaymentWithProcess[]
+  /** All milestones for the tenant's processes, prefetched on the server. */
+  milestones: MilestoneRow[]
+  /** All tasks (pendências) for the tenant's processes, prefetched. */
+  tasks: TaskRow[]
+  /** All downloadable documents for the tenant's processes, prefetched. */
+  documents: DocumentRow[]
 }
 
 /**
@@ -36,11 +45,17 @@ export function PortalShell({
   unreadCount: initialUnread,
   techs,
   payments,
+  milestones,
+  tasks,
+  documents,
 }: PortalShellProps) {
   const [activeItem, setActiveItem] = useState("painel")
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(
     null,
   )
+  // Which tab the process detail opens on — "Resolver Pendências" and the
+  // notifications dropdown jump straight to the pendências tab.
+  const [detailInitialTab, setDetailInitialTab] = useState<string>("resumo")
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
   const [unreadCount, setUnreadCount] = useState<number>(initialUnread)
 
@@ -64,6 +79,36 @@ export function PortalShell({
     return map
   }, [payments])
 
+  const milestonesByProcess = useMemo(() => {
+    const map = new Map<string, MilestoneRow[]>()
+    for (const m of milestones) {
+      const list = map.get(m.process_id) ?? []
+      list.push(m)
+      map.set(m.process_id, list)
+    }
+    return map
+  }, [milestones])
+
+  const tasksByProcess = useMemo(() => {
+    const map = new Map<string, TaskRow[]>()
+    for (const task of tasks) {
+      const list = map.get(task.process_id) ?? []
+      list.push(task)
+      map.set(task.process_id, list)
+    }
+    return map
+  }, [tasks])
+
+  const documentsByProcess = useMemo(() => {
+    const map = new Map<string, DocumentRow[]>()
+    for (const doc of documents) {
+      const list = map.get(doc.process_id) ?? []
+      list.push(doc)
+      map.set(doc.process_id, list)
+    }
+    return map
+  }, [documents])
+
   // Flattened view of all bucketed processes — the sidebar + selection
   // lookups still need a single list.
   const processes: ProcessRow[] = useMemo(
@@ -83,8 +128,25 @@ export function PortalShell({
     [processes, selectedProcessId],
   )
 
-  function handleProcessSelect(processId: string) {
+  // Pendências summary for the header notifications dropdown — one entry per
+  // process that has open items, ordered by count so the worst offender leads.
+  const pendenciasSummary = useMemo(
+    () =>
+      processes
+        .filter((p) => p.pendencias_count > 0)
+        .sort((a, b) => b.pendencias_count - a.pendencias_count)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          code: p.code,
+          count: p.pendencias_count,
+        })),
+    [processes],
+  )
+
+  function handleProcessSelect(processId: string, tab: string = "resumo") {
     setSelectedProcessId(processId)
+    setDetailInitialTab(tab)
     setActiveItem("processo-detalhe")
   }
 
@@ -106,8 +168,14 @@ export function PortalShell({
     if (activeItem === "processo-detalhe" && selectedProcess) {
       return (
         <ProcessDetail
+          key={`${selectedProcess.id}:${detailInitialTab}`}
           process={selectedProcess}
           payments={paymentsByProcess.get(selectedProcess.id) ?? []}
+          milestones={milestonesByProcess.get(selectedProcess.id) ?? []}
+          tasks={tasksByProcess.get(selectedProcess.id) ?? []}
+          documents={documentsByProcess.get(selectedProcess.id) ?? []}
+          initialTab={detailInitialTab}
+          onBack={() => setActiveItem("painel")}
         />
       )
     }
@@ -121,6 +189,7 @@ export function PortalShell({
             unreadCount={unreadCount}
             paymentsTotalDue={paymentsTotalDue}
             onSelectProcess={handleProcessSelect}
+            onNavigate={setActiveItem}
           />
         )
       case "mensagens":
@@ -143,6 +212,7 @@ export function PortalShell({
             unreadCount={unreadCount}
             paymentsTotalDue={paymentsTotalDue}
             onSelectProcess={handleProcessSelect}
+            onNavigate={setActiveItem}
           />
         )
     }
@@ -161,7 +231,13 @@ export function PortalShell({
 
       <div className="lg:ml-72">
         <div className="pt-16 lg:pt-0">
-          <PortalHeader onItemChange={setActiveItem} />
+          <PortalHeader
+            onItemChange={setActiveItem}
+            pendencias={pendenciasSummary}
+            onOpenPendencias={(processId) =>
+              handleProcessSelect(processId, "pendencias")
+            }
+          />
 
           <main className="p-4 md:p-6">{renderContent()}</main>
         </div>
