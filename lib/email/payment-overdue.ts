@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { Client } from '@/lib/db/clients';
 import type { PaymentRow } from '@/lib/db/payments';
-import { sendEmail } from './resend';
+import { sendEmail } from './send';
 
 const brl = new Intl.NumberFormat('pt-BR', {
   style: 'currency',

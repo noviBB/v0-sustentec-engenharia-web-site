@@ -9,6 +9,9 @@ import {
 } from "@/lib/db/messages"
 import { listPaymentsByClient } from "@/lib/db/payments"
 import { listActiveResponsibleTechs } from "@/lib/db/responsibleTechs"
+import { listMilestonesForClient } from "@/lib/db/milestones"
+import { listTasksForClient } from "@/lib/db/tasks"
+import { listDocumentsForClient } from "@/lib/db/documents"
 import { PortalShell } from "@/components/portal/portal-shell"
 
 /**
@@ -37,12 +40,24 @@ export default async function PortalPage() {
     redirect("/portal/login?reason=no_tenant")
   }
 
-  const [buckets, messages, unreadCount, techs, payments] = await Promise.all([
+  const [
+    buckets,
+    messages,
+    unreadCount,
+    techs,
+    payments,
+    milestones,
+    tasks,
+    documents,
+  ] = await Promise.all([
     listBuckets(session, client.id),
     listMessagesForClient(session, client.id),
     countUnreadForClient(session, client.id),
     listActiveResponsibleTechs(session),
     listPaymentsByClient(session, client.id),
+    listMilestonesForClient(session, client.id),
+    listTasksForClient(session, client.id),
+    listDocumentsForClient(session, client.id),
   ])
 
   return (
@@ -53,6 +68,9 @@ export default async function PortalPage() {
       unreadCount={unreadCount}
       techs={techs}
       payments={payments}
+      milestones={milestones}
+      tasks={tasks}
+      documents={documents}
     />
   )
 }

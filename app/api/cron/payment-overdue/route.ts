@@ -7,6 +7,7 @@ import { insertAuditLog } from '@/lib/db/auditLog';
 import { getClientById } from '@/lib/db/clients';
 import { db } from '@/lib/db';
 import { markOverdue } from '@/lib/db/payments';
+import { ensurePaymentOverdueTask } from '@/lib/db/tasks';
 import { processes } from '@/lib/db/schema';
 import { sendPaymentOverdueEmail } from '@/lib/email/payment-overdue';
 
@@ -19,12 +20,14 @@ export const dynamic = 'force-dynamic';
  *   GET /api/cron/payment-overdue
  *   Authorization: Bearer $CRON_SECRET
  *
- * Sweeps any `pending` payment past its `due_date` to `overdue`, groups the
- * resulting rows by tenant, and fans out a notification email per client. One
- * failing email does NOT abort the run — failures are logged via the email
- * helper and the loop moves on.
+ * Sweeps any `pending` payment past its `due_date` to `overdue`, opens a
+ * pendência (process_task) per flipped installment, groups the resulting rows
+ * by tenant, and fans out a notification email per client. One failing email
+ * does NOT abort the run — failures are logged via the email helper and the
+ * loop moves on. Task creation is idempotent (deterministic title), so a
+ * payment that stays overdue across runs never duplicates its pendência.
  *
- * Response shape: `{ ok: true, updated: N, emailed: M }`.
+ * Response shape: `{ ok: true, updated: N, emailed: M, tasksCreated: K }`.
  */
 export async function GET(request: Request): Promise<Response> {
   const fail = requireCronAuth(request);
@@ -37,9 +40,36 @@ export async function GET(request: Request): Promise<Response> {
       await insertAuditLog({
         action: AuditAction.PaymentOverdueCronRun,
         entity_type: 'cron',
-        after: { updated: 0, emailed: 0 },
+        after: { updated: 0, emailed: 0, tasksCreated: 0 },
       });
-      return NextResponse.json({ ok: true, updated: 0, emailed: 0 });
+      return NextResponse.json({
+        ok: true,
+        updated: 0,
+        emailed: 0,
+        tasksCreated: 0,
+      });
+    }
+
+    // One pendência per flipped installment so the portal badge/tab surface
+    // the late payment (issue #32, pront 210526 item 4).
+    let tasksCreated = 0;
+    for (const row of flipped) {
+      const { created } = await ensurePaymentOverdueTask(
+        row.process_id,
+        row.installment_no,
+      );
+      if (created) {
+        tasksCreated += 1;
+        await insertAuditLog({
+          action: AuditAction.PaymentOverdueTaskCreated,
+          entity_type: 'payment',
+          entity_id: row.id,
+          after: {
+            process_id: row.process_id,
+            installment_no: row.installment_no,
+          },
+        });
+      }
     }
 
     // Resolve process_id -> client_id in one query.
@@ -89,13 +119,14 @@ export async function GET(request: Request): Promise<Response> {
     await insertAuditLog({
       action: AuditAction.PaymentOverdueCronRun,
       entity_type: 'cron',
-      after: { updated: flipped.length, emailed },
+      after: { updated: flipped.length, emailed, tasksCreated },
     });
 
     return NextResponse.json({
       ok: true,
       updated: flipped.length,
       emailed,
+      tasksCreated,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

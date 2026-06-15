@@ -39,6 +39,9 @@ export type ProcessRow = {
   latitude: string | null;
   longitude: string | null;
   environmental_agency: string | null;
+  classe_impacto: string | null;
+  tempo_tramitacao: string | null;
+  atividade_licenciada: string | null;
   started_at: string | null;
   due_date: string | null;
   finished_at: string | null;
@@ -51,6 +54,8 @@ export type ProcessRow = {
   deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  responsible_tech_name: string | null;
+  license_types: string[];
   progress_percent: number;
   pendencias_count: number;
 };

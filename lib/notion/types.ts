@@ -77,6 +77,9 @@ export interface ParsedProcess {
   links: string | null;
   city: string | null;
   environmental_agency: string | null;
+  classe_impacto: string | null;
+  tempo_tramitacao: string | null;
+  atividade_licenciada: string | null;
   status: ProcessStatus;
   status_label: string | null;
   tipologia: ProcessTipologia | null;

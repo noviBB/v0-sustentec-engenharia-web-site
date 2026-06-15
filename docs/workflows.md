@@ -164,7 +164,10 @@ Vercel project env vars (preview + production):
 | `CRON_SECRET` | `/api/cron/notion-sync`, `/api/cron/payment-overdue`, `/api/notion/sync-now` | Quarterly, or any time the value leaks. Update Vercel cron headers if Vercel's auto-injection ever fails. |
 | `NOTION_INTEGRATION_TOKEN` | Notion adapter (fallback when `clients.notion_integration_token` is null) | When the Notion integration is rotated. Validated lazily at sync time. |
 | `NOTION_WEBHOOK_SECRET` | `/api/notion/webhook` (HMAC verification) | When the Notion integration is rotated (re-issued alongside the integration token). Validated lazily at request time — handler returns 503 when unset, so Notion stops retrying. |
-| `RESEND_API_KEY` | Overdue-payment email sender | When Resend rotates the project key. Validated lazily at send time — overdue cron tolerates an empty value (logs `PaymentOverdueEmailFailed`, doesn't crash). |
+| `EMAIL_PROVIDER` | Email facade (`lib/email/send.ts`) — selects the transport (`smtp` default, `resend`) | Only changes when switching providers. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | SMTP provider (overdue-payment + appointment emails) | When the mail server credentials rotate. Validated lazily at send time — senders tolerate missing values (audit `*EmailFailed`, don't crash). Local dev points at Inbucket: `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325`, no auth (inbox UI at http://localhost:54324). |
+| `EMAIL_FROM` | Default From address for all outbound email | When the sending domain changes. Deliverability (SPF/DKIM/DMARC) is the mail server's responsibility. |
+| `RESEND_API_KEY` | Resend provider (rollback path, `EMAIL_PROVIDER=resend` only) | When Resend rotates the project key. |
 
 ## Row-level security
 

@@ -39,6 +39,19 @@ export const ENGEPRAT_PROCESS_PAGE: NotionPage = {
       type: 'rich_text',
       rich_text: [{ plain_text: 'INEA' }],
     },
+    // Resumo fields — one of each accepted shape (select / rich_text).
+    'Classe de Impacto': {
+      type: 'select',
+      select: { name: 'Classe 2' },
+    },
+    'Tempo de tramitação': {
+      type: 'rich_text',
+      rich_text: [{ plain_text: '8 a 12 meses' }],
+    },
+    'Atividade licenciada': {
+      type: 'rich_text',
+      rich_text: [{ plain_text: 'Saneamento básico' }],
+    },
     'CNPJ CLIENTE': {
       type: 'rich_text',
       rich_text: [{ plain_text: '03.314.057/0001-53' }],

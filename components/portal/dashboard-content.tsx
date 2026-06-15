@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,8 +31,14 @@ interface DashboardContentProps {
   unreadCount: number
   /** Sum of pending + overdue payment amounts across the client's projects. */
   paymentsTotalDue: number
-  onSelectProcess: (processId: string) => void
+  /** Opens a process detail; `tab` preselects a detail tab (e.g. pendências). */
+  onSelectProcess: (processId: string, tab?: string) => void
+  /** Switches the shell to another view (e.g. "agendamentos"). */
+  onNavigate: (item: string) => void
 }
+
+/** Mailbox monitored by the Sustentec team (matches the seed constant). */
+const NEW_PROJECT_EMAIL = "contato@sustentec-engenharia.com.br"
 
 export function DashboardContent({
   displayName,
@@ -38,8 +46,12 @@ export function DashboardContent({
   unreadCount,
   paymentsTotalDue,
   onSelectProcess,
+  onNavigate,
 }: DashboardContentProps) {
   const { t } = useLanguage()
+  // Clicking a status card filters the list below to that bucket; clicking it
+  // again (or the TOTAL card) shows everything.
+  const [bucketFilter, setBucketFilter] = useState<Bucket | null>(null)
 
   const processes: ProcessRow[] = [
     ...buckets.andamento,
@@ -55,11 +67,40 @@ export function DashboardContent({
     0,
   )
 
-  const groupedProcesses: Array<{ bucket: Bucket; items: ProcessRow[] }> = [
+  const allGroups: Array<{ bucket: Bucket; items: ProcessRow[] }> = [
     { bucket: "andamento", items: buckets.andamento },
     { bucket: "acompanhamento", items: buckets.acompanhamento },
     { bucket: "finalizado", items: buckets.finalizado },
   ]
+  const groupedProcesses = allGroups.filter(
+    (group) => bucketFilter === null || group.bucket === bucketFilter,
+  )
+
+  // "Resolver Pendências" jumps to the project with the most open items.
+  const pendenciasTarget = processes.reduce<ProcessRow | null>(
+    (max, p) =>
+      p.pendencias_count > 0 &&
+      p.pendencias_count > (max?.pendencias_count ?? 0)
+        ? p
+        : max,
+    null,
+  )
+
+  const newProjectMailto = `mailto:${NEW_PROJECT_EMAIL}?subject=${encodeURIComponent(
+    t("portal.dashboard.shortcut.newProcess.mail.subject"),
+  )}&body=${encodeURIComponent(
+    t("portal.dashboard.shortcut.newProcess.mail.body"),
+  )}`
+
+  function toggleBucketFilter(bucket: Bucket) {
+    setBucketFilter((prev) => (prev === bucket ? null : bucket))
+  }
+
+  const statCardClasses = (active: boolean) =>
+    cn(
+      "bg-white cursor-pointer transition-shadow hover:shadow-md",
+      active && "ring-2 ring-[#2d5a27]",
+    )
 
   const bucketLabel = (b: Bucket) => t(`portal.dashboard.bucket.${b}`)
 
@@ -83,7 +124,11 @@ export function DashboardContent({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="bg-white">
+        <Card
+          className={statCardClasses(false)}
+          role="button"
+          onClick={() => setBucketFilter(null)}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.total")}
@@ -104,7 +149,12 @@ export function DashboardContent({
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card
+          className={statCardClasses(bucketFilter === "andamento")}
+          role="button"
+          aria-pressed={bucketFilter === "andamento"}
+          onClick={() => toggleBucketFilter("andamento")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.inProgress")}
@@ -125,7 +175,12 @@ export function DashboardContent({
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card
+          className={statCardClasses(bucketFilter === "acompanhamento")}
+          role="button"
+          aria-pressed={bucketFilter === "acompanhamento"}
+          onClick={() => toggleBucketFilter("acompanhamento")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.accompaniment")}
@@ -146,7 +201,12 @@ export function DashboardContent({
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card
+          className={statCardClasses(bucketFilter === "finalizado")}
+          role="button"
+          aria-pressed={bucketFilter === "finalizado"}
+          onClick={() => toggleBucketFilter("finalizado")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.finalized")}
@@ -287,7 +347,11 @@ export function DashboardContent({
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer">
+        <Card
+          className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+          role="button"
+          onClick={() => onNavigate("agendamentos")}
+        >
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
@@ -303,23 +367,38 @@ export function DashboardContent({
           </CardContent>
         </Card>
 
-        <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
-                <FolderKanban className="w-6 h-6 text-[#2d5a27]" />
+        <a href={newProjectMailto} className="block">
+          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="p-3 bg-[#e8f5e9] rounded-xl w-fit mx-auto mb-3">
+                  <FolderKanban className="w-6 h-6 text-[#2d5a27]" />
+                </div>
+                <p className="font-semibold text-foreground">
+                  {t("portal.dashboard.shortcut.newProcess.title")}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t("portal.dashboard.shortcut.newProcess.description")}
+                </p>
               </div>
-              <p className="font-semibold text-foreground">
-                {t("portal.dashboard.shortcut.newProcess.title")}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t("portal.dashboard.shortcut.newProcess.description")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </a>
 
-        <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer">
+        <Card
+          className={cn(
+            "bg-white transition-shadow",
+            pendenciasTarget
+              ? "hover:shadow-md cursor-pointer"
+              : "opacity-60",
+          )}
+          role="button"
+          aria-disabled={!pendenciasTarget}
+          onClick={() =>
+            pendenciasTarget &&
+            onSelectProcess(pendenciasTarget.id, "pendencias")
+          }
+        >
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="p-3 bg-amber-100 rounded-xl w-fit mx-auto mb-3">

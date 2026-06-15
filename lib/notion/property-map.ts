@@ -51,6 +51,13 @@ export const SCALAR_PROPERTIES = {
   links: 'Links',
   city: 'Município',
   environmental_agency: 'Órgão Ambiental',
+  // "Resumo do enquadramento" fields (issue #32). Ops may not have created
+  // these properties in the Notion database yet — parsing degrades to null
+  // when a property is absent, and they are intentionally NOT exported back
+  // (writing an unknown property name errors the Notion page update).
+  classe_impacto: 'Classe de Impacto',
+  tempo_tramitacao: 'Tempo de tramitação',
+  atividade_licenciada: 'Atividade licenciada',
   client_cnpj: 'CNPJ CLIENTE',
   applicant_cnpj: 'CNPJ REQUERENTE',
   status: 'Situação',
@@ -254,6 +261,15 @@ export function parseProcess(
   const environmental_agency = parseRichText(
     props[SCALAR_PROPERTIES.environmental_agency],
   );
+  const classe_impacto = parseSelectOrRichText(
+    props[SCALAR_PROPERTIES.classe_impacto],
+  );
+  const tempo_tramitacao = parseSelectOrRichText(
+    props[SCALAR_PROPERTIES.tempo_tramitacao],
+  );
+  const atividade_licenciada = parseSelectOrRichText(
+    props[SCALAR_PROPERTIES.atividade_licenciada],
+  );
   const client_cnpj = cnpjDigits(
     parseRichText(props[SCALAR_PROPERTIES.client_cnpj]),
   );
@@ -350,6 +366,9 @@ export function parseProcess(
     links,
     city,
     environmental_agency,
+    classe_impacto,
+    tempo_tramitacao,
+    atividade_licenciada,
     status,
     status_label,
     tipologia,
@@ -365,6 +384,21 @@ export function parseProcess(
     tasks,
     errors,
   };
+}
+
+/**
+ * Resumo fields may be authored as a select or a rich_text property — the
+ * real property type in the team's Notion DB is not pinned down yet. Accept
+ * either; any other shape (or an absent property) degrades to null rather
+ * than failing the page.
+ */
+function parseSelectOrRichText(
+  prop: NotionPropertyValue | undefined,
+): string | null {
+  if (!prop) return null;
+  if ('select' in prop) return parseSelect(prop);
+  if ('rich_text' in prop) return parseRichText(prop);
+  return null;
 }
 
 /** Links may arrive as a url property or a rich_text blob. Accept either. */

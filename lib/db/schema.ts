@@ -154,6 +154,12 @@ export const processes = pgTable(
     latitude: numeric('latitude', { precision: 10, scale: 7 }),
     longitude: numeric('longitude', { precision: 10, scale: 7 }),
     environmental_agency: text('environmental_agency'),
+    // "Resumo do enquadramento" fields (issue #32). Free text — values come
+    // from Notion properties that ops may not have created yet, so all
+    // nullable and the portal renders an em-dash when missing.
+    classe_impacto: text('classe_impacto'),
+    tempo_tramitacao: text('tempo_tramitacao'),
+    atividade_licenciada: text('atividade_licenciada'),
     started_at: date('started_at'),
     due_date: date('due_date'),
     finished_at: date('finished_at'),
@@ -256,6 +262,26 @@ export const processTasks = pgTable(
       .on(t.notion_page_id)
       .where(sql`deleted_at IS NULL`),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// process_documents  (download-only in the portal; rows written by seed/staff)
+// ---------------------------------------------------------------------------
+export const processDocuments = pgTable(
+  'process_documents',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    process_id: uuid('process_id')
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => [index('process_documents_process_id_idx').on(t.process_id)],
 );
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ export enum AuditEvent {
   ClientUpdateFailed = 'client_update_failed',
   PaymentOverdueCronFailed = 'payment_overdue_cron_failed',
   PaymentOverdueEmailFailed = 'payment_overdue_email_failed',
+  AppointmentNotifyEmailFailed = 'appointment_notify_email_failed',
 }
 
 /** Values written to the `audit_log.action` column. */
@@ -34,7 +35,10 @@ export enum AuditAction {
   PaymentOverdueCronRun = 'payment.cron_overdue',
   PaymentOverdueEmailSent = 'payment.overdue_email_sent',
   PaymentOverdueEmailFailed = 'payment.overdue_email_failed',
+  PaymentOverdueTaskCreated = 'payment.overdue_task_created',
   MessageMarkedRead = 'message.marked_read',
   AppointmentCreated = 'appointment.created',
   AppointmentCreateFailed = 'appointment.create_failed',
+  AppointmentNotifyEmailSent = 'appointment.notify_email_sent',
+  AppointmentNotifyEmailFailed = 'appointment.notify_email_failed',
 }

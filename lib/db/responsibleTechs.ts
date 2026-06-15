@@ -31,3 +31,21 @@ export async function listActiveResponsibleTechs(
       .orderBy(asc(responsibleTechs.display_name)),
   );
 }
+
+/**
+ * Display name of one tech, or null when the id is unknown. Used by the
+ * appointment-created notification email. Same RLS rationale as above.
+ */
+export async function getResponsibleTechName(
+  session: SessionLike,
+  techId: string,
+): Promise<string | null> {
+  return dbRls(session, async (tx) => {
+    const rows = await tx
+      .select({ display_name: responsibleTechs.display_name })
+      .from(responsibleTechs)
+      .where(eq(responsibleTechs.id, techId))
+      .limit(1);
+    return rows[0]?.display_name ?? null;
+  });
+}

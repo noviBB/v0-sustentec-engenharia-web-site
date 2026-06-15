@@ -180,7 +180,7 @@ const translations: Record<Language, Record<string, string>> = {
       "Sua sessão expirou. Faça login novamente para concluir o agendamento.",
     "portal.appointment.error.server.title": "Não foi possível agendar",
     "portal.appointment.error.server.description":
-      "Ocorreu um erro inesperado ao registrar o agendamento. Tente novamente em instantes.",
+      "Não foi possível registrar o agendamento. Tente novamente em instantes; se o problema persistir, fale conosco pelo WhatsApp informando o código abaixo.",
     "portal.appointment.validation.techRequired":
       "Selecione um responsável técnico.",
     "portal.appointment.validation.slotRequired":
@@ -267,6 +267,10 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dashboard.shortcut.newProcess.title": "Novo Projeto",
     "portal.dashboard.shortcut.newProcess.description":
       "Solicite um novo projeto de licenciamento",
+    "portal.dashboard.shortcut.newProcess.mail.subject":
+      "Solicitação de novo projeto",
+    "portal.dashboard.shortcut.newProcess.mail.body":
+      "Olá, equipe Sustentec!\n\nGostaria de solicitar um novo projeto. Seguem os detalhes:\n\n- Empreendimento:\n- Município/UF:\n- Atividade:\n- Objetivo:\n\nAguardo o retorno de vocês.",
     "portal.dashboard.shortcut.pendencias.title": "Resolver Pendências",
     "portal.dashboard.shortcut.pendencias.one":
       "Você tem {count} item pendente",
@@ -315,9 +319,74 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.dashboardTotal": "Total a pagar",
     "portal.payments.emailSubject": "Pagamento em atraso",
 
+    // Portal — header
+    "portal.header.title": "O controle do seu projeto na palma da sua mão.",
+    "portal.header.subtitle":
+      "Portal exclusivo para clientes acompanharem cada etapa do licenciamento ambiental em tempo real.",
+    "portal.header.notifications": "Notificações",
+    "portal.header.notifications.title": "Pendências por projeto",
+    "portal.header.notifications.empty": "Nenhuma pendência no momento",
+    "portal.header.notifications.itemCount.one": "{count} pendência",
+    "portal.header.notifications.itemCount.other": "{count} pendências",
+
     // Portal — process tabs
+    "portal.process.tab.resumo": "Resumo",
+    "portal.process.tab.evolution": "Evolução",
+    "portal.process.tab.documents": "Documentos",
+    "portal.process.tab.pendencias": "Pendências",
     "portal.process.tab.payments": "Pagamentos",
     "portal.process.tab.map": "Mapa",
+
+    // Portal — process detail
+    "portal.process.status.title": "STATUS ATUAL",
+    "portal.process.status.lastUpdate": "Última atualização:",
+    "portal.process.progress.title": "PROGRESSO",
+    "portal.process.progress.caption": "do fluxo concluído",
+    "portal.process.dates.title": "DATAS",
+    "portal.process.dates.start": "Início",
+    "portal.process.dates.due": "Prazo",
+    "portal.process.resumo.title": "RESUMO DO ENQUADRAMENTO",
+    "portal.process.resumo.licenseType": "Tipo de licença",
+    "portal.process.resumo.agency": "Órgão ambiental",
+    "portal.process.resumo.processingTime": "Tempo de tramitação",
+    "portal.process.resumo.impactClass": "Classe de Impacto",
+    "portal.process.resumo.responsibleTech": "Responsável técnico",
+    "portal.process.resumo.licensedActivity": "Atividade licenciada",
+    "portal.process.resumo.tipologia": "Tipologia",
+    "portal.process.resumo.objective": "Objetivo",
+    "portal.process.resumo.observations": "Observações",
+    "portal.process.evolution.title": "EVOLUÇÃO DO PROJETO",
+    "portal.process.evolution.empty":
+      "Ainda não há etapas cadastradas para este projeto.",
+    "portal.process.documents.title": "DOCUMENTOS DO PROJETO",
+    "portal.process.documents.empty.title": "Nenhum documento disponível",
+    "portal.process.documents.empty.description":
+      "Os documentos do seu projeto aparecerão aqui para download.",
+    "portal.process.documents.download": "Baixar",
+    "portal.process.pendencias.title": "PENDÊNCIAS DO PROJETO",
+    "portal.process.pendencias.empty.title": "Nenhuma pendência",
+    "portal.process.pendencias.empty.description":
+      "Este projeto não possui pendências no momento.",
+    "portal.process.pendencias.due": "Prazo: {date}",
+    "portal.process.support.title": "DÚVIDAS OU PRECISA DE SUPORTE?",
+    "portal.process.support.description":
+      "Fale diretamente com a equipe Sustentec Projetos pelo WhatsApp.",
+    "portal.process.support.cta": "Falar agora",
+    "portal.process.transparent.title": "COMUNICAÇÃO TRANSPARENTE",
+    "portal.process.transparent.description":
+      "Todas as atualizações do seu projeto em um só lugar.",
+    "portal.process.transparent.cta": "Mais informações",
+
+    // Portal — task (pendência) badges
+    "portal.task.status.aberta": "Aberta",
+    "portal.task.status.em_andamento": "Em andamento",
+    "portal.task.status.aguardando_cliente": "Aguardando cliente",
+    "portal.task.status.concluida": "Concluída",
+    "portal.task.status.arquivada": "Arquivada",
+    "portal.task.priority.baixa": "Baixa",
+    "portal.task.priority.media": "Média",
+    "portal.task.priority.alta": "Alta",
+    "portal.task.priority.urgente": "Urgente",
 
     // Portal — map
     "portal.map.title": "Localização",
@@ -509,7 +578,7 @@ const translations: Record<Language, Record<string, string>> = {
       "Your session has expired. Please sign in again to finish scheduling.",
     "portal.appointment.error.server.title": "Could not schedule",
     "portal.appointment.error.server.description":
-      "Something went wrong saving your appointment. Please try again shortly.",
+      "We could not save your appointment. Please try again shortly; if the problem persists, contact us on WhatsApp quoting the code below.",
     "portal.appointment.validation.techRequired":
       "Please select a responsible engineer.",
     "portal.appointment.validation.slotRequired":
@@ -594,6 +663,9 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dashboard.shortcut.schedule.description":
       "Book a meeting with your responsible engineer",
     "portal.dashboard.shortcut.newProcess.title": "New Project",
+    "portal.dashboard.shortcut.newProcess.mail.subject": "New project request",
+    "portal.dashboard.shortcut.newProcess.mail.body":
+      "Hello, Sustentec team!\n\nI would like to request a new project. Here are the details:\n\n- Site/Enterprise:\n- City/State:\n- Activity:\n- Objective:\n\nLooking forward to hearing from you.",
     "portal.dashboard.shortcut.newProcess.description":
       "Request a new licensing project",
     "portal.dashboard.shortcut.pendencias.title": "Resolve Pending Items",
@@ -644,9 +716,74 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.dashboardTotal": "Total due",
     "portal.payments.emailSubject": "Overdue payment",
 
+    // Portal — header
+    "portal.header.title": "Your project's progress in the palm of your hand.",
+    "portal.header.subtitle":
+      "Exclusive portal for clients to follow every step of their environmental licensing in real time.",
+    "portal.header.notifications": "Notifications",
+    "portal.header.notifications.title": "Pending items by project",
+    "portal.header.notifications.empty": "No pending items right now",
+    "portal.header.notifications.itemCount.one": "{count} pending item",
+    "portal.header.notifications.itemCount.other": "{count} pending items",
+
     // Portal — process tabs
+    "portal.process.tab.resumo": "Summary",
+    "portal.process.tab.evolution": "Progress",
+    "portal.process.tab.documents": "Documents",
+    "portal.process.tab.pendencias": "Pending items",
     "portal.process.tab.payments": "Payments",
     "portal.process.tab.map": "Map",
+
+    // Portal — process detail
+    "portal.process.status.title": "CURRENT STATUS",
+    "portal.process.status.lastUpdate": "Last update:",
+    "portal.process.progress.title": "PROGRESS",
+    "portal.process.progress.caption": "of the workflow completed",
+    "portal.process.dates.title": "DATES",
+    "portal.process.dates.start": "Start",
+    "portal.process.dates.due": "Deadline",
+    "portal.process.resumo.title": "LICENSING FRAMEWORK SUMMARY",
+    "portal.process.resumo.licenseType": "License type",
+    "portal.process.resumo.agency": "Environmental agency",
+    "portal.process.resumo.processingTime": "Processing time",
+    "portal.process.resumo.impactClass": "Impact class",
+    "portal.process.resumo.responsibleTech": "Technical lead",
+    "portal.process.resumo.licensedActivity": "Licensed activity",
+    "portal.process.resumo.tipologia": "Typology",
+    "portal.process.resumo.objective": "Objective",
+    "portal.process.resumo.observations": "Notes",
+    "portal.process.evolution.title": "PROJECT PROGRESS",
+    "portal.process.evolution.empty":
+      "No milestones recorded for this project yet.",
+    "portal.process.documents.title": "PROJECT DOCUMENTS",
+    "portal.process.documents.empty.title": "No documents available",
+    "portal.process.documents.empty.description":
+      "Your project documents will appear here for download.",
+    "portal.process.documents.download": "Download",
+    "portal.process.pendencias.title": "PROJECT PENDING ITEMS",
+    "portal.process.pendencias.empty.title": "No pending items",
+    "portal.process.pendencias.empty.description":
+      "This project has no pending items at the moment.",
+    "portal.process.pendencias.due": "Due: {date}",
+    "portal.process.support.title": "QUESTIONS OR NEED SUPPORT?",
+    "portal.process.support.description":
+      "Talk directly to the Sustentec Projetos team on WhatsApp.",
+    "portal.process.support.cta": "Talk now",
+    "portal.process.transparent.title": "TRANSPARENT COMMUNICATION",
+    "portal.process.transparent.description":
+      "All your project updates in one place.",
+    "portal.process.transparent.cta": "More information",
+
+    // Portal — task (pending item) badges
+    "portal.task.status.aberta": "Open",
+    "portal.task.status.em_andamento": "In progress",
+    "portal.task.status.aguardando_cliente": "Awaiting client",
+    "portal.task.status.concluida": "Done",
+    "portal.task.status.arquivada": "Archived",
+    "portal.task.priority.baixa": "Low",
+    "portal.task.priority.media": "Medium",
+    "portal.task.priority.alta": "High",
+    "portal.task.priority.urgente": "Urgent",
 
     // Portal — map
     "portal.map.title": "Location",

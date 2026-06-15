@@ -16,7 +16,7 @@ Known gaps and deferred work. Not prioritized — order is logical-grouping, not
 ## Features
 
 4. **Contact form has no backend.** [components/contact-section.tsx](../components/contact-section.tsx) collects name/email/phone/message into `useState` and `console.log`s on submit. Options:
-   - Next.js server action posting to an email service (Resend, Postmark) or a Google Sheet.
+   - Next.js server action sending through the in-house email facade (`lib/email/send.ts`, provider-agnostic — SMTP by default) or posting to a Google Sheet.
    - A third-party form provider (Formspree, Tally).
    - Migrate from plain `useState` to react-hook-form + zod for validation (both are already installed).
 
