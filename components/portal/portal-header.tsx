@@ -7,6 +7,7 @@ import { Bell, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import Image from "next/image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,19 +50,16 @@ export function PortalHeader({
         {/* Logo - visible on desktop */}
         <div className="hidden lg:flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <span className="text-xl font-bold text-foreground">
-                Susten<span className="text-primary">tec</span>
-              </span>
-              <div className="w-8 h-8 border-2 border-primary rounded-lg grid grid-cols-2 gap-0.5 p-1">
-                <div className="bg-primary rounded-sm"></div>
-                <div className="bg-primary rounded-sm"></div>
-                <div className="bg-primary rounded-sm"></div>
-                <div className="bg-primary rounded-sm"></div>
-              </div>
-            </div>
+            <Image
+              src="/sustentec-logo.png"
+              alt="Sustentec"
+              width={408}
+              height={139}
+              priority
+              className="h-9 w-auto"
+            />
           </Link>
-          <span className="text-xs text-muted-foreground">engenharia e meio ambiente</span>
+          <span className="text-xs text-muted-foreground">{t("portal.header.tagline")}</span>
         </div>
 
         {/* Center Title */}

@@ -29,6 +29,7 @@ export const resendProvider: EmailProvider = {
     const result = await getResend().emails.send({
       from: msg.from,
       to: msg.to,
+      ...(msg.cc ? { cc: msg.cc } : {}),
       subject: msg.subject,
       html: msg.html,
     });

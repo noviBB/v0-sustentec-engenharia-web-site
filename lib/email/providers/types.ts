@@ -9,6 +9,8 @@ import 'server-only';
 export interface OutgoingEmail {
   from: string;
   to: string;
+  /** Optional carbon-copy recipient (e.g. the appointment's responsável). */
+  cc?: string;
   subject: string;
   html: string;
 }

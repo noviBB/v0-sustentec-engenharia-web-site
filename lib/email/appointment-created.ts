@@ -30,6 +30,9 @@ function escapeHtml(value: string): string {
 export interface SendAppointmentCreatedEmailParams {
   clientName: string;
   techName: string | null;
+  /** Selected responsável's email, CC'd on the notification. Read with the
+   * service connection because the column is locked to client reads. */
+  techEmail: string | null;
   startsAtIso: string;
   subject: string | null;
   notes: string | null;
@@ -82,6 +85,7 @@ export async function sendAppointmentCreatedEmail(
 
   await sendEmail({
     to: NOTIFY_EMAIL,
+    cc: params.techEmail ?? undefined,
     subject: `Nova reunião agendada — ${clientName}`,
     html,
     audit: {

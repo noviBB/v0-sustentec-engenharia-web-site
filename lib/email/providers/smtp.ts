@@ -47,6 +47,7 @@ export const smtpProvider: EmailProvider = {
     const info = await getTransporter().sendMail({
       from: msg.from,
       to: msg.to,
+      ...(msg.cc ? { cc: msg.cc } : {}),
       subject: msg.subject,
       html: msg.html,
     });
