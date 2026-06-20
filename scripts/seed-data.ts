@@ -149,8 +149,7 @@ const RESPONSIBLE_TECHS: ReadonlyArray<{
   active: boolean;
   email: string | null;
 }> = [
-  // --- Active (the 8 appointment-dropdown techs) -------------------------
-  { slug: 'amanda', display_name: 'Amanda', active: true, email: 'amanda@example.com' },
+  // --- Active (the 7 appointment-dropdown techs from issue #34 item 8) ----
   { slug: 'hilton', display_name: 'Hilton Fontenele', active: true, email: 'hilton@example.com' },
   { slug: 'ivon-benitez', display_name: 'Ivón O. Benítez', active: true, email: 'ivonoristela@example.com' },
   { slug: 'kely', display_name: 'Kely Figueira', active: true, email: 'kely@example.com' },
@@ -159,6 +158,8 @@ const RESPONSIBLE_TECHS: ReadonlyArray<{
   { slug: 'maira', display_name: 'Maíra Benedikt', active: true, email: 'maira@example.com' },
   { slug: 'marcelo', display_name: 'Marcelo Perello', active: true, email: 'marcelo@example.com' },
   // --- Inactive (legacy; kept for existing process FKs) ------------------
+  // Amanda: historical only (CC 24-044 reassigned to Leon); not a current responsável.
+  { slug: 'amanda', display_name: 'Amanda', active: false, email: null },
   { slug: 'victor', display_name: 'Victor', active: false, email: null },
   { slug: 'rafael', display_name: 'Rafael', active: false, email: null },
   { slug: 'guilherme', display_name: 'Guilherme', active: false, email: null },
@@ -641,7 +642,7 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     started_at: '2024-09-12',
     due_date: '2025-04-30',
     finished_at: '2025-04-22',
-    responsible_tech_slug: 'amanda',
+    responsible_tech_slug: 'leon',
     license_types: ['outros'],
     classe_impacto: 'Classe 1',
     tempo_tramitacao: '4 a 6 meses',
