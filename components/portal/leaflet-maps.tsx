@@ -11,7 +11,7 @@
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react"
 
 import type { MapPoint } from "./dashboard-map"
 
@@ -20,11 +20,9 @@ import type { MapPoint } from "./dashboard-map"
 // is already initialized" — crashing the dashboard in `pnpm dev` (prod, with no
 // double-invoke, is unaffected). `MapShell` defers the MapContainer to a
 // post-mount render so it mounts exactly once on a fresh, uniquely-keyed node.
-let mapInstanceSeq = 0
-
-function MapShell({ children }: { children: (key: number) => ReactNode }) {
+function MapShell({ children }: { children: (key: string) => ReactNode }) {
   const [mounted, setMounted] = useState(false)
-  const [instanceKey] = useState(() => (mapInstanceSeq += 1))
+  const instanceKey = useId()
   useEffect(() => {
     setMounted(true)
   }, [])
