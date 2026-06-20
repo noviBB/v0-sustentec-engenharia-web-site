@@ -38,7 +38,9 @@ interface DashboardContentProps {
 }
 
 /** Mailbox monitored by the Sustentec team (matches the seed constant). */
-const NEW_PROJECT_EMAIL = "contato@sustentec-engenharia.com.br"
+const NEW_PROJECT_EMAIL = "leondalmasso@sustentec-engenharia.com.br"
+/** Team inbox kept in copy on new-project requests. */
+const NEW_PROJECT_CC = "contato@sustentec-engenharia.com.br"
 
 export function DashboardContent({
   displayName,
@@ -86,7 +88,9 @@ export function DashboardContent({
     null,
   )
 
-  const newProjectMailto = `mailto:${NEW_PROJECT_EMAIL}?subject=${encodeURIComponent(
+  const newProjectMailto = `mailto:${NEW_PROJECT_EMAIL}?cc=${encodeURIComponent(
+    NEW_PROJECT_CC,
+  )}&subject=${encodeURIComponent(
     t("portal.dashboard.shortcut.newProcess.mail.subject"),
   )}&body=${encodeURIComponent(
     t("portal.dashboard.shortcut.newProcess.mail.body"),

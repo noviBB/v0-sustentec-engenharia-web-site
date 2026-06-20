@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 const INITIAL_STATE: SignInState = { ok: true }
 
@@ -25,13 +26,16 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="text-left">
-              <span className="text-2xl font-bold text-foreground">
-                Susten<span className="text-primary">tec</span>
-              </span>
-              <p className="text-xs text-muted-foreground">{t("portal.login.tagline")}</p>
-            </div>
+          <Link href="/" className="inline-flex flex-col items-center gap-2">
+            <Image
+              src="/sustentec-logo.png"
+              alt="Sustentec"
+              width={408}
+              height={139}
+              priority
+              className="h-14 w-auto"
+            />
+            <p className="text-xs text-muted-foreground">{t("portal.login.tagline")}</p>
           </Link>
         </div>
 

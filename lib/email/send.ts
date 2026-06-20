@@ -43,6 +43,8 @@ function defaultFrom(): string {
 
 export interface SendEmailParams {
   to: string;
+  /** Optional carbon-copy recipient, forwarded to the provider and audited. */
+  cc?: string;
   subject: string;
   html: string;
   from?: string;
@@ -58,6 +60,7 @@ export interface SendEmailParams {
 export async function sendEmail(params: SendEmailParams): Promise<void> {
   const {
     to,
+    cc,
     subject,
     html,
     from = defaultFrom(),
@@ -71,13 +74,14 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
     const { messageId } = await getProvider().send({
       from,
       to,
+      cc,
       subject,
       html,
     });
     await insertAuditLog({
       action: audit.sent,
       entity_type: 'email',
-      after: { to, subject, message_id: messageId },
+      after: { to, cc, subject, message_id: messageId },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -92,7 +96,7 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
     await insertAuditLog({
       action: audit.failed,
       entity_type: 'email',
-      after: { to, subject, error: message },
+      after: { to, cc, subject, error: message },
     }).catch(() => {
       // Avoid masking the original error if audit logging itself fails.
     });

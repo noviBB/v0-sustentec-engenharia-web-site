@@ -4,7 +4,10 @@ import { requireClient } from '@/lib/auth/tenant';
 import { AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
 import { createAppointment } from '@/lib/db/appointments';
-import { getResponsibleTechName } from '@/lib/db/responsibleTechs';
+import {
+  getResponsibleTechEmail,
+  getResponsibleTechName,
+} from '@/lib/db/responsibleTechs';
 import { sendAppointmentCreatedEmail } from '@/lib/email/appointment-created';
 import {
   createAppointmentSchema,
@@ -52,9 +55,15 @@ export async function createAppointmentAction(
         ctx.session,
         data.responsible_tech_id,
       );
+      // Read via the service connection — the `email` column is locked to the
+      // client role by column-level grants.
+      const techEmail = await getResponsibleTechEmail(
+        data.responsible_tech_id,
+      );
       await sendAppointmentCreatedEmail({
         clientName: ctx.client.name,
         techName,
+        techEmail,
         startsAtIso: data.scheduled_for,
         subject: data.subject,
         notes: data.notes ?? null,

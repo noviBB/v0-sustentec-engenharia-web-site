@@ -116,10 +116,6 @@ export function ProcessDetail({
       label: t("portal.process.resumo.licensedActivity"),
       value: process.atividade_licenciada ?? "—",
     },
-    {
-      label: t("portal.process.resumo.tipologia"),
-      value: process.tipologia ?? "—",
-    },
   ]
 
   return (
@@ -147,7 +143,7 @@ export function ProcessDetail({
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">{t("portal.process.status.title")}</CardTitle>
@@ -161,23 +157,6 @@ export function ProcessDetail({
                 <p className="font-semibold text-foreground text-sm leading-tight">{statusBadgeText}</p>
                 <p className="text-xs text-muted-foreground mt-1">{t("portal.process.status.lastUpdate")}</p>
                 <p className="text-xs text-muted-foreground">{formatBRDate(process.updated_at as unknown as string)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">{t("portal.process.progress.title")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 bg-[#e8f5e9] rounded-xl">
-                <TrendingUp className="w-6 h-6 text-[#2d5a27]" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-foreground">{process.progress_percent}%</p>
-                <p className="text-xs text-muted-foreground">{t("portal.process.progress.caption")}</p>
               </div>
             </div>
           </CardContent>
@@ -221,13 +200,6 @@ export function ProcessDetail({
             {t("portal.process.tab.evolution")}
           </TabsTrigger>
           <TabsTrigger
-            value="documentos"
-            className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
-          >
-            <FolderOpen className="w-4 h-4" />
-            {t("portal.process.tab.documents")}
-          </TabsTrigger>
-          <TabsTrigger
             value="pendencias"
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3 relative"
           >
@@ -238,6 +210,13 @@ export function ProcessDetail({
                 {process.pendencias_count}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="documentos"
+            className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
+          >
+            <FolderOpen className="w-4 h-4" />
+            {t("portal.process.tab.documents")}
           </TabsTrigger>
           <TabsTrigger
             value="pagamentos"
@@ -339,66 +318,6 @@ export function ProcessDetail({
           </Card>
         </TabsContent>
 
-        {/* Documentos Tab — download-only (no upload affordance; documents are
-            published by the Sustentec team). */}
-        <TabsContent value="documentos">
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.documents.title")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {documents.length === 0 ? (
-                <div className="text-center py-8">
-                  <Download className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-lg font-medium text-foreground">
-                    {t("portal.process.documents.empty.title")}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t("portal.process.documents.empty.description")}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between gap-4 p-4 border border-gray-100 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-[#e8f5e9] rounded-lg shrink-0">
-                          <FileText className="w-5 h-5 text-[#2d5a27]" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatBRDate(doc.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 text-[#2d5a27] border-[#2d5a27]/30 hover:bg-[#e8f5e9]"
-                      >
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          {t("portal.process.documents.download")}
-                        </a>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* Pendências Tab — open process_tasks (synced from Notion or created
             by the payment-overdue cron). */}
         <TabsContent value="pendencias">
@@ -457,6 +376,66 @@ export function ProcessDetail({
                           )}
                         </p>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documentos Tab — download-only (no upload affordance; documents are
+            published by the Sustentec team). */}
+        <TabsContent value="documentos">
+          <Card className="bg-white">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.documents.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {documents.length === 0 ? (
+                <div className="text-center py-8">
+                  <Download className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-medium text-foreground">
+                    {t("portal.process.documents.empty.title")}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("portal.process.documents.empty.description")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between gap-4 p-4 border border-gray-100 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-[#e8f5e9] rounded-lg shrink-0">
+                          <FileText className="w-5 h-5 text-[#2d5a27]" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatBRDate(doc.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 text-[#2d5a27] border-[#2d5a27]/30 hover:bg-[#e8f5e9]"
+                      >
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          {t("portal.process.documents.download")}
+                        </a>
+                      </Button>
                     </div>
                   ))}
                 </div>

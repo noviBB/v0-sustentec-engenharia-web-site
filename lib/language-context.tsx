@@ -264,7 +264,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dashboard.shortcut.schedule.title": "Agendar Reunião",
     "portal.dashboard.shortcut.schedule.description":
       "Marque uma reunião com seu responsável técnico",
-    "portal.dashboard.shortcut.newProcess.title": "Novo Projeto",
+    "portal.dashboard.shortcut.newProcess.title": "Nova proposta do Projeto",
     "portal.dashboard.shortcut.newProcess.description":
       "Solicite um novo projeto de licenciamento",
     "portal.dashboard.shortcut.newProcess.mail.subject":
@@ -335,7 +335,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.tab.documents": "Documentos",
     "portal.process.tab.pendencias": "Pendências",
     "portal.process.tab.payments": "Pagamentos",
-    "portal.process.tab.map": "Mapa",
+    "portal.process.tab.map": "Localização",
 
     // Portal — process detail
     "portal.process.status.title": "STATUS ATUAL",
@@ -344,7 +344,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.progress.caption": "do fluxo concluído",
     "portal.process.dates.title": "DATAS",
     "portal.process.dates.start": "Início",
-    "portal.process.dates.due": "Prazo",
+    "portal.process.dates.due": "Prazo total estimado",
     "portal.process.resumo.title": "RESUMO DO ENQUADRAMENTO",
     "portal.process.resumo.licenseType": "Tipo de licença",
     "portal.process.resumo.agency": "Órgão ambiental",
@@ -662,7 +662,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.dashboard.shortcut.schedule.title": "Book a Meeting",
     "portal.dashboard.shortcut.schedule.description":
       "Book a meeting with your responsible engineer",
-    "portal.dashboard.shortcut.newProcess.title": "New Project",
+    "portal.dashboard.shortcut.newProcess.title": "New project proposal",
     "portal.dashboard.shortcut.newProcess.mail.subject": "New project request",
     "portal.dashboard.shortcut.newProcess.mail.body":
       "Hello, Sustentec team!\n\nI would like to request a new project. Here are the details:\n\n- Site/Enterprise:\n- City/State:\n- Activity:\n- Objective:\n\nLooking forward to hearing from you.",
@@ -732,7 +732,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.tab.documents": "Documents",
     "portal.process.tab.pendencias": "Pending items",
     "portal.process.tab.payments": "Payments",
-    "portal.process.tab.map": "Map",
+    "portal.process.tab.map": "Location",
 
     // Portal — process detail
     "portal.process.status.title": "CURRENT STATUS",
@@ -741,7 +741,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.progress.caption": "of the workflow completed",
     "portal.process.dates.title": "DATES",
     "portal.process.dates.start": "Start",
-    "portal.process.dates.due": "Deadline",
+    "portal.process.dates.due": "Total estimated deadline",
     "portal.process.resumo.title": "LICENSING FRAMEWORK SUMMARY",
     "portal.process.resumo.licenseType": "License type",
     "portal.process.resumo.agency": "Environmental agency",
