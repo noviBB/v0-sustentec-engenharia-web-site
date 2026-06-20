@@ -11,9 +11,28 @@
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import type { MapPoint } from "./dashboard-map"
+
+// React StrictMode (dev) double-invokes mount effects, which makes react-leaflet
+// try to initialize Leaflet twice on the same DOM node and throw "Map container
+// is already initialized" — crashing the dashboard in `pnpm dev` (prod, with no
+// double-invoke, is unaffected). `MapShell` defers the MapContainer to a
+// post-mount render so it mounts exactly once on a fresh, uniquely-keyed node.
+let mapInstanceSeq = 0
+
+function MapShell({ children }: { children: (key: number) => ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  const [instanceKey] = useState(() => (mapInstanceSeq += 1))
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  if (!mounted) {
+    return <div style={{ height: "100%", width: "100%" }} aria-hidden />
+  }
+  return <>{children(instanceKey)}</>
+}
 
 // Leaflet's default icon paths break under bundlers. Re-point them at the
 // public CDN once, on first import.
@@ -43,20 +62,25 @@ export function SingleMarkerMap({ lat, lng, label }: SingleMarkerMapProps) {
   }, [])
 
   return (
-    <MapContainer
-      center={[lat, lng]}
-      zoom={13}
-      scrollWheelZoom={false}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Marker position={[lat, lng]}>
-        <Popup>{label}</Popup>
-      </Marker>
-    </MapContainer>
+    <MapShell>
+      {(mapKey) => (
+        <MapContainer
+          key={mapKey}
+          center={[lat, lng]}
+          zoom={13}
+          scrollWheelZoom={false}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Marker position={[lat, lng]}>
+            <Popup>{label}</Popup>
+          </Marker>
+        </MapContainer>
+      )}
+    </MapShell>
   )
 }
 
@@ -77,21 +101,26 @@ export function MultiMarkerMap({ points }: MultiMarkerMapProps) {
   }, [points])
 
   return (
-    <MapContainer
-      center={center}
-      zoom={points.length === 1 ? 13 : 10}
-      scrollWheelZoom={false}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {points.map((p) => (
-        <Marker key={p.id} position={[p.lat, p.lng]}>
-          <Popup>{p.label}</Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+    <MapShell>
+      {(mapKey) => (
+        <MapContainer
+          key={mapKey}
+          center={center}
+          zoom={points.length === 1 ? 13 : 10}
+          scrollWheelZoom={false}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {points.map((p) => (
+            <Marker key={p.id} position={[p.lat, p.lng]}>
+              <Popup>{p.label}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      )}
+    </MapShell>
   )
 }
