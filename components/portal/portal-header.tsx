@@ -59,6 +59,7 @@ export function PortalHeader({
               className="h-9 w-auto"
             />
           </Link>
+          <span className="text-xs text-muted-foreground">{t("portal.header.tagline")}</span>
         </div>
 
         {/* Center Title */}

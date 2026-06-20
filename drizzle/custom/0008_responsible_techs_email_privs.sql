@@ -24,6 +24,10 @@
 --    non-sensitive columns. Re-running is a no-op.
 -- ---------------------------------------------------------------------------
 REVOKE SELECT ON public.responsible_techs FROM authenticated;
+-- Defense-in-depth: neither role has a SELECT grant today (0005 grants table
+-- privileges to `authenticated` only, and RLS denies `anon`), but revoking
+-- here guards against any future blanket GRANT re-exposing `email`.
+REVOKE SELECT ON public.responsible_techs FROM anon, PUBLIC;
 GRANT SELECT (id, slug, display_name, active, created_at, updated_at)
   ON public.responsible_techs TO authenticated;
 

@@ -17,8 +17,9 @@ node_modules
 # Worktrees (branches checked out under ./.worktrees/<branch>)
 .worktrees/
 
-# Claude Code (both files local-only; do not commit)
-.claude/
+# Claude Code — local settings stay local; shared skills are committed
+.claude/*
+!.claude/skills/
 
 # autoskills (https://npm.im/autoskills) — local install state
 .agents/

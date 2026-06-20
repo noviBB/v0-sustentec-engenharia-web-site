@@ -320,6 +320,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.emailSubject": "Pagamento em atraso",
 
     // Portal — header
+    "portal.header.tagline": "engenharia e meio ambiente",
     "portal.header.title": "O controle do seu projeto na palma da sua mão.",
     "portal.header.subtitle":
       "Portal exclusivo para clientes acompanharem cada etapa do licenciamento ambiental em tempo real.",
@@ -340,8 +341,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — process detail
     "portal.process.status.title": "STATUS ATUAL",
     "portal.process.status.lastUpdate": "Última atualização:",
-    "portal.process.progress.title": "PROGRESSO",
-    "portal.process.progress.caption": "do fluxo concluído",
     "portal.process.dates.title": "DATAS",
     "portal.process.dates.start": "Início",
     "portal.process.dates.due": "Prazo total estimado",
@@ -352,7 +351,6 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.resumo.impactClass": "Classe de Impacto",
     "portal.process.resumo.responsibleTech": "Responsável técnico",
     "portal.process.resumo.licensedActivity": "Atividade licenciada",
-    "portal.process.resumo.tipologia": "Tipologia",
     "portal.process.resumo.objective": "Objetivo",
     "portal.process.resumo.observations": "Observações",
     "portal.process.evolution.title": "EVOLUÇÃO DO PROJETO",
@@ -717,6 +715,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.emailSubject": "Overdue payment",
 
     // Portal — header
+    "portal.header.tagline": "engineering and environment",
     "portal.header.title": "Your project's progress in the palm of your hand.",
     "portal.header.subtitle":
       "Exclusive portal for clients to follow every step of their environmental licensing in real time.",
@@ -737,8 +736,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — process detail
     "portal.process.status.title": "CURRENT STATUS",
     "portal.process.status.lastUpdate": "Last update:",
-    "portal.process.progress.title": "PROGRESS",
-    "portal.process.progress.caption": "of the workflow completed",
     "portal.process.dates.title": "DATES",
     "portal.process.dates.start": "Start",
     "portal.process.dates.due": "Total estimated deadline",
@@ -749,7 +746,6 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.process.resumo.impactClass": "Impact class",
     "portal.process.resumo.responsibleTech": "Technical lead",
     "portal.process.resumo.licensedActivity": "Licensed activity",
-    "portal.process.resumo.tipologia": "Typology",
     "portal.process.resumo.objective": "Objective",
     "portal.process.resumo.observations": "Notes",
     "portal.process.evolution.title": "PROJECT PROGRESS",
