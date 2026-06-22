@@ -4,10 +4,10 @@ import { inArray } from 'drizzle-orm';
 import { CronRouteError, requireCronAuth } from '@/app/api/cron/_shared/auth';
 import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
-import { getClientById } from '@/lib/db/clients';
-import { db } from '@/lib/db';
-import { markOverdue } from '@/lib/db/payments';
-import { ensurePaymentOverdueTask } from '@/lib/db/tasks';
+import { getClientById } from '@/modules/clients/clients.repo';
+import { getDbService } from '@/lib/db';
+import { markOverdue } from '@/modules/payments/payments.repo';
+import { ensurePaymentOverdueTask } from '@/modules/tasks/tasks.repo';
 import { processes } from '@/lib/db/schema';
 import { sendPaymentOverdueEmail } from '@/lib/email/payment-overdue';
 
@@ -32,6 +32,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request): Promise<Response> {
   const fail = requireCronAuth(request);
   if (fail) return fail;
+
+  const db = getDbService();
 
   try {
     const flipped = await markOverdue();

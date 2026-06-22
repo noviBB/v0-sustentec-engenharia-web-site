@@ -185,19 +185,3 @@ export function getDb(
     },
   };
 }
-
-// ---------------------------------------------------------------------------
-// Deprecated singleton alias.
-//
-// Pre-#22 every helper imported `db` from this file and used the service
-// connection unconditionally. The factory above replaces that — portal-facing
-// helpers now thread a `session` and call `dbRls`; system helpers explicitly
-// call `getDbService()`.
-//
-// The `db` export stays so any caller we missed still works. New code MUST
-// pick a mode explicitly. A follow-up will delete this alias once the audit
-// confirms no caller outside `lib/db/*` still uses it.
-//
-// @deprecated Use `getDbService()` / `dbRls(session, ...)` / `dbAnon(...)`.
-// ---------------------------------------------------------------------------
-export const db: DrizzleClient = drizzleClient;

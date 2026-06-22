@@ -2,14 +2,14 @@ import 'server-only';
 
 import { AuditAction } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
-import { getClientById } from '@/lib/db/clients';
+import { getClientById } from '@/modules/clients/clients.repo';
 import {
   getProcessByNotionPageId,
   getProcessForExport,
   listProcessIdsForClient,
   listProcessSyncItemsForClient,
   type ProcessSyncItem,
-} from '@/lib/db/processes';
+} from '@/modules/processes/processes.repo';
 import { createNotionClient, type NotionClient } from './client';
 import { exportToNotion } from './export';
 import { parseProcess, taskRelationIds } from './property-map';

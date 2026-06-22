@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
 import { AuthProvider } from "@/lib/auth-context"
 import { sessionForUser } from "@/lib/auth/tenant"
-import { createClient } from "@/lib/supabase/server"
-import { getClientForUser } from "@/lib/db/tenants"
-import { getProfileByUserId } from "@/lib/db/profiles"
+import { authPort } from "@/lib/auth/port"
+import { getClientForUser } from "@/lib/auth/tenant"
+import { getProfileByUserId } from "@/lib/auth/tenant"
 
 /**
  * Protected portal layout.
@@ -14,7 +14,7 @@ import { getProfileByUserId } from "@/lib/db/profiles"
  * should re-fetch the user.
  *
  * Order of checks:
- *  1. `supabase.auth.getUser()` — middleware already guards the route, but
+ *  1. `authPort.getCurrentUser()` — middleware already guards the route, but
  *     a server component must NEVER trust a client cookie blindly.
  *  2. Build a `session` from the authenticated user — this is what every
  *     RLS-aware repository call needs.
@@ -28,10 +28,7 @@ export default async function PortalLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await authPort.getCurrentUser()
 
   if (!user) {
     redirect("/portal/login")

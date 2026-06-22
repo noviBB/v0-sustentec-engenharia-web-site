@@ -1,14 +1,14 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { HeroSection } from "@/components/hero-section"
-import { StatsSection } from "@/components/stats-section"
-import { ServicesSection } from "@/components/services-section"
-import { TrackerSection } from "@/components/tracker-section"
-import { ValuesSection } from "@/components/values-section"
-import { SupportSection } from "@/components/support-section"
-import { ContactSection } from "@/components/contact-section"
-import { Footer } from "@/components/footer"
+import { Header } from "@/modules/marketing/components/header"
+import { HeroSection } from "@/modules/marketing/components/hero-section"
+import { StatsSection } from "@/modules/marketing/components/stats-section"
+import { ServicesSection } from "@/modules/marketing/components/services-section"
+import { TrackerSection } from "@/modules/marketing/components/tracker-section"
+import { ValuesSection } from "@/modules/marketing/components/values-section"
+import { SupportSection } from "@/modules/marketing/components/support-section"
+import { ContactSection } from "@/modules/marketing/components/contact-section"
+import { Footer } from "@/modules/marketing/components/footer"
 
 export default function Home() {
   return (

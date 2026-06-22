@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { signOut } from "@/app/portal/actions"
-import type { ProcessRow } from "@/lib/db/processes"
+import type { ProcessRow } from "@/modules/processes/processes.repo"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/lib/language-context"
 import {

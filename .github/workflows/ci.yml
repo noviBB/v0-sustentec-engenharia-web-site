@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---- Fast, no-DB checks (run in parallel) --------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # next.config.mjs sets typescript.ignoreBuildErrors, so type-check here.
+      - run: pnpm exec tsc --noEmit
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm test
+
+  # ---- Integration: Vitest against a real Postgres -------------------------
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: supabase/postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm test:int
+
+  # ---- Production build (artifact reused by e2e) ---------------------------
+  build:
+    runs-on: ubuntu-latest
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm build
+      - name: Upload .next build
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next
+          retention-days: 1
+
+  # ---- End-to-end: Playwright against the local Supabase stack -------------
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      # Email -> Inbucket (the SMTP sink the local Supabase stack runs).
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: '54325'
+      EMAIL_FROM: ci@example.com
+      # Local stack endpoints.
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      # Anon + service-role keys come from repo secrets. When unset, the
+      # "Resolve Supabase keys" step below derives them from the running local
+      # stack — so no key literal is ever committed to this file.
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SERVICE_ROLE_KEY }}
+      CRON_SECRET: test-cron-secret
+      # UPSTASH_* intentionally left unset — the rate limiter degrades to allow.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase stack
+        run: supabase start
+
+      - name: Resolve Supabase keys (secret, else from local stack)
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"          # defines ANON_KEY / SERVICE_ROLE_KEY
+          anon="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-$ANON_KEY}"
+          svc="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          echo "::add-mask::$anon"
+          echo "::add-mask::$svc"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$anon" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
+
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm seed:auth
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright (chromium)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Download .next build
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+
+      - name: Run Playwright tests
+        run: pnpm exec playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

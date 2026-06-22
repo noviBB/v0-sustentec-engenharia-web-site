@@ -20,8 +20,14 @@ const adminHeaders: Record<string, string> = {
 };
 
 const seedUsers: ReadonlyArray<{ email: string; password: string }> = [
-  { email: 'cliente@exemplo.com', password: '123456' },
-  { email: 'victorfr2026ok@gmail.com', password: 'sustentec1' },
+  {
+    email: process.env.SEED_CLIENTE_EMAIL ?? 'cliente@exemplo.com',
+    password: process.env.SEED_CLIENTE_PASSWORD ?? '123456',
+  },
+  {
+    email: process.env.SEED_VICTOR_EMAIL ?? 'victorfr2026ok@gmail.com',
+    password: process.env.SEED_VICTOR_PASSWORD ?? 'local-dev-victor',
+  },
 ];
 
 async function findUserByEmail(email: string): Promise<AuthUser | null> {

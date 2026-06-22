@@ -1,7 +1,7 @@
 import 'server-only';
 
-import type { Client } from '@/lib/db/clients';
-import type { PaymentRow } from '@/lib/db/payments';
+import type { Client } from '@/modules/clients/clients.repo';
+import type { PaymentRow } from '@/modules/payments/payments.repo';
 import { sendEmail } from './send';
 
 const brl = new Intl.NumberFormat('pt-BR', {
