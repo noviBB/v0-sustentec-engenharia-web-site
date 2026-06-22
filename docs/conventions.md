@@ -12,7 +12,7 @@ Closed sets of values (result codes, event names, statuses) **MUST** be a TypeSc
 
 - App-level codes live in [lib/constants/](../lib/constants/): `ResultCode` and `NotionRouteError` in [result-codes.ts](../lib/constants/result-codes.ts); `AuditEvent` and `AuditAction` in [audit-events.ts](../lib/constants/audit-events.ts).
 - Use **string enums** (members assigned string values) — they are plain strings at runtime, so a returned `code` stays serialization-safe across the server-action → client boundary and a component can compare it with `=== ResultCode.DoubleBooked`. Do **not** use numeric enums.
-- An ESLint `no-restricted-syntax` guard in [eslint.config.mjs](../eslint.config.mjs) flags `... as const` inside `lib/constants/**`, `lib/actions/**`, and `lib/schemas/**` to keep the rule enforceable.
+- An ESLint `no-restricted-syntax` guard in [eslint.config.mjs](../eslint.config.mjs) flags `... as const` inside `lib/constants/**` and the modules' `*.schema.ts` / `*.controller.ts` files to keep the rule enforceable.
 - Drizzle `pgEnum` in [lib/db/enums.ts](../lib/db/enums.ts) is the correct tool for **Postgres column** enums and is out of scope for this rule.
 
 ## React / Next.js
@@ -96,23 +96,27 @@ The adapter is **bidirectional**:
 
 > Live write-back is only exercised with a real `NOTION_INTEGRATION_TOKEN`. The reverse mapping itself is verified by fixtures in [lib/notion/__tests__/export.test.ts](../lib/notion/__tests__/export.test.ts).
 
-## Repository architecture
+## Module & layer architecture
 
-Data access is layered. **Only repositories touch the Drizzle `db` instance.**
+Business code is organized by **feature module** under [modules/](../modules/) (`marketing`, `clients`, `processes`, `appointments`, `payments`, `messages`, `documents`, `milestones`, `tasks`). Each module owns a strict `controller → service → repository` layering:
 
 ```
-services  (server actions, the Notion adapter, route handlers)
-   │  call repository functions — never `db` directly
+controller  (modules/<d>/<d>.controller.ts — 'use server' action, or app/api/**/route.ts)
+   │  auth (requireClient) + Zod parse; calls ONE service; maps domain result -> ResultCode
    ▼
-repositories  (lib/db/*: clients, processes, tenants, auditLog, messages, …)
-   │  the ONLY modules that import `db`
+service     (modules/<d>/<d>.service.ts — framework-free; returns a domain result { kind })
+   │  orchestrates repository calls, email, audit; no next/*, no Supabase, no DB
    ▼
-db  (lib/db/index.ts — the single Drizzle instance)
+repository  (modules/<d>/<d>.repo.ts — the ONLY layer that imports getDbService/dbRls/dbAnon)
+   ▼
+db core     (lib/db/index.ts — the single Drizzle instance + dbRls/dbAnon/getDbService)
 ```
 
-- **Repositories** live in [lib/db/](../lib/db/) (one file per aggregate: `clients.ts`, `processes.ts`, `tenants.ts`, `auditLog.ts`, …). They `import { db } from './index'` and expose typed read/write functions. They never import auth/Supabase concerns.
-- **Services** (`lib/actions/*`, `lib/notion/adapter.ts`, route handlers) compose repository calls. They must not `import { db }` or call `db.select/insert/update/transaction` directly.
-- **Auth** (`lib/auth/*`) bridges Supabase identity to the tenant model. `requireClient` is an auth concern, but its DB read delegates to the `lib/db/tenants.ts` repository (`getClientForUser`) — it does not touch `db`.
-- **Exception:** [lib/notion/repository.ts](../lib/notion/repository.ts) is itself a repository — it owns the multi-table transactional Notion *import* writer and legitimately uses `db.transaction`. It lives under `lib/notion/` (not `lib/db/`) because it is internal to the adapter boundary, but it plays the repository role.
+- **Repositories** are `modules/<domain>/<domain>.repo.ts`. They import `getDbService`/`dbRls`/`dbAnon` from `@/lib/db` and the schema from `@/lib/db/schema`. They never import auth/Supabase/email/React. The deprecated `db` singleton has been **removed** — use the mode helpers.
+- **Services** are framework-free and unit-tested with in-memory fake repos.
+- **Controllers** are the only framework entrypoints; they own auth + Zod + `ResultCode` mapping.
+- **Shared, NOT modular:** the DB core (`lib/db/index.ts` + `schema`/`relations`/`enums`/`views`) and the cross-cutting tenancy/profile/audit repos (`lib/db/tenants.ts`, `profiles.ts`, `auditLog.ts`).
+- **Auth** (`lib/auth/*`) bridges identity (via the `AuthPort` seam) to the tenant model; `requireClient`/`getClientForUser`/`getProfileByUserId` are the surface pages/controllers use — they never touch `db` directly.
+- **Exception:** [lib/notion/repository.ts](../lib/notion/repository.ts) is the Notion adapter's own transactional writer (uses `getDbService()` transactions); it lives under the adapter boundary but plays the repository role.
 
-**Invariant (grep):** outside `lib/db/*` and `lib/notion/repository.ts`, no service module imports `db` or calls `db.{insert,select,update,transaction}`.
+**Enforced** by `no-restricted-imports` in [eslint.config.mjs](../eslint.config.mjs): view code can't import the DB/Supabase-server at runtime (type-only allowed); the `db` name is banned; `*.service.ts` can't import `next/*` or Supabase. Every controller/service/repo file starts with `import 'server-only'`.

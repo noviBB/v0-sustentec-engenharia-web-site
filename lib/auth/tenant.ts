@@ -1,29 +1,35 @@
 import 'server-only';
-import type { User } from '@supabase/supabase-js';
 import { getClientForUser, type Client } from '@/lib/db/tenants';
+import { getProfileByUserId, type Profile } from '@/lib/db/profiles';
 import type { SessionLike } from '@/lib/db';
-import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { authPort } from '@/lib/auth/port';
+import type { AuthUser } from '@/lib/auth/port';
 
 /**
- * Auth concern: bridges Supabase auth identity to the application's tenant
- * model. The actual tenant DB read lives in `lib/db/tenants.ts`; this module
- * adds the auth-aware `requireClient` helper.
+ * Auth concern: bridges the auth identity (via the `AuthPort` seam) to the
+ * application's tenant model. The actual tenant DB read lives in
+ * `lib/db/tenants.ts`; this module adds the auth-aware `requireClient` helper.
  *
  * Layering: services/auth → repositories (`lib/db/*`) → `db`. Only the
  * repository touches `db`. See docs/conventions.md.
+ *
+ * This module no longer imports `@supabase/*` or `@/lib/supabase/server`
+ * directly — all auth flows through `authPort` (the Supabase adapter), so the
+ * provider is swappable / fakeable without editing call sites.
  */
-export { getClientForUser };
-export type { Client };
+export { getClientForUser, getProfileByUserId };
+export type { Client, Profile };
 
 export type RequireClientResult =
-  | { ok: true; user: User; client: Client; session: SessionLike }
+  | { ok: true; user: AuthUser; client: Client; session: SessionLike }
   | { ok: false; code: 'unauthorized' };
 
 /**
  * Builds the JWT-claims object that `dbRls(session, ...)` propagates into
- * `request.jwt.claims`. Exported so callers that need a session for an
- * RLS-scoped read but already have a `User` in hand (e.g. portal RSCs)
- * can build one without re-running `auth.getUser()`.
+ * `request.jwt.claims`. Exported (now a thin alias over `authPort.toClaims`)
+ * so callers that need a session for an RLS-scoped read but already have a
+ * user in hand (e.g. portal RSCs) can build one without re-running
+ * `getCurrentUser()`.
  *
  * Only the columns RLS policies look at are populated — `auth.uid()` reads
  * `sub`, `auth.role()` reads `role`. The role is hard-coded to
@@ -31,12 +37,8 @@ export type RequireClientResult =
  * transaction; the JWT `role` field would override `auth.role()` if it
  * disagreed, so we keep them in sync.
  */
-export function sessionForUser(user: Pick<User, 'id' | 'email'>): SessionLike {
-  return {
-    sub: user.id,
-    email: user.email ?? undefined,
-    role: 'authenticated',
-  };
+export function sessionForUser(user: AuthUser): SessionLike {
+  return authPort.toClaims(user);
 }
 
 /**
@@ -50,14 +52,11 @@ export function sessionForUser(user: Pick<User, 'id' | 'email'>): SessionLike {
  * `lib/db/tenants.ts` repository — this wrapper never touches `db` directly.
  */
 export async function requireClient(): Promise<RequireClientResult> {
-  const supabase = await createSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await authPort.getCurrentUser();
   if (!user) {
     return { ok: false, code: 'unauthorized' };
   }
-  const session = sessionForUser(user);
+  const session = authPort.toClaims(user);
   const client = await getClientForUser(session, user.id);
   if (!client) {
     return { ok: false, code: 'unauthorized' };

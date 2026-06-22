@@ -1,0 +1,20 @@
+name: Setup
+description: >-
+  Install pnpm + Node (with pnpm cache) and run a frozen-lockfile install.
+  The caller is responsible for `actions/checkout` before invoking this.
+
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

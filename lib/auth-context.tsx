@@ -1,8 +1,8 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import type { User } from "@supabase/supabase-js"
-import { createClient } from "@/lib/supabase/client"
+import type { AuthUser } from "@/lib/auth/port"
+import { clientAuthPort } from "@/lib/auth/adapters/supabase.client"
 import type { Profile } from "@/lib/db/profiles"
 import type { Client } from "@/lib/db/tenants"
 
@@ -16,7 +16,7 @@ import type { Client } from "@/lib/db/tenants"
  * just race with the server-resolved state.
  */
 export type PortalContext = {
-  user: User
+  user: AuthUser
   profile: Profile
   client: Client
 }
@@ -35,26 +35,22 @@ export function AuthProvider({
   initial: PortalContext
   children: ReactNode
 }) {
-  const [user, setUser] = useState<User>(initial.user)
+  const [user, setUser] = useState<AuthUser>(initial.user)
 
   useEffect(() => {
-    const supabase = createClient()
-
     // Subscribe so client-side reactivity (e.g. another tab signs out)
-    // still works. We deliberately do NOT call `getUser()` on mount —
+    // still works. We deliberately do NOT call `getCurrentUser()` on mount —
     // the server already resolved the user and passed it in via `initial`.
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          setUser(session.user)
-        }
-        // No-op on SIGNED_OUT: middleware will redirect on the next nav.
-      },
-    )
+    // Auth lives behind the port; the browser adapter wraps Supabase's
+    // `onAuthStateChange` and returns an unsubscribe fn.
+    const unsubscribe = clientAuthPort.onAuthStateChange!((nextUser) => {
+      if (nextUser) {
+        setUser(nextUser)
+      }
+      // No-op on sign-out: middleware will redirect on the next nav.
+    })
 
-    return () => {
-      subscription.subscription.unsubscribe()
-    }
+    return unsubscribe
   }, [])
 
   const displayName = initial.profile.display_name ?? user.email ?? ""

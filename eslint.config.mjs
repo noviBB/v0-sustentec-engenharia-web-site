@@ -83,12 +83,105 @@ export default tseslint.config(
       ],
     },
   },
+  // Block A — no runtime DB / Supabase server clients in components and
+  // pages/layouts. The data layer lives behind controllers; view code should
+  // only import row TYPES (allowTypeImports keeps `import type` legal) and use
+  // the auth port instead of a Supabase server client. WARN for now — the
+  // Integrator flips these to error once callers have migrated.
+  {
+    files: [
+      'components/**/*.{ts,tsx}',
+      'modules/**/components/**/*.{ts,tsx}',
+      'app/**/page.tsx',
+      'app/**/layout.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/lib/db', '@/lib/db/*', 'drizzle-orm', 'drizzle-orm/*', 'postgres'],
+              allowTypeImports: true,
+              message:
+                'Do not access the database from view code. Import row TYPES from ' +
+                '`@/modules/<domain>` and do data access in a controller.',
+            },
+            {
+              group: ['@/lib/supabase/server', '@/lib/supabase/middleware'],
+              allowTypeImports: true,
+              message:
+                'Do not create a Supabase server client in view code. Use the auth ' +
+                'port instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Block B — the deprecated `db` singleton stays dead. It was removed from
+  // `@/lib/db`; importing the `db` name must not come back. WARN for now.
+  {
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['lib/db/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/lib/db',
+              importNames: ['db'],
+              message:
+                'The deprecated `db` singleton was removed. Use ' +
+                'getDbService()/dbRls()/dbAnon().',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Block C — services stay framework-free. A `*.service.ts` must not reach for
+  // Next.js request primitives or a Supabase client; those belong in the
+  // controller/adapter layer. WARN for now.
+  {
+    files: ['modules/**/*.service.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'next/headers',
+              message:
+                'Services must be framework-free. Read request context in a ' +
+                'controller and pass it in.',
+            },
+            {
+              name: 'next/navigation',
+              message:
+                'Services must be framework-free. Handle navigation in a ' +
+                'controller/route, not the service.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@/lib/supabase/*'],
+              message:
+                'Services must be framework-free. Inject the data/auth port ' +
+                'instead of importing a Supabase client.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Closed sets of values (result codes, event names, statuses) MUST be real
   // string `enum`s — never an `as const` object literal masquerading as one.
   // See docs/conventions.md. This guard flags `... as const` in the modules
   // that own those sets so the rule stays enforceable.
   {
-    files: ['lib/constants/**', 'lib/actions/**', 'lib/schemas/**'],
+    files: ['lib/constants/**', 'modules/**/*.schema.ts', 'modules/**/*.controller.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

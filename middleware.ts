@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { refreshSession } from '@/lib/auth/adapters/supabase.server';
 
 /**
  * Top-level Next.js middleware.
@@ -11,9 +11,10 @@ import { updateSession } from '@/lib/supabase/middleware';
  *     `/portal/login`) to `/portal/login`.
  *  3. Redirect already-authenticated visitors of `/portal/login` to `/portal`.
  *
- * The session refresh dance lives in `lib/supabase/middleware.ts` so the
- * cookie passthrough logic stays in one place — this file only owns the
- * routing decisions.
+ * The session refresh dance lives behind the auth adapter
+ * (`lib/auth/adapters/supabase.server#refreshSession`, which wraps
+ * `lib/supabase/middleware`) so the cookie passthrough logic stays in one
+ * place — this file only owns the routing decisions.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,7 +24,7 @@ export async function middleware(request: NextRequest) {
   // Marketing site is unaffected.
   if (!isPortal) return NextResponse.next({ request });
 
-  const { response, user } = await updateSession(request);
+  const { response, user } = await refreshSession(request);
 
   if (!user && !isLogin) {
     const url = request.nextUrl.clone();

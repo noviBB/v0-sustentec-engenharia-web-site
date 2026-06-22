@@ -3,10 +3,12 @@ import 'server-only';
 import { and, eq, isNotNull, isNull, max } from 'drizzle-orm';
 
 import { AuditAction } from '@/lib/constants/audit-events';
-import { db } from '@/lib/db';
+import { getDbService } from '@/lib/db';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { clients, processes } from '@/lib/db/schema';
 import { syncClient } from './adapter';
+
+const db = getDbService();
 
 /**
  * Cron orchestrator for the Notion -> DB incremental sync.

@@ -8,7 +8,8 @@ __v0_jsx-dev-runtime.ts
 
 # Environment variables
 .env*.local
-
+!.env*.example
+.env
 # Common ignores
 node_modules
 .next/
@@ -17,9 +18,9 @@ node_modules
 # Worktrees (branches checked out under ./.worktrees/<branch>)
 .worktrees/
 
-# Claude Code — local settings stay local; shared skills are committed
-.claude/*
-!.claude/skills/
+# Claude Code (both files local-only; do not commit)
+.claude/
+.playwright-mcp/
 
 # autoskills (https://npm.im/autoskills) — local install state
 .agents/
@@ -32,3 +33,9 @@ drizzle/.snapshots/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# e2e — generated auth storage states + Playwright artifacts
+e2e/storage/
+/playwright-report/
+/test-results/
+/.env.test

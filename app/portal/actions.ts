@@ -1,7 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { authPort } from "@/lib/auth/port"
 
 export type SignInState = {
   ok: boolean
@@ -26,10 +26,9 @@ export async function signIn(
     return { ok: false, code: "invalid_credentials" }
   }
 
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const result = await authPort.signIn(email, password)
 
-  if (error) {
+  if (!result.ok) {
     // Treat every auth-provider failure as invalid credentials at the
     // boundary — we don't want to disclose whether an email exists.
     return { ok: false, code: "invalid_credentials" }
@@ -49,14 +48,7 @@ export async function signIn(
 export async function signOut() {
   let failed = false
   try {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      failed = true
-      console.error(
-        JSON.stringify({ event: "signOut.failed", error: error.message }),
-      )
-    }
+    await authPort.signOut()
   } catch (error) {
     failed = true
     console.error(

@@ -6,10 +6,12 @@ import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 
 import { config } from '../lib/config';
 import { AuditAction } from '../lib/constants/audit-events';
-import { db } from '../lib/db';
+import { getDbService } from '../lib/db';
 import { insertAuditLog } from '../lib/db/auditLog';
 import { clients, processes } from '../lib/db/schema';
 import { syncClient } from '../lib/notion';
+
+const db = getDbService();
 
 /**
  * Initial Notion -> DB migration CLI (issue #12).
@@ -177,7 +179,7 @@ async function runWithRollback<T>(thunk: () => Promise<T>): Promise<T> {
     return result as T;
   } catch (e: unknown) {
     if (e && typeof e === 'object' && '__rollback' in e) {
-      return (e as { value: T }).value;
+      return (e as unknown as { value: T }).value;
     }
     throw e;
   } finally {

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 
-import { db } from '@/lib/db';
+import { getDbService } from '@/lib/db';
 import {
   processes,
   processLicenseTypes,
@@ -14,6 +14,8 @@ import {
 } from '@/lib/db/schema';
 import { foldDiacritics } from './parsers';
 import type { NotionSyncError, ParsedProcess } from './types';
+
+const db = getDbService();
 
 /**
  * Drizzle write layer for the Notion adapter. Operates in "service mode" via

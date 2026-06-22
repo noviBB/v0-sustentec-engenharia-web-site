@@ -4,21 +4,15 @@ Known gaps and deferred work. Not prioritized — order is logical-grouping, not
 
 ## Tooling
 
-1. **Lint is broken.** [package.json](../package.json) has `"lint": "eslint ."` but `eslint` is not a devDependency and no config file exists. To fix: add `eslint`, `eslint-config-next`, and create `eslint.config.mjs` (flat config — Next.js 16 expects it). Then re-enable lint checks at build time if desired (currently no `eslint.ignoreDuringBuilds` flag is set; we just don't have lint running at all).
+1. ~~**Lint is broken.**~~ **Done.** ESLint flat config in [eslint.config.mjs](../eslint.config.mjs); `pnpm lint` works and enforces the module/auth import boundaries.
 
-2. **No test harness.** Choose one of:
-   - **Vitest** + Testing Library for unit / component tests.
-   - **Playwright** for end-to-end.
-   - Or both. Recommended starting point: Vitest for `t()` lookups and component smoke tests, Playwright if the site grows beyond marketing.
+2. ~~**No test harness.**~~ **Done.** Vitest (unit + integration projects) and Playwright e2e are configured. See the "Testing" section in [CLAUDE.md](../CLAUDE.md).
 
-3. **No CI.** No `.github/workflows/`. Once lint/tests exist, wire a PR check.
+3. ~~**No CI.**~~ **Done.** [.github/workflows/ci.yml](../.github/workflows/ci.yml) runs lint, typecheck, unit, integration, build, and e2e on every PR.
 
 ## Features
 
-4. **Contact form has no backend.** [components/contact-section.tsx](../components/contact-section.tsx) collects name/email/phone/message into `useState` and `console.log`s on submit. Options:
-   - Next.js server action sending through the in-house email facade (`lib/email/send.ts`, provider-agnostic — SMTP by default) or posting to a Google Sheet.
-   - A third-party form provider (Formspree, Tally).
-   - Migrate from plain `useState` to react-hook-form + zod for validation (both are already installed).
+4. ~~**Contact form has no backend.**~~ **Done.** The contact form is a feature module (`modules/marketing`) with a server-action controller → service → anon-mode repo (`insertContactSubmission`), Zod validation, Upstash rate-limiting, and audit logging.
 
 5. **Persist language choice.** The header switcher resets to PT on every refresh. Persist to `localStorage` (or a cookie if we want SSR awareness) and update `<html lang>` reactively.
 

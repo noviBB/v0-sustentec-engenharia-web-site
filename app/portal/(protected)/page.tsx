@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation"
 import { sessionForUser } from "@/lib/auth/tenant"
-import { createClient } from "@/lib/supabase/server"
-import { getClientForUser } from "@/lib/db/tenants"
-import { listBuckets } from "@/lib/db/processes"
+import { authPort } from "@/lib/auth/port"
+import { getClientForUser } from "@/lib/auth/tenant"
+import { listBuckets } from "@/modules/processes/processes.repo"
 import {
   countUnreadForClient,
   listMessagesForClient,
-} from "@/lib/db/messages"
-import { listPaymentsByClient } from "@/lib/db/payments"
-import { listActiveResponsibleTechs } from "@/lib/db/responsibleTechs"
-import { listMilestonesForClient } from "@/lib/db/milestones"
-import { listTasksForClient } from "@/lib/db/tasks"
-import { listDocumentsForClient } from "@/lib/db/documents"
+} from "@/modules/messages/messages.repo"
+import { listPaymentsByClient } from "@/modules/payments/payments.repo"
+import { listActiveResponsibleTechs } from "@/modules/appointments/responsible-techs.repo"
+import { listMilestonesForClient } from "@/modules/milestones/milestones.repo"
+import { listTasksForClient } from "@/modules/tasks/tasks.repo"
+import { listDocumentsForClient } from "@/modules/documents/documents.repo"
 import { PortalShell } from "@/components/portal/portal-shell"
 
 /**
@@ -25,10 +25,7 @@ import { PortalShell } from "@/components/portal/portal-shell"
  * the JWT-claims object every repository helper threads to `dbRls`.
  */
 export default async function PortalPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await authPort.getCurrentUser()
   if (!user) {
     redirect("/portal/login")
   }
