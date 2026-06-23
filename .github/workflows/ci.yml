@@ -52,17 +52,34 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
       DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      # Only to satisfy env validation in scripts/config — the DB connection
+      # itself uses DATABASE_URL. Keys come from repo secrets (see e2e job).
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_ANON_KEY }}
+      CRON_SECRET: test-cron-secret
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: pnpm db:migrate
-      - run: pnpm db:seed
+      # No db:seed here — it calls the Supabase GoTrue admin API (no auth server
+      # in this bare-Postgres job). The RLS integration tests self-provision.
       - run: pnpm test:int
 
   # ---- Production build (artifact reused by e2e) ---------------------------
   build:
     runs-on: ubuntu-latest
     needs: typecheck
+    env:
+      # `next build` collects page data for the API routes, which load the
+      # config module and validate env. These only need to be present/valid —
+      # dynamic routes don't open a DB connection at build. Keys via secrets.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SERVICE_ROLE_KEY }}
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      CRON_SECRET: test-cron-secret
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
