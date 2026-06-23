@@ -85,12 +85,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: pnpm build
-      - name: Upload .next build
-        uses: actions/upload-artifact@v4
-        with:
-          name: next-build
-          path: .next
-          retention-days: 1
 
   # ---- End-to-end: Playwright against the local Supabase stack -------------
   e2e:
@@ -151,12 +145,8 @@ jobs:
       - name: Install Playwright (chromium)
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Download .next build
-        uses: actions/download-artifact@v4
-        with:
-          name: next-build
-          path: .next
-
+      # No artifact download — the Playwright webServer runs `pnpm build &&
+      # pnpm start`, so it builds .next itself with the resolved env.
       - name: Run Playwright tests
         run: pnpm exec playwright test
 

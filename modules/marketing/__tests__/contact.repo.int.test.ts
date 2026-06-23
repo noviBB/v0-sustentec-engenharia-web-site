@@ -4,9 +4,11 @@ import { describeIntegration } from '@/modules/_test-support/integration';
 
 /**
  * RLS invariant (marketing SPEC §"Integration (anon RLS)"):
- *   - role `anon` MAY INSERT into contact_submissions (WITH CHECK true),
- *   - role `anon` may NOT SELECT — there is no anon read policy, so an anon
- *     SELECT returns zero rows even for rows that exist.
+ *   - role `anon` MAY INSERT into contact_submissions (INSERT grant + WITH
+ *     CHECK true), but the insert is write-only — no RETURNING.
+ *   - role `anon` may NOT SELECT: there is no SELECT grant for anon (only a
+ *     staff SELECT policy), so an anon SELECT is denied at the privilege level
+ *     (throws "permission denied"), not merely filtered to zero rows.
  *
  * All DB code is dynamically imported so this file never loads `@/lib/db`
  * (which throws on missing server env) when the suite is skipped.
@@ -24,24 +26,39 @@ afterAll(async () => {
 });
 
 describeIntegration('contact.repo (anon RLS)', () => {
-  it('anon may INSERT a submission', async () => {
+  it('anon may INSERT a submission (write-only)', async () => {
     const { insertContactSubmission } = await import(
       '@/modules/marketing/contact.repo'
     );
-    const result = await insertContactSubmission({
-      name: 'Anon Tester',
-      email: `anon-${Date.now()}@example.com`,
-      phone: null,
-      message: 'integration insert',
-      ip_hash: null,
-      source: 'marketing_site',
-      user_agent: null,
-    });
-    expect(result.id).toBeTruthy();
-    createdIds.push(result.id as string);
+    const { getDbService } = await import('@/lib/db');
+    const { contactSubmissions } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    const email = `anon-${Date.now()}@example.com`;
+    // The anon insert must succeed (and return nothing — it's write-only).
+    await expect(
+      insertContactSubmission({
+        name: 'Anon Tester',
+        email,
+        phone: null,
+        message: 'integration insert',
+        ip_hash: null,
+        source: 'marketing_site',
+        user_agent: null,
+      }),
+    ).resolves.toBeUndefined();
+
+    // Verify the row landed — read via the SERVICE connection, since anon
+    // itself has no read privilege.
+    const rows = await getDbService()
+      .select({ id: contactSubmissions.id })
+      .from(contactSubmissions)
+      .where(eq(contactSubmissions.email, email));
+    expect(rows).toHaveLength(1);
+    createdIds.push(rows[0]!.id);
   });
 
-  it('anon may NOT SELECT submissions (deny-select invariant)', async () => {
+  it('anon may NOT SELECT submissions (no read privilege)', async () => {
     const { dbAnon, getDbService } = await import('@/lib/db');
     const { contactSubmissions } = await import('@/lib/db/schema');
 
@@ -57,8 +74,10 @@ describeIntegration('contact.repo (anon RLS)', () => {
       .returning({ id: contactSubmissions.id });
     createdIds.push(seeded!.id);
 
-    // ...then prove the anon role cannot read it back.
-    const rows = await dbAnon((tx) => tx.select().from(contactSubmissions));
-    expect(rows).toHaveLength(0);
+    // ...then prove the anon role cannot read it back: anon has no SELECT
+    // grant, so the read is rejected at the privilege level.
+    await expect(
+      dbAnon((tx) => tx.select().from(contactSubmissions)),
+    ).rejects.toThrow(/permission denied/i);
   });
 });
