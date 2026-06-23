@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: supabase/postgres:15
+        image: supabase/postgres:15.8.1.135
         env:
           POSTGRES_PASSWORD: postgres
         ports:
