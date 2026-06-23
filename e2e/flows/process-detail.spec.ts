@@ -13,7 +13,8 @@ const TAB_LABELS: ReadonlyArray<RegExp> = [
   /pendências|pendencias/i,
   /documentos/i,
   /pagamentos/i,
-  /mapa/i,
+  // The map tab is labelled "Localização" / "Location" (not "Mapa").
+  /localização|location/i,
 ];
 
 test.describe('process detail', () => {

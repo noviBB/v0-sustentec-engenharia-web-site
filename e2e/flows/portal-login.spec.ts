@@ -32,12 +32,11 @@ test.describe('portal login (UI)', () => {
     await page.locator('#password').fill('wrong-password');
     await page.getByRole('button', { name: /entrar|sign in/i }).click();
 
-    // invalidCredentials message renders inline (PT: "Credenciais inválidas..."
-    // EN: "Invalid credentials..."). Match loosely on the shared word.
-    // TODO selector: no data-testid on the error banner — asserting on copy.
-    await expect(
-      page.getByText(/credenciais|invalid credentials/i),
-    ).toBeVisible({ timeout: 10_000 });
+    // The error banner carries data-testid="login-error" (PT copy is
+    // "E-mail ou senha incorretos."). Assert the banner shows and we stay put.
+    await expect(page.getByTestId('login-error')).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page).toHaveURL(/\/portal\/login/);
   });
 });

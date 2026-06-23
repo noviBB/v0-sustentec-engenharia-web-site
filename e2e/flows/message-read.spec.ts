@@ -23,18 +23,14 @@ test.describe('message read', () => {
       .first()
       .click();
 
-    // Capture the current unread badge count. The badge is rendered near the
-    // Mensagens nav item / inbox header.
-    // TODO selector: the unread badge has no testid — this reads the first
-    // small numeric badge on the page. Refine once a stable hook exists.
-    const badge = page.locator('text=/^\\d+$/').first();
+    // The Mensagens sidebar item shows the unread count in a badge with
+    // data-testid="nav-badge-mensagens".
+    const badge = page.getByTestId('nav-badge-mensagens');
     const before = Number((await badge.textContent())?.trim() ?? '0');
     expect(before).toBeGreaterThan(0);
 
-    // Click the first unread inbound message card.
-    // TODO selector: message cards are clickable <Card>s without roles/testids;
-    // the unread ones are visually highlighted. Clicking the first card here.
-    await page.locator('[class*="cursor-pointer"]').first().click();
+    // Click the first unread inbound message card (data-testid="message-unread").
+    await page.getByTestId('message-unread').first().click();
 
     // Badge decrements by one (optimistic, then confirmed).
     await expect(async () => {

@@ -135,6 +135,7 @@ export function MessagesView({
             return (
               <Card
                 key={msg.id}
+                data-testid={isUnread ? "message-unread" : undefined}
                 onClick={() => handleClick(msg)}
                 className={cn(
                   "bg-white",

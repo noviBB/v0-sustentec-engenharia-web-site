@@ -222,6 +222,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
                     <Button
                       type="button"
                       variant="outline"
+                      data-testid="appt-date-trigger"
                       className={cn(
                         "w-full justify-start text-left font-normal",
                         !date && "text-muted-foreground"
@@ -232,13 +233,15 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      disabled={isDateDisabled}
-                      initialFocus
-                    />
+                    <div data-testid="appt-calendar">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        disabled={isDateDisabled}
+                        initialFocus
+                      />
+                    </div>
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">
@@ -298,6 +301,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
               <Button
                 type="submit"
                 disabled={!canSubmit}
+                data-testid="appt-submit"
                 className="bg-[#2d5a27] hover:bg-[#1b3d19] text-white"
               >
                 {isPending

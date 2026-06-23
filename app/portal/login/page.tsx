@@ -49,7 +49,10 @@ export default function LoginPage() {
           <CardContent>
             <form action={formAction} className="space-y-4">
               {errorMessage && (
-                <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                <div
+                  data-testid="login-error"
+                  className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm"
+                >
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>

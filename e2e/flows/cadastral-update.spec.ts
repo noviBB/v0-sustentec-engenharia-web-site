@@ -35,9 +35,12 @@ test.describe('cadastral update', () => {
     // Save (PT "Salvar").
     await page.getByRole('button', { name: /salvar|save/i }).first().click();
 
-    // Success toast (PT: "Dados cadastrais atualizados.").
+    // Success toast (PT: "Dados cadastrais atualizados."). The text appears in
+    // both the toast and its aria-live announcer, so scope to the first.
     await expect(
-      page.getByText(/dados cadastrais atualizados|client details updated/i),
+      page
+        .getByText(/dados cadastrais atualizados|client details updated/i)
+        .first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // Value persists across a reload.

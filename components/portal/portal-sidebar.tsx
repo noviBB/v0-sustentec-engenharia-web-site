@@ -122,6 +122,7 @@ export function PortalSidebar({
               )}
               {item.badge != null && item.id !== "processos" && (
                 <Badge
+                  data-testid={`nav-badge-${item.id}`}
                   className={cn(
                     "h-5 min-w-5 flex items-center justify-center text-xs rounded-full",
                     activeItem === item.id
