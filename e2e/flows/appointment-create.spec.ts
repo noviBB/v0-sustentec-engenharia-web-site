@@ -32,22 +32,19 @@ test.describe('appointment create', () => {
       .click();
 
     // --- Fill the scheduling form (Radix Select + date popover + inputs). ---
-    // Responsible tech: Radix Select with trigger id="tech".
-    // TODO selector: Radix Select renders a listbox in a portal — open the
-    // trigger then pick the first option. Option text is the tech display_name.
+    // Responsible tech: Radix Select with trigger id="tech". Open it, pick the
+    // first option (option text is the tech display_name).
     await page.locator('#tech').click();
     await page.getByRole('option').first().click();
 
-    // Date: a popover calendar button. Pick the first selectable (enabled) day.
-    // TODO selector: the date trigger button text is the placeholder until a day
-    // is chosen; matching the calendar grid cell is environment-dependent.
+    // Date: open the popover (data-testid="appt-date-trigger") and click the
+    // first ENABLED day inside the calendar (data-testid="appt-calendar").
+    // Disabled days (past / non Mon–Thu) carry the `disabled` attribute.
+    await page.getByTestId('appt-date-trigger').click();
     await page
-      .getByRole('button', { name: /selecione|select a date|data/i })
-      .first()
-      .click();
-    await page
-      .getByRole('gridcell')
-      .filter({ has: page.locator(':not([disabled])') })
+      .getByTestId('appt-calendar')
+      .locator('button:not([disabled])')
+      .filter({ hasText: /^\d+$/ })
       .first()
       .click();
 
@@ -59,11 +56,9 @@ test.describe('appointment create', () => {
     await page.locator('#subject').fill(subject);
     await page.locator('#message').fill('Agendamento de teste automatizado.');
 
-    // Submit the booking.
-    await page
-      .getByRole('button', { name: /agendar|confirmar|book|schedule/i })
-      .last()
-      .click();
+    // Submit the booking (data-testid="appt-submit"); enabled once the form is
+    // complete.
+    await page.getByTestId('appt-submit').click();
 
     // Success toast (PT: "Agendamento solicitado").
     await expect(
