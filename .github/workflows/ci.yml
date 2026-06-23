@@ -34,36 +34,37 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm test
 
-  # ---- Integration: Vitest against a real Postgres -------------------------
+  # ---- Integration: Vitest RLS tests against the full Supabase stack -------
+  # Uses the Supabase CLI stack (not a bare Postgres container) so auth.uid()
+  # is the canonical platform function that reads `request.jwt.claims` the way
+  # dbRls() sets it — a bare image's auth.uid() returns NULL and RLS allow-cases
+  # would all fail.
   integration:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: supabase/postgres:15.8.1.135
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 54322:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
       DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      # Only to satisfy env validation in scripts/config — the DB connection
-      # itself uses DATABASE_URL. Keys come from repo secrets (see e2e job).
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SERVICE_ROLE_KEY }}
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_ANON_KEY }}
       CRON_SECRET: test-cron-secret
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase stack
+        run: supabase start
+      - name: Resolve Supabase keys from the running stack
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"          # defines ANON_KEY / SERVICE_ROLE_KEY
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
       - run: pnpm db:migrate
-      # No db:seed here — it calls the Supabase GoTrue admin API (no auth server
-      # in this bare-Postgres job). The RLS integration tests self-provision.
+      # No db:seed — the RLS integration tests self-provision their tenants.
       - run: pnpm test:int
 
   # ---- Production build (artifact reused by e2e) ---------------------------
@@ -124,20 +125,22 @@ jobs:
       - name: Start Supabase stack
         run: supabase start
 
-      - name: Resolve Supabase keys (secret, else from local stack)
+      - name: Resolve Supabase keys from the running stack
         run: |
           set -euo pipefail
+          # The locally-started stack is authoritative: its keys are signed with
+          # the stack's JWT secret. Prefer them over any TEST_* secret (whose
+          # demo keys won't verify against this stack -> 403 bad_jwt at seed).
           eval "$(supabase status -o env)"          # defines ANON_KEY / SERVICE_ROLE_KEY
-          anon="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-$ANON_KEY}"
-          svc="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
-          echo "::add-mask::$anon"
-          echo "::add-mask::$svc"
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$anon" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
 
       - run: pnpm db:migrate
-      - run: pnpm db:seed
+      # seed:auth creates the GoTrue users that db:seed (seed-data) looks up.
       - run: pnpm seed:auth
+      - run: pnpm db:seed
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
