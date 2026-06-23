@@ -60,9 +60,10 @@ test.describe('appointment create', () => {
     // complete.
     await page.getByTestId('appt-submit').click();
 
-    // Success toast (PT: "Agendamento solicitado").
+    // Success toast (PT: "Agendamento solicitado"). Text also appears in the
+    // aria-live announcer, so scope to .first().
     await expect(
-      page.getByText(/agendamento solicitado|appointment requested/i),
+      page.getByText(/agendamento solicitado|appointment requested/i).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     // The team mailbox receives the notification email.

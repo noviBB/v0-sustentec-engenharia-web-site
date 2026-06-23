@@ -15,27 +15,24 @@ test.describe('message read', () => {
   }) => {
     await page.goto('/portal');
 
-    // Open the inbox via the sidebar.
-    // TODO selector: sidebar item is an i18n label (portal.nav.messages —
-    // PT "Mensagens"); no testid available.
+    // Open the inbox via the sidebar (i18n label "Mensagens").
     await page
       .getByRole('button', { name: /mensagens|messages|inbox/i })
       .first()
       .click();
 
-    // The Mensagens sidebar item shows the unread count in a badge with
-    // data-testid="nav-badge-mensagens".
-    const badge = page.getByTestId('nav-badge-mensagens');
-    const before = Number((await badge.textContent())?.trim() ?? '0');
+    // Unread inbound cards carry data-testid="message-unread". Clicking one
+    // marks it read (optimistic), which removes the testid — so the count of
+    // unread cards drops by one.
+    const unread = page.getByTestId('message-unread');
+    await unread.first().waitFor({ timeout: 10_000 });
+    const before = await unread.count();
     expect(before).toBeGreaterThan(0);
 
-    // Click the first unread inbound message card (data-testid="message-unread").
-    await page.getByTestId('message-unread').first().click();
+    await unread.first().click();
 
-    // Badge decrements by one (optimistic, then confirmed).
     await expect(async () => {
-      const after = Number((await badge.textContent())?.trim() ?? '0');
-      expect(after).toBe(before - 1);
+      expect(await page.getByTestId('message-unread').count()).toBe(before - 1);
     }).toPass({ timeout: 10_000 });
   });
 });
