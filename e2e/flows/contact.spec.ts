@@ -38,9 +38,9 @@ test.describe('contact form', () => {
     await page.getByRole('button', { name: /enviar mensagem|send message/i }).click();
 
     // Success toast title (PT: "Mensagem enviada" / EN: "Message sent").
-    // TODO selector: toast has no testid — asserting on copy.
+    // The text appears in both the toast and its aria-live announcer → .first().
     await expect(
-      page.getByText(/mensagem enviada|message sent/i),
+      page.getByText(/mensagem enviada|message sent/i).first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // Form is reset on success.
