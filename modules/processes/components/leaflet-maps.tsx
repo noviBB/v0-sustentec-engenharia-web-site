@@ -35,15 +35,29 @@ function MapShell({ children }: { children: (key: string) => ReactNode }) {
 // The two private members we touch on Leaflet's default-icon prototype:
 // `_getIconUrl` (the bundler-broken path resolver we delete) and our own
 // idempotency flag. Typed precisely so we never reach for `any`.
-type LeafletIconProto = {
+interface LeafletIconProto {
   _getIconUrl?: unknown
   _sustentecIconFixed?: boolean
+}
+
+// Narrows the (loosely typed) Leaflet prototype to the private members we
+// touch, via a structural type guard — no `as` needed. Both members are
+// optional, so the guard verifies the shapes that are present and otherwise
+// treats absent members as "not yet set" (the prototype is a fresh object).
+function isLeafletIconProto(value: object): value is LeafletIconProto {
+  // `_sustentecIconFixed` is our own optional flag; when present it must be a
+  // boolean. When absent the prototype is fresh (not yet patched), which is
+  // still a valid `LeafletIconProto` since the member is optional.
+  if (!('_sustentecIconFixed' in value)) return true
+  const flag: unknown = value._sustentecIconFixed
+  return typeof flag === 'boolean'
 }
 
 // Leaflet's default icon paths break under bundlers. Re-point them at the
 // public CDN once, on first import.
 function fixDefaultIcon(): void {
-  const proto = L.Icon.Default.prototype as unknown as LeafletIconProto
+  const proto: object = L.Icon.Default.prototype
+  if (!isLeafletIconProto(proto)) return
   if (proto._sustentecIconFixed) return
   delete proto._getIconUrl
   L.Icon.Default.mergeOptions({

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ResultCode } from '@/lib/constants/result-codes';
+import type { ResultCode } from '@/lib/constants/result-codes';
 
 /**
  * Shared Zod schema for the marketing contact form.

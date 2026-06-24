@@ -1,6 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { PortalView, ProcessTab } from "@/lib/enums"
+import { groupByProcess, totalDue } from "@/modules/payments"
 import type { Client } from "@/modules/clients/clients.repo"
 import type { ProcessBuckets, ProcessRow } from "@/modules/processes/processes.repo"
 import type { MessageRow } from "@/modules/messages/messages.repo"
@@ -33,6 +35,29 @@ interface PortalShellProps {
   documents: DocumentRow[]
 }
 
+// Value-keyed lookups so a raw string narrows to an enum member without an
+// assertion AND without an enum-vs-string comparison (which `tsc` allows but
+// `no-unsafe-enum-comparison` rejects). `Object.values` of a string enum is
+// exactly its set of string values.
+const PORTAL_VIEW_BY_VALUE: Partial<Record<string, PortalView>> =
+  Object.fromEntries(Object.values(PortalView).map((v) => [v, v]))
+const PROCESS_TAB_BY_VALUE: Partial<Record<string, ProcessTab>> =
+  Object.fromEntries(Object.values(ProcessTab).map((t) => [t, t]))
+
+/**
+ * Narrows a raw nav string (from string-typed child callbacks that haven't
+ * adopted the `PortalView` enum yet) to a `PortalView`. Unknown values fall
+ * back to the dashboard so a stray string can never wedge the shell.
+ */
+function toPortalView(item: string): PortalView {
+  return PORTAL_VIEW_BY_VALUE[item] ?? PortalView.Painel
+}
+
+/** Same idea for the process-detail tab; defaults to the resumo tab. */
+function toProcessTab(tab: string): ProcessTab {
+  return PROCESS_TAB_BY_VALUE[tab] ?? ProcessTab.Resumo
+}
+
 /**
  * Client-side shell for the portal — owns the in-page navigation state
  * (which "view" is active, which process is open). Data comes pre-fetched
@@ -49,35 +74,28 @@ export function PortalShell({
   tasks,
   documents,
 }: PortalShellProps) {
-  const [activeItem, setActiveItem] = useState("painel")
+  const [activeItem, setActiveItem] = useState<PortalView>(PortalView.Painel)
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(
     null,
   )
   // Which tab the process detail opens on — "Resolver Pendências" and the
   // notifications dropdown jump straight to the pendências tab.
-  const [detailInitialTab, setDetailInitialTab] = useState<string>("resumo")
+  const [detailInitialTab, setDetailInitialTab] = useState<ProcessTab>(
+    ProcessTab.Resumo,
+  )
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
   const [unreadCount, setUnreadCount] = useState<number>(initialUnread)
 
-  // Total still owed = pending + overdue. Recomputed locally so future
-  // "mark paid" actions could update it without a server roundtrip.
-  const paymentsTotalDue = useMemo(
-    () =>
-      payments
-        .filter((p) => p.status === "pending" || p.status === "overdue")
-        .reduce((acc, p) => acc + Number(p.amount ?? 0), 0),
+  // Total still owed = pending + overdue. Uses the payments module's pure
+  // `totalDue` helper so the "due" status set lives in one place (the module,
+  // where it can compare against the PaymentStatus enum) rather than being
+  // re-spelled as string literals in view code.
+  const paymentsTotalDue = useMemo(() => totalDue(payments), [payments])
+
+  const paymentsByProcess = useMemo(
+    () => groupByProcess(payments),
     [payments],
   )
-
-  const paymentsByProcess = useMemo(() => {
-    const map = new Map<string, PaymentWithProcess[]>()
-    for (const p of payments) {
-      const list = map.get(p.process_id) ?? []
-      list.push(p)
-      map.set(p.process_id, list)
-    }
-    return map
-  }, [payments])
 
   const milestonesByProcess = useMemo(() => {
     const map = new Map<string, MilestoneRow[]>()
@@ -144,10 +162,10 @@ export function PortalShell({
     [processes],
   )
 
-  function handleProcessSelect(processId: string, tab: string = "resumo") {
+  function handleProcessSelect(processId: string, tab: string = ProcessTab.Resumo) {
     setSelectedProcessId(processId)
-    setDetailInitialTab(tab)
-    setActiveItem("processo-detalhe")
+    setDetailInitialTab(toProcessTab(tab))
+    setActiveItem(PortalView.ProcessoDetalhe)
   }
 
   function handleMessageMarkedRead(messageId: string) {
@@ -155,6 +173,12 @@ export function PortalShell({
       prev.map((m) => (m.id === messageId ? { ...m, read: true } : m)),
     )
     setUnreadCount((prev) => Math.max(0, prev - 1))
+  }
+
+  // Bridges string-typed child callbacks (DashboardContent, PortalHeader) that
+  // emit a raw nav string into the `PortalView`-typed view state.
+  function navigate(item: string) {
+    setActiveItem(toPortalView(item))
   }
 
   function handleMessageMarkReadFailed(messageId: string) {
@@ -165,7 +189,7 @@ export function PortalShell({
   }
 
   function renderContent() {
-    if (activeItem === "processo-detalhe" && selectedProcess) {
+    if (activeItem === PortalView.ProcessoDetalhe && selectedProcess) {
       return (
         <ProcessDetail
           key={`${selectedProcess.id}:${detailInitialTab}`}
@@ -175,24 +199,13 @@ export function PortalShell({
           tasks={tasksByProcess.get(selectedProcess.id) ?? []}
           documents={documentsByProcess.get(selectedProcess.id) ?? []}
           initialTab={detailInitialTab}
-          onBack={() => setActiveItem("painel")}
+          onBack={() => setActiveItem(PortalView.Painel)}
         />
       )
     }
 
     switch (activeItem) {
-      case "painel":
-        return (
-          <DashboardContent
-            displayName={client.name}
-            buckets={buckets}
-            unreadCount={unreadCount}
-            paymentsTotalDue={paymentsTotalDue}
-            onSelectProcess={handleProcessSelect}
-            onNavigate={setActiveItem}
-          />
-        )
-      case "mensagens":
+      case PortalView.Mensagens:
         return (
           <MessagesView
             messages={messages}
@@ -200,10 +213,11 @@ export function PortalShell({
             onMarkReadFailed={handleMessageMarkReadFailed}
           />
         )
-      case "agendamentos":
+      case PortalView.Agendamentos:
         return <SchedulingView techs={techs} />
-      case "dados":
+      case PortalView.Dados:
         return <DadosCadastraisView client={client} />
+      case PortalView.Painel:
       default:
         return (
           <DashboardContent
@@ -212,7 +226,7 @@ export function PortalShell({
             unreadCount={unreadCount}
             paymentsTotalDue={paymentsTotalDue}
             onSelectProcess={handleProcessSelect}
-            onNavigate={setActiveItem}
+            onNavigate={navigate}
           />
         )
     }
@@ -238,7 +252,7 @@ export function PortalShell({
             onItemChange={setActiveItem}
             pendencias={pendenciasSummary}
             onOpenPendencias={(processId) =>
-              handleProcessSelect(processId, "pendencias")
+              handleProcessSelect(processId, ProcessTab.Pendencias)
             }
           />
 

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import { ResultCode } from '@/lib/constants/result-codes';
+import { MessageDirection } from '@/lib/db/enums';
 import {
   cleanupWorld,
   createTenant,
@@ -14,7 +15,9 @@ import {
  *   - list/count only see own-tenant rows;
  *   - markMessageRead returns NotFound for a cross-tenant id (no existence leak).
  */
-type Repo = typeof import('@/modules/messages/messages.repo');
+import type * as MessagesRepo from '@/modules/messages/messages.repo';
+
+type Repo = typeof MessagesRepo;
 
 const world = newWorld();
 let repo: Repo;
@@ -29,7 +32,7 @@ async function seedMessage(clientId: string, opts: { read?: boolean } = {}) {
     .insert(messages)
     .values({
       client_id: clientId,
-      direction: 'inbound',
+      direction: MessageDirection.Inbound,
       subject: 'Hello',
       body: 'Integration message',
       read: opts.read ?? false,

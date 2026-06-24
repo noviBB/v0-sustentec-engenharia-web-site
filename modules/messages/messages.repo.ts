@@ -5,6 +5,7 @@ import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { dbRls, type SessionLike } from '@/lib/db';
+import { DbMode } from '@/lib/enums';
 import { messages } from '@/lib/db/schema';
 
 export type MessageRow = typeof messages.$inferSelect;
@@ -86,7 +87,7 @@ export async function markMessageRead(
             entity_id: messageId,
             after: { client_id: clientId },
           },
-          { mode: 'tx', tx },
+          { mode: DbMode.Tx, tx },
         );
       }
       return rows;

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import { findStructuredLog } from '@/modules/_test-support/console-log';
 
 /**
@@ -59,7 +60,7 @@ describe('createAppointment (service)', () => {
     fakeEmail.sendAppointmentCreatedEmail.mockResolvedValue(undefined);
 
     const result = await createAppointment(deps, input);
-    expect(result).toEqual({ kind: 'ok', id: 'appt-1' });
+    expect(result).toEqual({ kind: ResultKind.Ok, id: 'appt-1' });
 
     expect(fakeEmail.sendAppointmentCreatedEmail).toHaveBeenCalledTimes(1);
     const params = fakeEmail.sendAppointmentCreatedEmail.mock.calls[0]![0];
@@ -79,7 +80,7 @@ describe('createAppointment (service)', () => {
       code: ResultCode.DoubleBooked,
     });
     const result = await createAppointment(deps, input);
-    expect(result).toEqual({ kind: 'double_booked' });
+    expect(result).toEqual({ kind: ResultKind.DoubleBooked });
     expect(fakeEmail.sendAppointmentCreatedEmail).not.toHaveBeenCalled();
   });
 
@@ -89,7 +90,7 @@ describe('createAppointment (service)', () => {
       code: ResultCode.Unauthorized,
     });
     const result = await createAppointment(deps, input);
-    expect(result).toEqual({ kind: 'unauthorized' });
+    expect(result).toEqual({ kind: ResultKind.Unauthorized });
     expect(fakeEmail.sendAppointmentCreatedEmail).not.toHaveBeenCalled();
   });
 
@@ -100,8 +101,8 @@ describe('createAppointment (service)', () => {
       ref: 'cafef00d',
     });
     const result = await createAppointment(deps, input);
-    expect(result.kind).toBe('error');
-    if (result.kind !== 'error') throw new Error('expected error');
+    expect(result.kind).toBe(ResultKind.Error);
+    if (result.kind !== ResultKind.Error) throw new Error('expected error');
     expect(result.ref).toBe('cafef00d');
     expect(fakeEmail.sendAppointmentCreatedEmail).not.toHaveBeenCalled();
   });
@@ -115,7 +116,7 @@ describe('createAppointment (service)', () => {
     );
 
     const result = await createAppointment(deps, input);
-    expect(result).toEqual({ kind: 'ok', id: 'appt-9' });
+    expect(result).toEqual({ kind: ResultKind.Ok, id: 'appt-9' });
 
     const logged = findStructuredLog(errSpy.mock.calls);
     expect(logged?.event).toBe(AuditEvent.AppointmentNotifyEmailFailed);

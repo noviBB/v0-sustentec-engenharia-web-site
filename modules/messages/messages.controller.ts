@@ -3,6 +3,7 @@ import 'server-only';
 
 import { requireClient } from '@/lib/auth/tenant';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import { markMessageReadSchema } from '@/modules/messages/message.schema';
 import { markMessageReadForClient } from '@/modules/messages/messages.service';
 
@@ -44,11 +45,11 @@ export async function markMessageReadAction(
     parsed.data.messageId,
   );
   switch (result.kind) {
-    case 'ok':
+    case ResultKind.Ok:
       return { ok: true };
-    case 'not_found':
+    case ResultKind.NotFound:
       return { ok: false, code: ResultCode.NotFound };
-    case 'error':
+    case ResultKind.Error:
       return { ok: false, code: ResultCode.ServerError, ref: result.ref };
   }
 }

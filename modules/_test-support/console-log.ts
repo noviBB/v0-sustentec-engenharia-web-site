@@ -12,22 +12,29 @@ export interface StructuredLog {
   [key: string]: unknown;
 }
 
+/** A non-null object that carries an `event` field — the audit-line shape. */
+function isStructuredLog(value: unknown): value is StructuredLog {
+  return typeof value === 'object' && value !== null && 'event' in value;
+}
+
 export function findStructuredLog(
   calls: ReadonlyArray<ReadonlyArray<unknown>>,
 ): StructuredLog | undefined {
   for (const call of calls) {
     for (const arg of call) {
-      if (arg && typeof arg === 'object' && 'event' in (arg as object)) {
-        return arg as StructuredLog;
+      if (isStructuredLog(arg)) {
+        return arg;
       }
       if (typeof arg === 'string') {
+        let parsed: unknown;
         try {
-          const parsed = JSON.parse(arg) as unknown;
-          if (parsed && typeof parsed === 'object' && 'event' in parsed) {
-            return parsed as StructuredLog;
-          }
+          parsed = JSON.parse(arg);
         } catch {
           // not JSON; keep scanning.
+          continue;
+        }
+        if (isStructuredLog(parsed)) {
+          return parsed;
         }
       }
     }

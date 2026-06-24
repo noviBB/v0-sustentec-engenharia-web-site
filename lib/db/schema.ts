@@ -15,6 +15,13 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import {
+  AppointmentStatus,
+  ContactSubmissionStatus,
+  PaymentStatus,
+  ProcessStatus,
+  ProcessTaskPriority,
+  ProcessTaskStatus,
+  UserRole,
   appointmentStatus,
   contactSubmissionStatus,
   messageDirection,
@@ -65,7 +72,7 @@ export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
   display_name: text('display_name'),
   email: text('email'),
-  role: userRole('role').notNull().default('client'),
+  role: userRole('role').notNull().default(UserRole.Client),
   created_at: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -143,7 +150,7 @@ export const processes = pgTable(
     objective: text('objective'),
     observation: text('observation'),
     links: text('links'),
-    status: processStatus('status').notNull().default('andamento'),
+    status: processStatus('status').notNull().default(ProcessStatus.Andamento),
     status_label: text('status_label'),
     tipologia: processTipologia('tipologia'),
     responsible_tech_id: uuid('responsible_tech_id').references(
@@ -242,8 +249,8 @@ export const processTasks = pgTable(
     notion_page_id: text('notion_page_id'),
     title: text('title').notNull(),
     summary: text('summary'),
-    status: processTaskStatus('status').notNull().default('aberta'),
-    priority: processTaskPriority('priority').notNull().default('media'),
+    status: processTaskStatus('status').notNull().default(ProcessTaskStatus.Aberta),
+    priority: processTaskPriority('priority').notNull().default(ProcessTaskPriority.Media),
     due_date: date('due_date'),
     assignee_user_id: uuid('assignee_user_id'),
     parent_task_id: uuid('parent_task_id'),
@@ -333,7 +340,7 @@ export const appointments = pgTable(
     description: text('description'),
     starts_at: timestamp('starts_at', { withTimezone: true }).notNull(),
     ends_at: timestamp('ends_at', { withTimezone: true }),
-    status: appointmentStatus('status').notNull().default('agendada'),
+    status: appointmentStatus('status').notNull().default(AppointmentStatus.Agendada),
     meet_url: text('meet_url'),
     created_at: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -360,7 +367,7 @@ export const contactSubmissions = pgTable('contact_submissions', {
   email: text('email'),
   phone: text('phone'),
   message: text('message'),
-  status: contactSubmissionStatus('status').notNull().default('novo'),
+  status: contactSubmissionStatus('status').notNull().default(ContactSubmissionStatus.Novo),
   submitted_at: timestamp('submitted_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -383,7 +390,7 @@ export const payments = pgTable(
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
     due_date: date('due_date').notNull(),
     paid_at: timestamp('paid_at', { withTimezone: true }),
-    status: paymentStatus('status').notNull().default('pending'),
+    status: paymentStatus('status').notNull().default(PaymentStatus.Pending),
     notes: text('notes'),
     created_at: timestamp('created_at', { withTimezone: true })
       .notNull()

@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { useLanguage } from "@/lib/language-context"
 import { signOut } from "@/app/portal/actions"
+import { PortalView } from "@/lib/enums"
 import { Bell, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +27,7 @@ export interface PendenciasSummaryItem {
 }
 
 interface PortalHeaderProps {
-  onItemChange: (item: string) => void
+  onItemChange: (item: PortalView) => void
   /** Open pendências per process — the badge shows the total. */
   pendencias: PendenciasSummaryItem[]
   /** Opens the given process on its pendências tab. */
@@ -137,7 +138,7 @@ export function PortalHeader({
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onItemChange("dados")}>{t("portal.menu.profile")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onItemChange(PortalView.Dados)}>{t("portal.menu.profile")}</DropdownMenuItem>
               <DropdownMenuItem>{t("portal.menu.settings")}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <form action={signOut}>

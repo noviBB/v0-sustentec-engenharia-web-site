@@ -151,8 +151,9 @@ export async function importFromNotion(
     let created: boolean;
     let unchanged = false;
 
-    if (existing.length > 0) {
-      processId = existing[0].id;
+    const existingRow = existing[0];
+    if (existingRow) {
+      processId = existingRow.id;
       created = false;
       // Detect a no-op: compare the etag against the stored one.
       const prior = await tx
@@ -174,7 +175,11 @@ export async function importFromNotion(
         .insert(processes)
         .values({ ...baseValues, notion_page_id: parsed.notion_page_id })
         .returning({ id: processes.id });
-      processId = ins[0].id;
+      const insertedId = ins[0]?.id;
+      if (insertedId === undefined) {
+        throw new Error('insert into processes returned no row');
+      }
+      processId = insertedId;
       created = true;
     }
 
@@ -240,11 +245,12 @@ export async function importFromNotion(
         updated_at: new Date(),
       };
 
-      if (existingTask.length > 0) {
+      const existingTaskRow = existingTask[0];
+      if (existingTaskRow) {
         await tx
           .update(processTasks)
           .set(taskValues)
-          .where(eq(processTasks.id, existingTask[0].id));
+          .where(eq(processTasks.id, existingTaskRow.id));
       } else {
         await tx
           .insert(processTasks)

@@ -16,7 +16,9 @@ import {
  *
  * Repos imported lazily so a skipped run never loads `@/lib/db`.
  */
-type Repo = typeof import('@/modules/clients/clients.repo');
+import type * as ClientsRepo from '@/modules/clients/clients.repo';
+
+type Repo = typeof ClientsRepo;
 
 const world = newWorld();
 let repo: Repo;

@@ -35,12 +35,19 @@ function manualLoad(path: string): void {
   }
 }
 
+/**
+ * Node >= 20.12 exposes `process.loadEnvFile`, which the installed
+ * `@types/node` may predate. Narrow with an `in` guard instead of asserting.
+ */
+function hasLoadEnvFile(
+  proc: NodeJS.Process,
+): proc is NodeJS.Process & { loadEnvFile: (path: string) => void } {
+  return 'loadEnvFile' in proc && typeof proc.loadEnvFile === 'function';
+}
+
 if (existsSync(envPath)) {
-  const loadEnvFile = (
-    process as unknown as { loadEnvFile?: (path: string) => void }
-  ).loadEnvFile;
-  if (typeof loadEnvFile === 'function') {
-    loadEnvFile(envPath);
+  if (hasLoadEnvFile(process)) {
+    process.loadEnvFile(envPath);
   } else {
     manualLoad(envPath);
   }

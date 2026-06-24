@@ -10,6 +10,7 @@ import {
   pendenciasTarget,
   totalPendencias,
 } from '@/modules/processes';
+import { ProcessBucket, ProcessTaskStatus } from '@/lib/db/enums';
 
 /**
  * Pure domain derivations from the processes SPEC §"Pure service derivations".
@@ -36,10 +37,17 @@ function buckets(b: {
 
 describe('BUCKET_ORDER / CLOSED_TASK_STATUSES', () => {
   it('exposes the canonical bucket order', () => {
-    expect(BUCKET_ORDER).toEqual(['andamento', 'acompanhamento', 'finalizado']);
+    expect(BUCKET_ORDER).toEqual([
+      ProcessBucket.Andamento,
+      ProcessBucket.Acompanhamento,
+      ProcessBucket.Finalizado,
+    ]);
   });
   it('lists the closed task statuses', () => {
-    expect(CLOSED_TASK_STATUSES).toEqual(['concluida', 'arquivada']);
+    expect(CLOSED_TASK_STATUSES).toEqual([
+      ProcessTaskStatus.Concluida,
+      ProcessTaskStatus.Arquivada,
+    ]);
   });
 });
 
@@ -139,18 +147,18 @@ describe('pendenciasTarget', () => {
 
 describe('isOpenTask / openTasks', () => {
   it('treats only non-closed statuses as open', () => {
-    expect(isOpenTask({ status: 'aberta' })).toBe(true);
-    expect(isOpenTask({ status: 'em_andamento' })).toBe(true);
-    expect(isOpenTask({ status: 'concluida' })).toBe(false);
-    expect(isOpenTask({ status: 'arquivada' })).toBe(false);
+    expect(isOpenTask({ status: ProcessTaskStatus.Aberta })).toBe(true);
+    expect(isOpenTask({ status: ProcessTaskStatus.EmAndamento })).toBe(true);
+    expect(isOpenTask({ status: ProcessTaskStatus.Concluida })).toBe(false);
+    expect(isOpenTask({ status: ProcessTaskStatus.Arquivada })).toBe(false);
   });
 
   it('filters a task list down to open tasks', () => {
     const tasks = [
-      { id: '1', status: 'aberta' },
-      { id: '2', status: 'concluida' },
-      { id: '3', status: 'arquivada' },
-      { id: '4', status: 'aberta' },
+      { id: '1', status: ProcessTaskStatus.Aberta },
+      { id: '2', status: ProcessTaskStatus.Concluida },
+      { id: '3', status: ProcessTaskStatus.Arquivada },
+      { id: '4', status: ProcessTaskStatus.Aberta },
     ];
     expect(openTasks(tasks).map((t) => t.id)).toEqual(['1', '4']);
   });

@@ -1,15 +1,17 @@
 // Central config service — `lib/config.ts` has no `import 'server-only'`, so
 // it's safe to import from a tsx script (outside the Next.js runtime).
+import { z } from 'zod';
 import { config } from '../lib/config';
 
-interface AuthUser {
-  id: string;
-  email?: string;
-}
+const authUserSchema = z.object({
+  id: z.string(),
+  email: z.string().optional(),
+});
+type AuthUser = z.infer<typeof authUserSchema>;
 
-interface AdminUsersListResponse {
-  users: AuthUser[];
-}
+const adminUsersListResponseSchema = z.object({
+  users: z.array(authUserSchema),
+});
 
 const baseUrl: string = config.public.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey: string = config.server.SUPABASE_SERVICE_ROLE_KEY;
@@ -41,8 +43,8 @@ async function findUserByEmail(email: string): Promise<AuthUser | null> {
       const body: string = await res.text();
       throw new Error(`[seed-auth] GET ${url} failed: ${res.status} ${body}`);
     }
-    const data = (await res.json()) as AdminUsersListResponse;
-    if (!Array.isArray(data.users) || data.users.length === 0) return null;
+    const data = adminUsersListResponseSchema.parse(await res.json());
+    if (data.users.length === 0) return null;
     const found = data.users.find((u) => u.email === email);
     if (found) return found;
     if (data.users.length < perPage) return null;
@@ -61,7 +63,7 @@ async function createUser(email: string, password: string): Promise<AuthUser> {
     const body: string = await res.text();
     throw new Error(`[seed-auth] POST ${url} failed: ${res.status} ${body}`);
   }
-  return (await res.json()) as AuthUser;
+  return authUserSchema.parse(await res.json());
 }
 
 async function main(): Promise<void> {

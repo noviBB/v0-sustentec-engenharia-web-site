@@ -1,15 +1,14 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Minimal flat ESLint config.
- *
- * Scope is deliberately narrow: the legacy v0-generated codebase has never
- * been linted, so a full ruleset would explode with pre-existing noise. The
- * one rule that matters here is the Notion adapter boundary —
- * `no-restricted-imports` forbidding `@notionhq/client` and the adapter's
- * internal modules anywhere outside `lib/notion/**`. The public surface
- * (`@/lib/notion`) stays importable everywhere.
+ * Flat ESLint config: type-aware rules repo-wide (enforced at error), the
+ * `as`-assertion ban, the Notion adapter boundary, and the module/auth layer
+ * boundaries. Non-shipped code (scripts/tests/e2e) is relaxed in the last block.
  */
 
 const FORBIDDEN_INTERNAL = [
@@ -35,36 +34,55 @@ export default tseslint.config(
       'components/ui/**',
       'lib/db/migrations/**',
       'drizzle/**',
+      // Build/config files are not part of the TS project — exclude them from
+      // the type-aware program rather than feed them to the project service.
+      'eslint.config.mjs',
+      'next.config.mjs',
+      'postcss.config.mjs',
     ],
   },
-  // Base recommended for TS — but only surface the boundary rule project-wide
-  // to avoid drowning in pre-existing legacy issues. We register js/tseslint
-  // recommended only for the adapter itself (new, clean code).
+  // Type-aware linting, repo-wide, enforced at ERROR. lib/notion is held to the
+  // same bar (its old no-explicit-any/projectService:false exemption was
+  // removed). Non-shipped code (scripts/tests/e2e) is relaxed in a later block.
   {
-    files: ['lib/notion/**/*.ts'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    languageOptions: {
-      parserOptions: { projectService: false },
-    },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-      ],
-    },
-  },
-  // The boundary rule applies to the WHOLE repo except lib/notion itself.
-  {
-    files: ['**/*.{ts,tsx,mjs,js}'],
-    ignores: ['lib/notion/**'],
+    files: ['**/*.{ts,tsx}'],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
+        projectService: true,
+        tsconfigRootDir,
         ecmaFeatures: { jsx: true },
         sourceType: 'module',
       },
     },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      // Ban `as <Type>` and `as unknown as <Type>` assertions, but ALLOW
+      // `as const`. The selector matches any TSAsExpression that is NOT
+      // `... as const` (i.e. its asserted type is not the `const` reference).
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "TSAsExpression:not(:has(TSTypeReference > Identifier[name='const']))",
+          message:
+            'Avoid `as` type assertions. Use zod/parse, a type guard, satisfies, ' +
+            'or generics. `as const` is allowed.',
+        },
+      ],
+    },
+  },
+  // The Notion adapter boundary applies to the WHOLE repo except lib/notion
+  // itself (which owns @notionhq/client and its internal modules).
+  {
+    files: ['**/*.{ts,tsx,mjs,js}'],
+    ignores: ['lib/notion/**'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -86,8 +104,7 @@ export default tseslint.config(
   // Block A — no runtime DB / Supabase server clients in components and
   // pages/layouts. The data layer lives behind controllers; view code should
   // only import row TYPES (allowTypeImports keeps `import type` legal) and use
-  // the auth port instead of a Supabase server client. WARN for now — the
-  // Integrator flips these to error once callers have migrated.
+  // the auth port instead of a Supabase server client.
   {
     files: [
       'components/**/*.{ts,tsx}',
@@ -120,7 +137,7 @@ export default tseslint.config(
     },
   },
   // Block B — the deprecated `db` singleton stays dead. It was removed from
-  // `@/lib/db`; importing the `db` name must not come back. WARN for now.
+  // `@/lib/db`; importing the `db` name must not come back.
   {
     files: ['**/*.{ts,tsx}'],
     ignores: ['lib/db/**'],
@@ -143,7 +160,7 @@ export default tseslint.config(
   },
   // Block C — services stay framework-free. A `*.service.ts` must not reach for
   // Next.js request primitives or a Supabase client; those belong in the
-  // controller/adapter layer. WARN for now.
+  // controller/adapter layer.
   {
     files: ['modules/**/*.service.ts'],
     rules: {
@@ -235,10 +252,25 @@ export default tseslint.config(
   // See docs/conventions.md. This guard flags `... as const` in the modules
   // that own those sets so the rule stays enforceable.
   {
-    files: ['lib/constants/**', 'modules/**/*.schema.ts', 'modules/**/*.controller.ts'],
+    files: [
+      'lib/constants/**',
+      'modules/**/*.schema.ts',
+      'modules/**/*.controller.ts',
+      'modules/**/*.service.ts',
+      'modules/**/*.repo.ts',
+    ],
     rules: {
       'no-restricted-syntax': [
         'error',
+        // Keep the global `as`-assertion ban active in these files too...
+        {
+          selector: "TSAsExpression:not(:has(TSTypeReference > Identifier[name='const']))",
+          message:
+            'Avoid `as` type assertions. Use zod/parse, a type guard, satisfies, ' +
+            'or generics. `as const` is allowed.',
+        },
+        // ...and additionally forbid `as const` here: closed sets of values
+        // (result codes, event names, statuses) MUST be a string `enum`.
         {
           selector: "TSAsExpression > TSTypeReference > Identifier[name='const']",
           message:
@@ -247,6 +279,27 @@ export default tseslint.config(
             'and docs/conventions.md).',
         },
       ],
+    },
+  },
+  // Non-shipped code — scripts, test files/fakes, e2e. These deal in untyped
+  // `fetch().json()`, test doubles, and ad-hoc casts; holding them to the new
+  // type-safety bar would drown the signal. Downgrade the new rules here.
+  {
+    files: [
+      'scripts/**',
+      '**/__tests__/**',
+      'e2e/**',
+      'modules/_test-support/**',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      'no-restricted-syntax': 'off',
+      'no-empty-pattern': 'off',
     },
   },
 );

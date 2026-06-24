@@ -19,8 +19,12 @@ export async function signIn(
   _prev: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
-  const email = String(formData.get("email") ?? "").trim()
-  const password = String(formData.get("password") ?? "")
+  // `FormData.get` returns `string | File | null`; only a real string is a
+  // valid credential — coercing a `File` would yield "[object Object]".
+  const rawEmail = formData.get("email")
+  const rawPassword = formData.get("password")
+  const email = typeof rawEmail === "string" ? rawEmail.trim() : ""
+  const password = typeof rawPassword === "string" ? rawPassword : ""
 
   if (!email || !password) {
     return { ok: false, code: "invalid_credentials" }

@@ -13,22 +13,42 @@ import { NotionMappingError, type NotionPropertyValue } from './types';
  * hand-written fixtures without a DB.
  */
 
+/**
+ * Type guard: narrows `value` to a non-null object carrying `key`. After this
+ * returns true, `value[key]` is accessible (as `unknown`) without a cast — TS's
+ * `in`-operator narrowing does the work. Used in place of the ad-hoc
+ * `(x as { key: unknown }).key` reads the parsers previously relied on.
+ */
+function hasKey<K extends string>(
+  value: unknown,
+  key: K,
+): value is Record<K, unknown> {
+  return typeof value === 'object' && value !== null && key in value;
+}
+
+/**
+ * Coerces a genuinely string-coercible Notion scalar (string / number /
+ * boolean) to its string form, returning '' for null/undefined/objects. Used
+ * in place of bare `String(unknown)`, which `no-base-to-string` rejects because
+ * an object would stringify to '[object Object]'.
+ */
+function scalarToString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return '';
+}
+
 function richTextArrayToPlain(arr: unknown): string | null {
   if (!Array.isArray(arr)) return null;
   const text = arr
     .map((node) => {
-      if (node && typeof node === 'object' && 'plain_text' in node) {
-        return String((node as { plain_text: unknown }).plain_text ?? '');
+      if (hasKey(node, 'plain_text')) {
+        return scalarToString(node.plain_text);
       }
-      if (
-        node &&
-        typeof node === 'object' &&
-        'text' in node &&
-        node.text &&
-        typeof node.text === 'object' &&
-        'content' in (node.text as object)
-      ) {
-        return String((node.text as { content: unknown }).content ?? '');
+      if (hasKey(node, 'text') && hasKey(node.text, 'content')) {
+        return scalarToString(node.text.content);
       }
       return '';
     })
@@ -61,10 +81,10 @@ export function parseDate(prop: NotionPropertyValue | undefined): string | null 
     throw new NotionMappingError('date', 'property is not a date');
   }
   const date = prop.date;
-  if (!date || typeof date !== 'object') return null;
-  const start = (date as { start?: unknown }).start;
+  if (!hasKey(date, 'start')) return null;
+  const start = date.start;
   if (start == null) return null;
-  return String(start);
+  return scalarToString(start);
 }
 
 export function parseUrl(prop: NotionPropertyValue | undefined): string | null {
@@ -74,7 +94,7 @@ export function parseUrl(prop: NotionPropertyValue | undefined): string | null {
   }
   const url = prop.url;
   if (url == null) return null;
-  const s = String(url).trim();
+  const s = scalarToString(url).trim();
   return s.length > 0 ? s : null;
 }
 
@@ -86,10 +106,10 @@ export function parseSelect(
     throw new NotionMappingError('select', 'property is not a select');
   }
   const select = prop.select;
-  if (!select || typeof select !== 'object') return null;
-  const name = (select as { name?: unknown }).name;
+  if (!hasKey(select, 'name')) return null;
+  const name = select.name;
   if (name == null) return null;
-  const s = String(name).trim();
+  const s = scalarToString(name).trim();
   return s.length > 0 ? s : null;
 }
 
@@ -103,10 +123,10 @@ export function parseStatus(
   if (container === undefined) {
     throw new NotionMappingError('status', 'property is not a status/select');
   }
-  if (!container || typeof container !== 'object') return null;
-  const name = (container as { name?: unknown }).name;
+  if (!hasKey(container, 'name')) return null;
+  const name = container.name;
   if (name == null) return null;
-  const s = String(name).trim();
+  const s = scalarToString(name).trim();
   return s.length > 0 ? s : null;
 }
 
@@ -123,11 +143,7 @@ export function parseMultiSelect(
   const arr = prop.multi_select;
   if (!Array.isArray(arr)) return [];
   return arr
-    .map((opt) =>
-      opt && typeof opt === 'object' && 'name' in opt
-        ? String((opt as { name: unknown }).name ?? '').trim()
-        : '',
-    )
+    .map((opt) => (hasKey(opt, 'name') ? scalarToString(opt.name).trim() : ''))
     .filter((s) => s.length > 0);
 }
 
@@ -163,11 +179,7 @@ export function parseRelation(
   const arr = prop.relation;
   if (!Array.isArray(arr)) return [];
   return arr
-    .map((r) =>
-      r && typeof r === 'object' && 'id' in r
-        ? String((r as { id: unknown }).id ?? '')
-        : '',
-    )
+    .map((r) => (hasKey(r, 'id') ? scalarToString(r.id) : ''))
     .filter((s) => s.length > 0);
 }
 

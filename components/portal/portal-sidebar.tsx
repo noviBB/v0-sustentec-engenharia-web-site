@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { signOut } from "@/app/portal/actions"
+import { PortalView } from "@/lib/enums"
 import type { ProcessRow } from "@/modules/processes/processes.repo"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/lib/language-context"
@@ -24,8 +25,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
 interface PortalSidebarProps {
-  activeItem: string
-  onItemChange: (item: string) => void
+  activeItem: PortalView
+  onItemChange: (item: PortalView) => void
   selectedProcess: string | null
   onProcessChange: (processId: string) => void
   processes: ProcessRow[]
@@ -47,21 +48,21 @@ export function PortalSidebar({
   const unreadMessages = unreadCount
 
   const menuItems: Array<{
-    id: string
+    id: PortalView
     label: string
     icon: typeof LayoutDashboard
     badge?: number
   }> = [
-    { id: "painel", label: t("portal.sidebar.menu.painel"), icon: LayoutDashboard },
-    { id: "processos", label: t("portal.sidebar.menu.processos"), icon: FolderKanban },
+    { id: PortalView.Painel, label: t("portal.sidebar.menu.painel"), icon: LayoutDashboard },
+    { id: PortalView.Processos, label: t("portal.sidebar.menu.processos"), icon: FolderKanban },
     {
-      id: "mensagens",
+      id: PortalView.Mensagens,
       label: t("portal.sidebar.menu.mensagens"),
       icon: MessageSquare,
       badge: unreadMessages > 0 ? unreadMessages : undefined,
     },
-    { id: "agendamentos", label: t("portal.sidebar.menu.agendamentos"), icon: Calendar },
-    { id: "dados", label: t("portal.sidebar.menu.dados"), icon: User },
+    { id: PortalView.Agendamentos, label: t("portal.sidebar.menu.agendamentos"), icon: Calendar },
+    { id: PortalView.Dados, label: t("portal.sidebar.menu.dados"), icon: User },
   ]
 
   const totalPendencias = processes.reduce(
@@ -90,7 +91,7 @@ export function PortalSidebar({
           <div key={item.id}>
             <button
               onClick={() => {
-                if (item.id === "processos") {
+                if (item.id === PortalView.Processos) {
                   setProcessesExpanded(!processesExpanded)
                 } else {
                   onItemChange(item.id)
@@ -99,14 +100,14 @@ export function PortalSidebar({
               }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
-                activeItem === item.id && item.id !== "processos"
+                activeItem === item.id && item.id !== PortalView.Processos
                   ? "bg-[#4caf50] text-white shadow-md"
                   : "text-white/80 hover:bg-white/10 hover:text-white"
               )}
             >
               <item.icon className="w-5 h-5" />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.id === "processos" && (
+              {item.id === PortalView.Processos && (
                 <>
                   {totalPendencias > 0 && (
                     <Badge className="h-5 min-w-5 flex items-center justify-center text-xs rounded-full bg-amber-500 text-white mr-1">
@@ -120,7 +121,7 @@ export function PortalSidebar({
                   )}
                 </>
               )}
-              {item.badge != null && item.id !== "processos" && (
+              {item.badge != null && item.id !== PortalView.Processos && (
                 <Badge
                   data-testid={`nav-badge-${item.id}`}
                   className={cn(
@@ -135,14 +136,14 @@ export function PortalSidebar({
               )}
             </button>
 
-            {item.id === "processos" && processesExpanded && (
+            {item.id === PortalView.Processos && processesExpanded && (
               <div className="ml-4 mt-1 space-y-1">
                 {processes.map((process) => (
                   <button
                     key={process.id}
                     onClick={() => {
                       onProcessChange(process.id)
-                      onItemChange("processo-detalhe")
+                      onItemChange(PortalView.ProcessoDetalhe)
                       setIsMobileOpen(false)
                     }}
                     className={cn(

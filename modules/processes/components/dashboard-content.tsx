@@ -14,6 +14,7 @@ import {
   pendenciasTarget as pickPendenciasTarget,
   totalPendencias as sumPendencias,
 } from "@/modules/processes/processes.service"
+import { ProcessBucket, ProcessStatus } from "@/lib/db/enums"
 import { useLanguage } from "@/lib/language-context"
 import { PaymentsDashboardCard } from "@/modules/payments/components/payments-dashboard-card"
 import { DashboardMap } from "./dashboard-map"
@@ -144,10 +145,10 @@ export function DashboardContent({
         </Card>
 
         <Card
-          className={statCardClasses(bucketFilter === "andamento")}
+          className={statCardClasses(bucketFilter === ProcessBucket.Andamento)}
           role="button"
-          aria-pressed={bucketFilter === "andamento"}
-          onClick={() => toggleBucketFilter("andamento")}
+          aria-pressed={bucketFilter === ProcessBucket.Andamento}
+          onClick={() => toggleBucketFilter(ProcessBucket.Andamento)}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
@@ -170,10 +171,12 @@ export function DashboardContent({
         </Card>
 
         <Card
-          className={statCardClasses(bucketFilter === "acompanhamento")}
+          className={statCardClasses(
+            bucketFilter === ProcessBucket.Acompanhamento,
+          )}
           role="button"
-          aria-pressed={bucketFilter === "acompanhamento"}
-          onClick={() => toggleBucketFilter("acompanhamento")}
+          aria-pressed={bucketFilter === ProcessBucket.Acompanhamento}
+          onClick={() => toggleBucketFilter(ProcessBucket.Acompanhamento)}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
@@ -196,10 +199,10 @@ export function DashboardContent({
         </Card>
 
         <Card
-          className={statCardClasses(bucketFilter === "finalizado")}
+          className={statCardClasses(bucketFilter === ProcessBucket.Finalizado)}
           role="button"
-          aria-pressed={bucketFilter === "finalizado"}
-          onClick={() => toggleBucketFilter("finalizado")}
+          aria-pressed={bucketFilter === ProcessBucket.Finalizado}
+          onClick={() => toggleBucketFilter(ProcessBucket.Finalizado)}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
@@ -271,15 +274,15 @@ export function DashboardContent({
                             <div className="flex-1">
                               <div className="flex items-start gap-3">
                                 <div className={`p-2 rounded-lg ${
-                                  process.status === "finalizado"
+                                  process.status === ProcessStatus.Finalizado
                                     ? "bg-[#e8f5e9]"
-                                    : process.status === "acompanhamento"
+                                    : process.status === ProcessStatus.Acompanhamento
                                     ? "bg-amber-100"
                                     : "bg-blue-100"
                                 }`}>
-                                  {process.status === "finalizado" ? (
+                                  {process.status === ProcessStatus.Finalizado ? (
                                     <CheckCircle className="w-5 h-5 text-[#4caf50]" />
-                                  ) : process.status === "acompanhamento" ? (
+                                  ) : process.status === ProcessStatus.Acompanhamento ? (
                                     <Eye className="w-5 h-5 text-amber-600" />
                                   ) : (
                                     <FileSearch className="w-5 h-5 text-blue-600" />
@@ -309,9 +312,9 @@ export function DashboardContent({
                               </div>
 
                               <Badge className={`${
-                                process.status === "finalizado"
+                                process.status === ProcessStatus.Finalizado
                                   ? "bg-[#e8f5e9] text-[#2d5a27]"
-                                  : process.status === "acompanhamento"
+                                  : process.status === ProcessStatus.Acompanhamento
                                   ? "bg-amber-100 text-amber-800"
                                   : "bg-blue-100 text-blue-800"
                               }`}>

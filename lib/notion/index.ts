@@ -36,3 +36,7 @@ export type {
   ExportTask,
 } from './types';
 export type { ProcessListItem, ExportResult, WebhookOutcome } from './adapter';
+
+// Boundary schema for the inbound webhook payload (used by the route handler).
+export { webhookPayloadSchema } from './schemas';
+export type { WebhookPayload } from './schemas';

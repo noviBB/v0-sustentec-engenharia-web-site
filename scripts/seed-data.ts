@@ -2,19 +2,30 @@
 import { and, eq, isNull, sql as drizzleSql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { z } from 'zod';
 // Central config service — `lib/config.ts` has no `import 'server-only'`, so
 // it's safe to import from a tsx script (outside the Next.js runtime).
 import { config } from '../lib/config';
 import * as schema from '../lib/db/schema';
+import {
+  MessageDirection,
+  PaymentStatus,
+  ProcessLicenseType,
+  ProcessStatus,
+  ProcessTaskPriority,
+  ProcessTaskStatus,
+  ProcessTipologia,
+  UserRole,
+} from '../lib/db/enums';
 
-interface AuthUser {
-  id: string;
-  email?: string;
-}
-
-interface AdminUsersListResponse {
-  users: AuthUser[];
-}
+const adminUsersListResponseSchema = z.object({
+  users: z.array(
+    z.object({
+      id: z.string(),
+      email: z.string().optional(),
+    }),
+  ),
+});
 
 const baseUrl: string = config.public.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey: string = config.server.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,13 +37,6 @@ const adminHeaders: Record<string, string> = {
 
 const sql = postgres(config.server.DATABASE_URL, { prepare: false, max: 1 });
 const db = drizzle(sql, { schema });
-
-type ProcessStatus = (typeof schema.processStatus.enumValues)[number];
-type ProcessTipologia = (typeof schema.processTipologia.enumValues)[number];
-type ProcessLicenseType = (typeof schema.processLicenseType.enumValues)[number];
-type ProcessTaskStatus = (typeof schema.processTaskStatus.enumValues)[number];
-type ProcessTaskPriority = (typeof schema.processTaskPriority.enumValues)[number];
-type PaymentStatus = (typeof schema.paymentStatus.enumValues)[number];
 
 interface SeedPayment {
   installment_no: number;
@@ -97,7 +101,7 @@ interface SeedMessage {
   subject: string;
   body: string;
   sent_at: string;
-  direction: 'inbound' | 'outbound';
+  direction: MessageDirection;
   read: boolean;
   /** Tied back to the seeded process via `processes.code` (same tenant). */
   process_code?: string;
@@ -238,41 +242,41 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 26-004',
     name: 'Enge Prat - UNOPS Planos',
     city: null,
-    status: 'andamento',
+    status: ProcessStatus.Andamento,
     status_label: 'Em analise',
     progress: 65,
     latitude: '-23.5505000',
     longitude: '-46.6333000',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Licenciamento ambiental do empreendimento UNOPS Planos.',
     started_at: '2026-01-15',
     due_date: '2026-06-30',
     finished_at: null,
     responsible_tech_slug: 'maira',
-    license_types: ['LP', 'LI'],
+    license_types: [ProcessLicenseType.LP, ProcessLicenseType.LI],
     classe_impacto: 'Classe 2',
     tempo_tramitacao: '8 a 12 meses',
     atividade_licenciada: 'Infraestrutura de saneamento',
     payments: [
-      { installment_no: 1, amount: '8500.00', due_date: '2026-02-10', status: 'paid' },
-      { installment_no: 2, amount: '8500.00', due_date: '2026-05-20', status: 'pending' },
-      { installment_no: 3, amount: '8500.00', due_date: '2026-08-10', status: 'pending' },
+      { installment_no: 1, amount: '8500.00', due_date: '2026-02-10', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '8500.00', due_date: '2026-05-20', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '8500.00', due_date: '2026-08-10', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.licencaPrevia, SEED_DOCS.comprovanteProtocolo],
     tasks: [
       {
         title: 'Enviar EIA/RIMA atualizado',
         summary: 'O órgão ambiental solicitou a versão revisada do estudo de impacto.',
-        status: 'aberta',
-        priority: 'alta',
+        status: ProcessTaskStatus.Aberta,
+        priority: ProcessTaskPriority.Alta,
         due_date: '2026-06-20',
       },
       {
         title: 'Assinar procuração',
         summary: 'Procuração necessária para representação junto ao INEA.',
-        status: 'aguardando_cliente',
-        priority: 'media',
+        status: ProcessTaskStatus.AguardandoCliente,
+        priority: ProcessTaskPriority.Media,
         due_date: null,
       },
     ],
@@ -281,34 +285,34 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 26-016',
     name: 'Licenças Enge Prat - Niterói',
     city: 'Niterói - RJ',
-    status: 'andamento',
+    status: ProcessStatus.Andamento,
     status_label: 'Aguardando docs',
     progress: 25,
     latitude: '-23.5805000',
     longitude: '-46.6633000',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Obtenção das licenças de instalação da unidade de Niterói.',
     started_at: '2026-03-01',
     due_date: '2026-10-15',
     finished_at: null,
     responsible_tech_slug: 'guilherme',
-    license_types: ['LI'],
+    license_types: [ProcessLicenseType.LI],
     classe_impacto: 'Classe 3',
     tempo_tramitacao: '6 a 9 meses',
     atividade_licenciada: 'Operação industrial',
     payments: [
-      { installment_no: 1, amount: '6200.00', due_date: '2026-03-20', status: 'paid' },
-      { installment_no: 2, amount: '6200.00', due_date: '2026-07-20', status: 'pending' },
-      { installment_no: 3, amount: '6200.00', due_date: '2026-10-20', status: 'pending' },
+      { installment_no: 1, amount: '6200.00', due_date: '2026-03-20', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '6200.00', due_date: '2026-07-20', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '6200.00', due_date: '2026-10-20', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.comprovanteProtocolo],
     tasks: [
       {
         title: 'Enviar plano de emergência atualizado',
         summary: 'Documentação pendente apontada na triagem do processo.',
-        status: 'aberta',
-        priority: 'urgente',
+        status: ProcessTaskStatus.Aberta,
+        priority: ProcessTaskPriority.Urgente,
         due_date: '2026-06-15',
       },
     ],
@@ -317,26 +321,26 @@ const ENGEPRAT_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 26-017',
     name: 'Laudo de Avaliação Cautelar de Vizinhança - Enge Prat',
     city: null,
-    status: 'finalizado',
+    status: ProcessStatus.Finalizado,
     status_label: 'Concluido',
     progress: 100,
     latitude: '-23.5205000',
     longitude: '-46.6033000',
-    tipologia: 'laudo',
+    tipologia: ProcessTipologia.Laudo,
     environmental_agency: 'Prefeitura de Niterói',
     objective: 'Laudo cautelar de vizinhança para a obra da unidade Centro.',
     started_at: '2025-11-10',
     due_date: '2026-02-28',
     finished_at: '2026-02-20',
     responsible_tech_slug: 'ivon-benitez',
-    license_types: ['LAS'],
+    license_types: [ProcessLicenseType.LAS],
     classe_impacto: 'Classe 1',
     tempo_tramitacao: '3 a 4 meses',
     atividade_licenciada: 'Avaliação de vizinhança',
     payments: [
-      { installment_no: 1, amount: '4500.00', due_date: '2025-12-01', status: 'paid' },
-      { installment_no: 2, amount: '4500.00', due_date: '2026-01-15', status: 'paid' },
-      { installment_no: 3, amount: '4500.00', due_date: '2026-02-28', status: 'paid' },
+      { installment_no: 1, amount: '4500.00', due_date: '2025-12-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '4500.00', due_date: '2026-01-15', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '4500.00', due_date: '2026-02-28', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.parecerTecnico, SEED_DOCS.licencaPrevia],
     tasks: [],
@@ -348,41 +352,41 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 26-021',
     name: 'Exigências Fazenda Sapucay',
     city: 'Cachoeiras de Macacu - RJ',
-    status: 'andamento',
+    status: ProcessStatus.Andamento,
     status_label: 'Em andamento',
     progress: 55,
     latitude: '-22.3930150',
     longitude: '-42.4869660',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Atendimento às exigências do órgão ambiental para a Fazenda Sapucay.',
     started_at: '2026-02-01',
     due_date: '2026-09-30',
     finished_at: null,
     responsible_tech_slug: 'laila',
-    license_types: ['LP'],
+    license_types: [ProcessLicenseType.LP],
     classe_impacto: 'Classe 2',
     tempo_tramitacao: '8 a 10 meses',
     atividade_licenciada: 'Atividade agropecuária',
     payments: [
-      { installment_no: 1, amount: '5000.00', due_date: '2026-02-15', status: 'paid' },
-      { installment_no: 2, amount: '5000.00', due_date: '2026-05-15', status: 'pending' },
-      { installment_no: 3, amount: '5000.00', due_date: '2026-08-15', status: 'pending' },
+      { installment_no: 1, amount: '5000.00', due_date: '2026-02-15', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '5000.00', due_date: '2026-05-15', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '5000.00', due_date: '2026-08-15', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.comprovanteProtocolo, SEED_DOCS.licencaPrevia],
     tasks: [
       {
         title: 'Responder exigência técnica do INEA',
         summary: 'Exigência nº 1 sobre a documentação fundiária da fazenda.',
-        status: 'aberta',
-        priority: 'alta',
+        status: ProcessTaskStatus.Aberta,
+        priority: ProcessTaskPriority.Alta,
         due_date: '2026-06-25',
       },
       {
         title: 'Confirmar coordenadas das nascentes',
         summary: 'Validação de campo das APPs mapeadas.',
-        status: 'em_andamento',
-        priority: 'media',
+        status: ProcessTaskStatus.EmAndamento,
+        priority: ProcessTaskPriority.Media,
         due_date: '2026-07-10',
       },
     ],
@@ -391,34 +395,34 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-016',
     name: 'Licença LI CGH Hydroen',
     city: 'Nova Friburgo - RJ',
-    status: 'andamento',
+    status: ProcessStatus.Andamento,
     status_label: 'Em andamento',
     progress: 50,
     latitude: '-21.9909560',
     longitude: '-42.3068850',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Obtenção da licença de instalação da central geradora hidrelétrica Hydroen.',
     started_at: '2024-06-10',
     due_date: '2026-08-31',
     finished_at: null,
     responsible_tech_slug: 'kely',
-    license_types: ['LI'],
+    license_types: [ProcessLicenseType.LI],
     classe_impacto: 'Classe 4',
     tempo_tramitacao: '18 a 24 meses',
     atividade_licenciada: 'Geração de energia hidrelétrica',
     payments: [
-      { installment_no: 1, amount: '12000.00', due_date: '2024-07-01', status: 'paid' },
-      { installment_no: 2, amount: '12000.00', due_date: '2026-05-01', status: 'pending' },
-      { installment_no: 3, amount: '12000.00', due_date: '2026-09-01', status: 'pending' },
+      { installment_no: 1, amount: '12000.00', due_date: '2024-07-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '12000.00', due_date: '2026-05-01', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '12000.00', due_date: '2026-09-01', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.parecerTecnico],
     tasks: [
       {
         title: 'Responder exigência técnica do INEA',
         summary: 'Exigência nº 1 sobre o estudo hidrológico complementar.',
-        status: 'aberta',
-        priority: 'urgente',
+        status: ProcessTaskStatus.Aberta,
+        priority: ProcessTaskPriority.Urgente,
         due_date: '2026-06-18',
       },
     ],
@@ -427,26 +431,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-015',
     name: 'IF CGH Hydroen',
     city: 'Nova Friburgo - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-21.9909560',
     longitude: '-42.3068850',
-    tipologia: 'consultoria',
+    tipologia: ProcessTipologia.Consultoria,
     environmental_agency: 'INEA',
     objective: 'Acompanhamento do inventário florestal da área da CGH Hydroen.',
     started_at: '2024-05-20',
     due_date: null,
     finished_at: null,
     responsible_tech_slug: 'marcelo',
-    license_types: ['outros'],
+    license_types: [ProcessLicenseType.Outros],
     classe_impacto: 'Classe 2',
     tempo_tramitacao: 'Contínuo',
     atividade_licenciada: 'Inventário florestal',
     payments: [
-      { installment_no: 1, amount: '3500.00', due_date: '2024-06-15', status: 'paid' },
-      { installment_no: 2, amount: '3500.00', due_date: '2024-09-15', status: 'paid' },
-      { installment_no: 3, amount: '3500.00', due_date: '2024-12-15', status: 'paid' },
+      { installment_no: 1, amount: '3500.00', due_date: '2024-06-15', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '3500.00', due_date: '2024-09-15', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '3500.00', due_date: '2024-12-15', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.parecerTecnico],
     tasks: [],
@@ -455,26 +459,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-017',
     name: 'ASV Fluminense Industrial',
     city: 'Cachoeiras de Macacu - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-22.8535590',
     longitude: '-43.0219400',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Autorização de supressão de vegetação para a planta industrial.',
     started_at: '2024-07-05',
     due_date: null,
     finished_at: null,
     responsible_tech_slug: 'marcelo',
-    license_types: ['outros'],
+    license_types: [ProcessLicenseType.Outros],
     classe_impacto: 'Classe 3',
     tempo_tramitacao: '10 a 14 meses',
     atividade_licenciada: 'Supressão de vegetação',
     payments: [
-      { installment_no: 1, amount: '4200.00', due_date: '2024-08-01', status: 'paid' },
-      { installment_no: 2, amount: '4200.00', due_date: '2024-11-01', status: 'paid' },
-      { installment_no: 3, amount: '4200.00', due_date: '2025-02-01', status: 'paid' },
+      { installment_no: 1, amount: '4200.00', due_date: '2024-08-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '4200.00', due_date: '2024-11-01', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '4200.00', due_date: '2025-02-01', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.comprovanteProtocolo],
     tasks: [],
@@ -483,34 +487,34 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-061',
     name: 'Programas Ambientais LI Hydroen',
     city: 'Nova Friburgo - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-21.9909560',
     longitude: '-42.3068850',
-    tipologia: 'monitoramento',
+    tipologia: ProcessTipologia.Monitoramento,
     environmental_agency: 'INEA',
     objective: 'Execução dos programas ambientais condicionantes da LI.',
     started_at: '2024-11-03',
     due_date: null,
     finished_at: null,
     responsible_tech_slug: 'kely',
-    license_types: ['LI'],
+    license_types: [ProcessLicenseType.LI],
     classe_impacto: 'Classe 4',
     tempo_tramitacao: 'Contínuo (vigência da LI)',
     atividade_licenciada: 'Programas de monitoramento ambiental',
     payments: [
-      { installment_no: 1, amount: '6000.00', due_date: '2024-12-01', status: 'paid' },
-      { installment_no: 2, amount: '6000.00', due_date: '2025-06-01', status: 'paid' },
-      { installment_no: 3, amount: '6000.00', due_date: '2026-06-01', status: 'pending' },
+      { installment_no: 1, amount: '6000.00', due_date: '2024-12-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '6000.00', due_date: '2025-06-01', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '6000.00', due_date: '2026-06-01', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.parecerTecnico],
     tasks: [
       {
         title: 'Agendar campanha de monitoramento trimestral',
         summary: 'Campanha de qualidade da água do 2º trimestre.',
-        status: 'aberta',
-        priority: 'media',
+        status: ProcessTaskStatus.Aberta,
+        priority: ProcessTaskPriority.Media,
         due_date: '2026-06-30',
       },
     ],
@@ -519,26 +523,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 25-072',
     name: 'LO Hydroen',
     city: 'Nova Friburgo - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-21.9909560',
     longitude: '-42.3068850',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Obtenção da licença de operação da CGH Hydroen.',
     started_at: '2025-03-18',
     due_date: '2026-12-20',
     finished_at: null,
     responsible_tech_slug: 'kely',
-    license_types: ['LO'],
+    license_types: [ProcessLicenseType.LO],
     classe_impacto: 'Classe 4',
     tempo_tramitacao: '12 a 18 meses',
     atividade_licenciada: 'Geração de energia hidrelétrica',
     payments: [
-      { installment_no: 1, amount: '7500.00', due_date: '2025-04-01', status: 'paid' },
-      { installment_no: 2, amount: '7500.00', due_date: '2026-07-01', status: 'pending' },
-      { installment_no: 3, amount: '7500.00', due_date: '2026-12-01', status: 'pending' },
+      { installment_no: 1, amount: '7500.00', due_date: '2025-04-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '7500.00', due_date: '2026-07-01', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '7500.00', due_date: '2026-12-01', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.comprovanteProtocolo],
     tasks: [],
@@ -547,26 +551,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 25-073',
     name: 'Renovação LO - Fazenda Sapucay',
     city: 'Cachoeiras de Macacu - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-22.3931190',
     longitude: '-42.4871580',
-    tipologia: 'licenciamento',
+    tipologia: ProcessTipologia.Licenciamento,
     environmental_agency: 'INEA',
     objective: 'Renovação da licença de operação das atividades da fazenda.',
     started_at: '2025-05-02',
     due_date: '2026-11-30',
     finished_at: null,
     responsible_tech_slug: 'kely',
-    license_types: ['renovacao'],
+    license_types: [ProcessLicenseType.Renovacao],
     classe_impacto: 'Classe 2',
     tempo_tramitacao: '6 a 8 meses',
     atividade_licenciada: 'Atividade agropecuária',
     payments: [
-      { installment_no: 1, amount: '3200.00', due_date: '2025-06-01', status: 'paid' },
-      { installment_no: 2, amount: '3200.00', due_date: '2026-06-01', status: 'pending' },
-      { installment_no: 3, amount: '3200.00', due_date: '2026-11-01', status: 'pending' },
+      { installment_no: 1, amount: '3200.00', due_date: '2025-06-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '3200.00', due_date: '2026-06-01', status: PaymentStatus.Pending },
+      { installment_no: 3, amount: '3200.00', due_date: '2026-11-01', status: PaymentStatus.Pending },
     ],
     documents: [SEED_DOCS.licencaPrevia],
     tasks: [],
@@ -575,26 +579,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-006',
     name: 'AA Canalização - Fluminense Industrial',
     city: 'Cachoeiras de Macacu - RJ',
-    status: 'acompanhamento',
+    status: ProcessStatus.Acompanhamento,
     status_label: 'Em acompanhamento',
     progress: 0,
     latitude: '-22.8535590',
     longitude: '-43.0219400',
-    tipologia: 'consultoria',
+    tipologia: ProcessTipologia.Consultoria,
     environmental_agency: 'INEA',
     objective: 'Autorização ambiental para canalização de curso d’água na planta industrial.',
     started_at: '2024-03-08',
     due_date: null,
     finished_at: null,
     responsible_tech_slug: 'laila',
-    license_types: ['outros'],
+    license_types: [ProcessLicenseType.Outros],
     classe_impacto: 'Classe 3',
     tempo_tramitacao: '8 a 12 meses',
     atividade_licenciada: 'Canalização de curso d’água',
     payments: [
-      { installment_no: 1, amount: '4800.00', due_date: '2024-04-01', status: 'paid' },
-      { installment_no: 2, amount: '4800.00', due_date: '2024-08-01', status: 'paid' },
-      { installment_no: 3, amount: '4800.00', due_date: '2024-12-01', status: 'paid' },
+      { installment_no: 1, amount: '4800.00', due_date: '2024-04-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '4800.00', due_date: '2024-08-01', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '4800.00', due_date: '2024-12-01', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.parecerTecnico],
     tasks: [],
@@ -603,26 +607,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 25-119',
     name: 'Laudo Maraú',
     city: 'Maraú - BA',
-    status: 'finalizado',
+    status: ProcessStatus.Finalizado,
     status_label: 'Finalizado',
     progress: 100,
     latitude: '-14.1107710',
     longitude: '-39.0148950',
-    tipologia: 'laudo',
+    tipologia: ProcessTipologia.Laudo,
     environmental_agency: 'INEMA',
     objective: 'Laudo técnico ambiental da gleba de Maraú.',
     started_at: '2025-08-11',
     due_date: '2025-12-19',
     finished_at: '2025-12-15',
     responsible_tech_slug: 'leon',
-    license_types: ['LAS'],
+    license_types: [ProcessLicenseType.LAS],
     classe_impacto: 'Classe 1',
     tempo_tramitacao: '3 a 5 meses',
     atividade_licenciada: 'Avaliação técnica ambiental',
     payments: [
-      { installment_no: 1, amount: '3800.00', due_date: '2025-09-01', status: 'paid' },
-      { installment_no: 2, amount: '3800.00', due_date: '2025-10-15', status: 'paid' },
-      { installment_no: 3, amount: '3800.00', due_date: '2025-12-19', status: 'paid' },
+      { installment_no: 1, amount: '3800.00', due_date: '2025-09-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '3800.00', due_date: '2025-10-15', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '3800.00', due_date: '2025-12-19', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.parecerTecnico, SEED_DOCS.comprovanteProtocolo],
     tasks: [],
@@ -631,26 +635,26 @@ const VICTOR_PROCESSES: ReadonlyArray<SeedProcess> = [
     code: 'CC 24-044',
     name: 'Demarcação de Faixa - Fluminense Industrial',
     city: 'Cachoeiras de Macacu - RJ',
-    status: 'finalizado',
+    status: ProcessStatus.Finalizado,
     status_label: 'Finalizado',
     progress: 100,
     latitude: '-22.8526190',
     longitude: '-43.0184890',
-    tipologia: 'consultoria',
+    tipologia: ProcessTipologia.Consultoria,
     environmental_agency: 'INEA',
     objective: 'Demarcação da faixa marginal de proteção do córrego limítrofe.',
     started_at: '2024-09-12',
     due_date: '2025-04-30',
     finished_at: '2025-04-22',
     responsible_tech_slug: 'leon',
-    license_types: ['outros'],
+    license_types: [ProcessLicenseType.Outros],
     classe_impacto: 'Classe 1',
     tempo_tramitacao: '4 a 6 meses',
     atividade_licenciada: 'Demarcação de faixa marginal',
     payments: [
-      { installment_no: 1, amount: '2800.00', due_date: '2024-10-01', status: 'paid' },
-      { installment_no: 2, amount: '2800.00', due_date: '2025-01-01', status: 'paid' },
-      { installment_no: 3, amount: '2800.00', due_date: '2025-04-01', status: 'paid' },
+      { installment_no: 1, amount: '2800.00', due_date: '2024-10-01', status: PaymentStatus.Paid },
+      { installment_no: 2, amount: '2800.00', due_date: '2025-01-01', status: PaymentStatus.Paid },
+      { installment_no: 3, amount: '2800.00', due_date: '2025-04-01', status: PaymentStatus.Paid },
     ],
     documents: [SEED_DOCS.parecerTecnico],
     tasks: [],
@@ -664,7 +668,7 @@ const ENGEPRAT_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Andamento do processo CC 26-004',
     body: 'Olá, informamos que o processo CC 26-004 foi encaminhado para análise técnica pelo órgão ambiental. Mantemos você atualizado sobre as próximas etapas.',
     sent_at: '2026-04-02T10:00:00Z',
-    direction: 'inbound',
+    direction: MessageDirection.Inbound,
     read: false,
     process_code: 'CC 26-004',
   },
@@ -674,7 +678,7 @@ const ENGEPRAT_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Re: Andamento do processo CC 26-004',
     body: 'Obrigado pela atualização. Vocês têm previsão de retorno do órgão ambiental? Estamos coordenando o cronograma do empreendimento com base nesse parecer.',
     sent_at: '2026-04-03T16:12:00Z',
-    direction: 'outbound',
+    direction: MessageDirection.Outbound,
     read: true,
     process_code: 'CC 26-004',
   },
@@ -684,7 +688,7 @@ const ENGEPRAT_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Documentação pendente — CC 26-016',
     body: 'Identificamos pendências de documentação no processo CC 26-016. Por favor, envie o EIA/RIMA e o plano de emergência atualizado.',
     sent_at: '2026-04-15T14:30:00Z',
-    direction: 'inbound',
+    direction: MessageDirection.Inbound,
     read: true,
     process_code: 'CC 26-016',
   },
@@ -694,7 +698,7 @@ const ENGEPRAT_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Re: Documentação pendente — CC 26-016',
     body: 'Estamos finalizando a revisão do EIA/RIMA com a equipe técnica. Devemos enviar até o fim da próxima semana. O plano de emergência segue em anexo.',
     sent_at: '2026-04-16T09:45:00Z',
-    direction: 'outbound',
+    direction: MessageDirection.Outbound,
     read: true,
     process_code: 'CC 26-016',
   },
@@ -707,7 +711,7 @@ const VICTOR_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Boas-vindas ao Portal Sustentec',
     body: 'Olá Victor, seu acesso ao portal foi habilitado. Em breve disponibilizaremos os detalhes completos dos seus processos. Qualquer dúvida, fale conosco no WhatsApp.',
     sent_at: '2026-05-19T09:00:00Z',
-    direction: 'inbound',
+    direction: MessageDirection.Inbound,
     read: false,
   },
   {
@@ -716,7 +720,7 @@ const VICTOR_MESSAGES: ReadonlyArray<SeedMessage> = [
     subject: 'Re: Boas-vindas ao Portal Sustentec',
     body: 'Obrigado pelo acesso. Quando os detalhes completos dos processos CC 24-016 (Licença LI CGH Hydroen) e CC 26-021 (Exigências Fazenda Sapucay) ficarem disponíveis, podem me avisar por aqui?',
     sent_at: '2026-05-19T11:20:00Z',
-    direction: 'outbound',
+    direction: MessageDirection.Outbound,
     read: true,
   },
 ];
@@ -732,8 +736,8 @@ async function getAuthUserId(email: string): Promise<string> {
       const body: string = await res.text();
       throw new Error(`[seed-data] GET ${url} failed: ${res.status} ${body}`);
     }
-    const data = (await res.json()) as AdminUsersListResponse;
-    if (!Array.isArray(data.users) || data.users.length === 0) {
+    const data = adminUsersListResponseSchema.parse(await res.json());
+    if (data.users.length === 0) {
       throw new Error(`[seed-data] no auth user found for ${email} — run \`pnpm seed:auth\` first`);
     }
     const found = data.users.find((u) => u.email === email);
@@ -768,20 +772,25 @@ async function upsertClient(
     .from(schema.clients)
     .where(eq(schema.clients.name, name))
     .limit(1);
-  if (existing.length > 0) {
+  const existingRow = existing[0];
+  if (existingRow) {
     if (cadastral) {
       await db
         .update(schema.clients)
         .set({ ...cadastral, updated_at: drizzleSql`now()` })
-        .where(eq(schema.clients.id, existing[0].id));
+        .where(eq(schema.clients.id, existingRow.id));
     }
-    return existing[0].id;
+    return existingRow.id;
   }
   const inserted = await db
     .insert(schema.clients)
     .values({ name, notion_cnpj_filter: cnpjFilter, ...cadastral })
     .returning({ id: schema.clients.id });
-  return inserted[0].id;
+  const insertedRow = inserted[0];
+  if (!insertedRow) {
+    throw new Error(`Failed to insert client ${name}`);
+  }
+  return insertedRow.id;
 }
 
 /**
@@ -854,8 +863,9 @@ async function seedProcessesForClient(
     };
 
     let processId: string;
-    if (existing.length > 0) {
-      processId = existing[0].id;
+    const existingProcess = existing[0];
+    if (existingProcess) {
+      processId = existingProcess.id;
       await db
         .update(schema.processes)
         .set({ ...baseValues, updated_at: drizzleSql`now()` })
@@ -865,7 +875,11 @@ async function seedProcessesForClient(
         .insert(schema.processes)
         .values({ client_id: clientId, code: row.code, ...baseValues })
         .returning({ id: schema.processes.id });
-      processId = ins[0].id;
+      const insertedProcess = ins[0];
+      if (!insertedProcess) {
+        throw new Error(`Failed to insert process ${row.code}`);
+      }
+      processId = insertedProcess.id;
       inserted += 1;
     }
 
@@ -917,7 +931,7 @@ async function seedProcessesForClient(
             amount: p.amount,
             due_date: p.due_date,
             status: p.status,
-            paid_at: p.status === 'paid' ? new Date(p.due_date) : null,
+            paid_at: p.status === PaymentStatus.Paid ? new Date(p.due_date) : null,
           })),
         )
         .onConflictDoUpdate({
@@ -1124,12 +1138,12 @@ async function main(): Promise<void> {
   await db
     .insert(schema.profiles)
     .values([
-      { id: engepratAuthId, display_name: 'Engeprat', email: ENGEPRAT_EMAIL, role: 'client' },
+      { id: engepratAuthId, display_name: 'Engeprat', email: ENGEPRAT_EMAIL, role: UserRole.Client },
       {
         id: victorAuthId,
         display_name: 'Victor Leonardo Ferreira Coutinho',
         email: VICTORF_EMAIL,
-        role: 'client',
+        role: UserRole.Client,
       },
     ])
     .onConflictDoNothing({ target: schema.profiles.id });
@@ -1203,22 +1217,22 @@ async function main(): Promise<void> {
     .select({ count: drizzleSql<number>`count(*)::int` })
     .from(schema.processTasks);
 
-  console.log(`[seed-data] clients=${clientCount.count}`);
-  console.log(`[seed-data] responsible_techs=${techCount.count}`);
-  console.log(`[seed-data] responsible_tech_aliases=${aliasCount.count}`);
-  console.log(`[seed-data] profiles=${profileCount.count}`);
-  console.log(`[seed-data] user_clients=${userClientCount.count}`);
-  console.log(`[seed-data] process_milestone_kinds=${kindCount.count}`);
+  console.log(`[seed-data] clients=${clientCount?.count ?? 0}`);
+  console.log(`[seed-data] responsible_techs=${techCount?.count ?? 0}`);
+  console.log(`[seed-data] responsible_tech_aliases=${aliasCount?.count ?? 0}`);
+  console.log(`[seed-data] profiles=${profileCount?.count ?? 0}`);
+  console.log(`[seed-data] user_clients=${userClientCount?.count ?? 0}`);
+  console.log(`[seed-data] process_milestone_kinds=${kindCount?.count ?? 0}`);
   console.log(
-    `[seed-data] processes=${processCount.count} (new this run: engeprat=${newEngeprat}, victor=${newVictor})`,
+    `[seed-data] processes=${processCount?.count ?? 0} (new this run: engeprat=${newEngeprat}, victor=${newVictor})`,
   );
-  console.log(`[seed-data] process_milestones=${milestoneCount.count}`);
+  console.log(`[seed-data] process_milestones=${milestoneCount?.count ?? 0}`);
   console.log(
-    `[seed-data] messages=${messageCount.count} (new this run: engeprat=${newEngMsgs}, victor=${newVicMsgs})`,
+    `[seed-data] messages=${messageCount?.count ?? 0} (new this run: engeprat=${newEngMsgs}, victor=${newVicMsgs})`,
   );
-  console.log(`[seed-data] payments=${paymentCount.count}`);
-  console.log(`[seed-data] process_documents=${documentCount.count}`);
-  console.log(`[seed-data] process_tasks=${taskCount.count}`);
+  console.log(`[seed-data] payments=${paymentCount?.count ?? 0}`);
+  console.log(`[seed-data] process_documents=${documentCount?.count ?? 0}`);
+  console.log(`[seed-data] process_tasks=${taskCount?.count ?? 0}`);
 }
 
 main()

@@ -1,6 +1,6 @@
 "use client"
 
-import type { PaymentRow } from "@/modules/payments"
+import { PaymentStatus, type PaymentRow } from "@/modules/payments"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -30,11 +30,24 @@ function formatDate(value: string | Date | null | undefined): string {
   return new Intl.DateTimeFormat("pt-BR").format(d)
 }
 
-const STATUS_CLASSES = {
-  pending: "bg-blue-100 text-blue-800 border-blue-200",
-  paid: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  overdue: "bg-rose-100 text-rose-800 border-rose-200",
-} as const
+const STATUS_CLASSES: Record<PaymentStatus, string> = {
+  [PaymentStatus.Pending]: "bg-blue-100 text-blue-800 border-blue-200",
+  [PaymentStatus.Paid]: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  [PaymentStatus.Overdue]: "bg-rose-100 text-rose-800 border-rose-200",
+}
+
+const FALLBACK_STATUS_CLASS = "bg-gray-100 text-gray-700 border-gray-200"
+
+/** Known status keys, as plain strings for a membership check. */
+const STATUS_KEYS: ReadonlySet<string> = new Set<PaymentStatus>(
+  Object.values(PaymentStatus),
+)
+
+/** Membership guard so we can index STATUS_CLASSES without an `as` or an
+ *  unchecked index access (the column is the enum type, but be defensive). */
+function isPaymentStatus(value: string): value is PaymentStatus {
+  return STATUS_KEYS.has(value)
+}
 
 /**
  * Per-project installments table. Renders a tight 5-column layout
@@ -71,7 +84,9 @@ export function PaymentsView({ payments }: PaymentsViewProps) {
             </TableHeader>
             <TableBody>
               {payments.map((p) => {
-                const statusKey = p.status as keyof typeof STATUS_CLASSES
+                const statusClass = isPaymentStatus(p.status)
+                  ? STATUS_CLASSES[p.status]
+                  : FALLBACK_STATUS_CLASS
                 const statusLabel = t(`portal.payments.status.${p.status}`)
                 return (
                   <TableRow key={p.id}>
@@ -89,8 +104,7 @@ export function PaymentsView({ payments }: PaymentsViewProps) {
                       <Badge
                         className={cn(
                           "border text-xs font-medium",
-                          STATUS_CLASSES[statusKey] ??
-                            "bg-gray-100 text-gray-700 border-gray-200",
+                          statusClass,
                         )}
                       >
                         {statusLabel}

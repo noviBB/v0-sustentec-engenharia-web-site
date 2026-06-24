@@ -1,73 +1,121 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
+import { enumValues } from './enum-bridge';
 
-export const processStatus = pgEnum('process_status', [
-  'andamento',
-  'acompanhamento',
-  'finalizado',
-  'arquivado',
-]);
+export enum ProcessStatus {
+  Andamento = 'andamento',
+  Acompanhamento = 'acompanhamento',
+  Finalizado = 'finalizado',
+  Arquivado = 'arquivado',
+}
 
-export const processBucket = pgEnum('process_bucket', [
-  'andamento',
-  'acompanhamento',
-  'finalizado',
-]);
+export enum ProcessBucket {
+  Andamento = 'andamento',
+  Acompanhamento = 'acompanhamento',
+  Finalizado = 'finalizado',
+}
 
-export const processTipologia = pgEnum('process_tipologia', [
-  'licenciamento',
-  'consultoria',
-  'laudo',
-  'monitoramento',
-  'outros',
-]);
+export enum ProcessTipologia {
+  Licenciamento = 'licenciamento',
+  Consultoria = 'consultoria',
+  Laudo = 'laudo',
+  Monitoramento = 'monitoramento',
+  Outros = 'outros',
+}
 
-export const processLicenseType = pgEnum('process_license_type', [
-  'LP',
-  'LI',
-  'LO',
-  'LAS',
-  'LMA',
-  'renovacao',
-  'outros',
-]);
+export enum ProcessLicenseType {
+  LP = 'LP',
+  LI = 'LI',
+  LO = 'LO',
+  LAS = 'LAS',
+  LMA = 'LMA',
+  Renovacao = 'renovacao',
+  Outros = 'outros',
+}
 
-export const processTaskStatus = pgEnum('process_task_status', [
-  'aberta',
-  'em_andamento',
-  'aguardando_cliente',
-  'concluida',
-  'arquivada',
-]);
+export enum ProcessTaskStatus {
+  Aberta = 'aberta',
+  EmAndamento = 'em_andamento',
+  AguardandoCliente = 'aguardando_cliente',
+  Concluida = 'concluida',
+  Arquivada = 'arquivada',
+}
 
-export const processTaskPriority = pgEnum('process_task_priority', [
-  'baixa',
-  'media',
-  'alta',
-  'urgente',
-]);
+export enum ProcessTaskPriority {
+  Baixa = 'baixa',
+  Media = 'media',
+  Alta = 'alta',
+  Urgente = 'urgente',
+}
 
-export const appointmentStatus = pgEnum('appointment_status', [
-  'agendada',
-  'realizada',
-  'cancelada',
-  'remarcada',
-]);
+export enum AppointmentStatus {
+  Agendada = 'agendada',
+  Realizada = 'realizada',
+  Cancelada = 'cancelada',
+  Remarcada = 'remarcada',
+}
 
-export const messageDirection = pgEnum('message_direction', [
-  'inbound',
-  'outbound',
-]);
+export enum MessageDirection {
+  Inbound = 'inbound',
+  Outbound = 'outbound',
+}
 
-export const contactSubmissionStatus = pgEnum('contact_submission_status', [
-  'novo',
-  'em_atendimento',
-  'arquivado',
-]);
+export enum ContactSubmissionStatus {
+  Novo = 'novo',
+  EmAtendimento = 'em_atendimento',
+  Arquivado = 'arquivado',
+}
 
-export const userRole = pgEnum('user_role', ['client', 'staff', 'admin']);
+export enum UserRole {
+  Client = 'client',
+  Staff = 'staff',
+  Admin = 'admin',
+}
 
-export const paymentStatus = pgEnum('payment_status', [
-  'pending',
-  'paid',
-  'overdue',
-]);
+export enum PaymentStatus {
+  Pending = 'pending',
+  Paid = 'paid',
+  Overdue = 'overdue',
+}
+
+export const processStatus = pgEnum('process_status', enumValues(ProcessStatus));
+
+export const processBucket = pgEnum('process_bucket', enumValues(ProcessBucket));
+
+export const processTipologia = pgEnum(
+  'process_tipologia',
+  enumValues(ProcessTipologia),
+);
+
+export const processLicenseType = pgEnum(
+  'process_license_type',
+  enumValues(ProcessLicenseType),
+);
+
+export const processTaskStatus = pgEnum(
+  'process_task_status',
+  enumValues(ProcessTaskStatus),
+);
+
+export const processTaskPriority = pgEnum(
+  'process_task_priority',
+  enumValues(ProcessTaskPriority),
+);
+
+export const appointmentStatus = pgEnum(
+  'appointment_status',
+  enumValues(AppointmentStatus),
+);
+
+export const messageDirection = pgEnum(
+  'message_direction',
+  enumValues(MessageDirection),
+);
+
+export const contactSubmissionStatus = pgEnum(
+  'contact_submission_status',
+  enumValues(ContactSubmissionStatus),
+);
+
+export const userRole = pgEnum('user_role', enumValues(UserRole));
+
+export const paymentStatus = pgEnum('payment_status', enumValues(PaymentStatus));

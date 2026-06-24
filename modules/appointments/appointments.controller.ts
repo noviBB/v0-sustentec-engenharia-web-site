@@ -4,6 +4,7 @@ import 'server-only';
 
 import { requireClient } from '@/lib/auth/tenant';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import {
   createAppointmentSchema,
   type CreateAppointmentResult,
@@ -47,11 +48,11 @@ export async function createAppointmentAction(
   );
 
   switch (result.kind) {
-    case 'ok':
+    case ResultKind.Ok:
       return { ok: true, id: result.id };
-    case 'double_booked':
+    case ResultKind.DoubleBooked:
       return { ok: false, code: ResultCode.DoubleBooked };
-    case 'unauthorized':
+    case ResultKind.Unauthorized:
       return { ok: false, code: ResultCode.Unauthorized };
     default:
       return { ok: false, code: ResultCode.ServerError, ref: result.ref };

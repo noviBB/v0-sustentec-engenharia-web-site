@@ -17,7 +17,9 @@ import {
  *   - ordered by process_id, then kind ordinal ASC;
  *   - checked/checked_at pass through (null when unchecked).
  */
-type Repo = typeof import('@/modules/milestones/milestones.repo');
+import type * as MilestonesRepo from '@/modules/milestones/milestones.repo';
+
+type Repo = typeof MilestonesRepo;
 
 const world = newWorld();
 const kindIds: string[] = [];

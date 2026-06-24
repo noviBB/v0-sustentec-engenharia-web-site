@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
+import { ProcessTaskPriority, ProcessTaskStatus } from '@/lib/db/enums';
 import {
   cleanupWorld,
   createProcess,
@@ -17,7 +18,9 @@ import {
  *   - distinct installmentNo → distinct tasks;
  *   - created row shape: status='aberta', priority='alta', notion_page_id=null.
  */
-type Repo = typeof import('@/modules/tasks/tasks.repo');
+import type * as TasksRepo from '@/modules/tasks/tasks.repo';
+
+type Repo = typeof TasksRepo;
 
 const world = newWorld();
 let repo: Repo;
@@ -60,8 +63,8 @@ describeIntegration('tasks.repo (RLS + ensurePaymentOverdueTask)', () => {
     await getDbService().insert(processTasks).values({
       process_id: bProc,
       title: 'B private task',
-      status: 'aberta',
-      priority: 'media',
+      status: ProcessTaskStatus.Aberta,
+      priority: ProcessTaskPriority.Media,
     });
     const aRows = await repo.listTasksForClient(a.session, a.clientId);
     expect(aRows.some((t) => t.title === 'B private task')).toBe(false);
@@ -79,8 +82,8 @@ describeIntegration('tasks.repo (RLS + ensurePaymentOverdueTask)', () => {
 
     const rows = await tasksWithTitle(aProc, 1);
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.status).toBe('aberta');
-    expect(rows[0]!.priority).toBe('alta');
+    expect(rows[0]!.status).toBe(ProcessTaskStatus.Aberta);
+    expect(rows[0]!.priority).toBe(ProcessTaskPriority.Alta);
     expect(rows[0]!.notion_page_id).toBeNull();
   });
 
@@ -90,7 +93,7 @@ describeIntegration('tasks.repo (RLS + ensurePaymentOverdueTask)', () => {
     const { and, eq } = await import('drizzle-orm');
     await getDbService()
       .update(processTasks)
-      .set({ status: 'concluida' })
+      .set({ status: ProcessTaskStatus.Concluida })
       .where(
         and(
           eq(processTasks.process_id, aProc),
@@ -102,7 +105,9 @@ describeIntegration('tasks.repo (RLS + ensurePaymentOverdueTask)', () => {
     expect(again).toEqual({ created: true });
 
     const open = (await tasksWithTitle(aProc, 1)).filter(
-      (t) => t.status !== 'concluida' && t.status !== 'arquivada',
+      (t) =>
+        t.status !== ProcessTaskStatus.Concluida &&
+        t.status !== ProcessTaskStatus.Arquivada,
     );
     expect(open).toHaveLength(1);
   });

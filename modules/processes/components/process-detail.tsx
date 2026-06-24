@@ -34,6 +34,8 @@ import { PaymentsView } from "@/modules/payments/components/payments-view"
 import { ProjectMap } from "./project-map"
 import { ProjectStatusBadge } from "./project-status-badge"
 import { useLanguage } from "@/lib/language-context"
+import { ProcessTab } from "@/lib/enums"
+import { ProcessTaskPriority } from "@/lib/db/enums"
 
 interface ProcessDetailProps {
   process: ProcessRow
@@ -60,11 +62,29 @@ function formatBRDate(value: string | Date | null | undefined): string {
   }
 }
 
-const TASK_PRIORITY_BADGE: Record<string, string> = {
-  baixa: "bg-gray-100 text-gray-700",
-  media: "bg-blue-100 text-blue-800",
-  alta: "bg-amber-100 text-amber-800",
-  urgente: "bg-red-100 text-red-800",
+const TASK_PRIORITY_BADGE: Record<ProcessTaskPriority, string> = {
+  [ProcessTaskPriority.Baixa]: "bg-gray-100 text-gray-700",
+  [ProcessTaskPriority.Media]: "bg-blue-100 text-blue-800",
+  [ProcessTaskPriority.Alta]: "bg-amber-100 text-amber-800",
+  [ProcessTaskPriority.Urgente]: "bg-red-100 text-red-800",
+}
+
+const TASK_PRIORITY_FALLBACK = "bg-gray-100 text-gray-700"
+
+const TASK_PRIORITY_SET: ReadonlySet<string> = new Set(
+  Object.values(ProcessTaskPriority),
+)
+
+/** Narrows an arbitrary status string to a known `ProcessTaskPriority`. */
+function isTaskPriority(value: string): value is ProcessTaskPriority {
+  return TASK_PRIORITY_SET.has(value)
+}
+
+/** Looks up the badge classes for a task priority, with a neutral fallback. */
+function taskPriorityBadge(priority: string): string {
+  return isTaskPriority(priority)
+    ? TASK_PRIORITY_BADGE[priority]
+    : TASK_PRIORITY_FALLBACK
 }
 
 export function ProcessDetail({
@@ -73,11 +93,11 @@ export function ProcessDetail({
   milestones = [],
   tasks = [],
   documents = [],
-  initialTab = "resumo",
+  initialTab = ProcessTab.Resumo,
   onBack,
 }: ProcessDetailProps) {
   const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState(initialTab)
+  const [activeTab, setActiveTab] = useState<string>(initialTab)
 
   const statusBadgeText = process.status_label ?? process.status
   const openTasks = pickOpenTasks(tasks)
@@ -152,7 +172,7 @@ export function ProcessDetail({
               <div>
                 <p className="font-semibold text-foreground text-sm leading-tight">{statusBadgeText}</p>
                 <p className="text-xs text-muted-foreground mt-1">{t("portal.process.status.lastUpdate")}</p>
-                <p className="text-xs text-muted-foreground">{formatBRDate(process.updated_at as unknown as string)}</p>
+                <p className="text-xs text-muted-foreground">{formatBRDate(process.updated_at)}</p>
               </div>
             </div>
           </CardContent>
@@ -182,21 +202,21 @@ export function ProcessDetail({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
           <TabsTrigger
-            value="resumo"
+            value={ProcessTab.Resumo}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <ClipboardList className="w-4 h-4" />
             {t("portal.process.tab.resumo")}
           </TabsTrigger>
           <TabsTrigger
-            value="evolucao"
+            value={ProcessTab.Evolucao}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <TrendingUp className="w-4 h-4" />
             {t("portal.process.tab.evolution")}
           </TabsTrigger>
           <TabsTrigger
-            value="pendencias"
+            value={ProcessTab.Pendencias}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3 relative"
           >
             <AlertCircle className="w-4 h-4" />
@@ -208,21 +228,21 @@ export function ProcessDetail({
             )}
           </TabsTrigger>
           <TabsTrigger
-            value="documentos"
+            value={ProcessTab.Documentos}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <FolderOpen className="w-4 h-4" />
             {t("portal.process.tab.documents")}
           </TabsTrigger>
           <TabsTrigger
-            value="pagamentos"
+            value={ProcessTab.Pagamentos}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <CreditCard className="w-4 h-4" />
             {t("portal.process.tab.payments")}
           </TabsTrigger>
           <TabsTrigger
-            value="mapa"
+            value={ProcessTab.Mapa}
             className="flex items-center gap-2 bg-white border border-gray-200 data-[state=active]:bg-[#2d5a27] data-[state=active]:text-white data-[state=active]:border-[#2d5a27] rounded-lg py-3"
           >
             <MapPin className="w-4 h-4" />
@@ -231,7 +251,7 @@ export function ProcessDetail({
         </TabsList>
 
         {/* Resumo Tab */}
-        <TabsContent value="resumo" className="space-y-6">
+        <TabsContent value={ProcessTab.Resumo} className="space-y-6">
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.resumo.title")}</CardTitle>
@@ -266,7 +286,7 @@ export function ProcessDetail({
         </TabsContent>
 
         {/* Evolução Tab — milestone timeline synced from Notion. */}
-        <TabsContent value="evolucao">
+        <TabsContent value={ProcessTab.Evolucao}>
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.evolution.title")}</CardTitle>
@@ -316,7 +336,7 @@ export function ProcessDetail({
 
         {/* Pendências Tab — open process_tasks (synced from Notion or created
             by the payment-overdue cron). */}
-        <TabsContent value="pendencias">
+        <TabsContent value={ProcessTab.Pendencias}>
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.pendencias.title")}</CardTitle>
@@ -354,10 +374,7 @@ export function ProcessDetail({
                             {t(`portal.task.status.${task.status}`)}
                           </Badge>
                           <Badge
-                            className={
-                              TASK_PRIORITY_BADGE[task.priority] ??
-                              "bg-gray-100 text-gray-700"
-                            }
+                            className={taskPriorityBadge(task.priority)}
                           >
                             {t(`portal.task.priority.${task.priority}`)}
                           </Badge>
@@ -382,7 +399,7 @@ export function ProcessDetail({
 
         {/* Documentos Tab — download-only (no upload affordance; documents are
             published by the Sustentec team). */}
-        <TabsContent value="documentos">
+        <TabsContent value={ProcessTab.Documentos}>
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.documents.title")}</CardTitle>
@@ -441,12 +458,12 @@ export function ProcessDetail({
         </TabsContent>
 
         {/* Pagamentos Tab */}
-        <TabsContent value="pagamentos">
+        <TabsContent value={ProcessTab.Pagamentos}>
           <PaymentsView payments={payments} />
         </TabsContent>
 
         {/* Mapa Tab */}
-        <TabsContent value="mapa">
+        <TabsContent value={ProcessTab.Mapa}>
           <ProjectMap
             latitude={process.latitude}
             longitude={process.longitude}

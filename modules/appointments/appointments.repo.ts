@@ -5,6 +5,8 @@ import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { dbRls, type SessionLike } from '@/lib/db';
+import { DbMode } from '@/lib/enums';
+import { AppointmentStatus } from '@/lib/db/enums';
 import { appointments } from '@/lib/db/schema';
 
 export type Appointment = typeof appointments.$inferSelect;
@@ -65,7 +67,7 @@ export async function listAppointmentsForTech(
       .where(
         and(
           eq(appointments.responsible_tech_id, techId),
-          ne(appointments.status, 'cancelada'),
+          ne(appointments.status, AppointmentStatus.Cancelada),
           gte(appointments.starts_at, from),
           lt(appointments.starts_at, toExclusive),
         ),
@@ -102,6 +104,12 @@ export async function createAppointment(
           ends_at: payload.ends_at ?? null,
         })
         .returning({ id: appointments.id });
+      if (!row) {
+        // A successful INSERT ... RETURNING always yields exactly one row; an
+        // empty result means the row never committed. Throw so the catch below
+        // audits it and the caller gets a ServerError (never a silent success).
+        throw new Error('appointment insert returned no row');
+      }
       // Same transaction: the audit row commits with the INSERT or rolls
       // back with it.
       await insertAuditLog(
@@ -116,14 +124,20 @@ export async function createAppointment(
             starts_at: startsAtIso,
           },
         },
-        { mode: 'tx', tx },
+        { mode: DbMode.Tx, tx },
       );
       return row.id;
     });
     return { ok: true, id };
   } catch (err) {
     // postgres-js surfaces Postgres errors with a `code` property.
-    const pgCode = (err as { code?: string } | null)?.code;
+    const pgCode =
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      typeof err.code === 'string'
+        ? err.code
+        : undefined;
     const ref = randomUUID().slice(0, 8);
     // Audit the failure on a fresh service-mode connection — the
     // transaction that wrapped the failed INSERT has already rolled back,
