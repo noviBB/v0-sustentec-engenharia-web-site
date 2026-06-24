@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { signOut } from "@/app/portal/actions"
 import { PortalView } from "@/lib/enums"
 import type { ProcessRow } from "@/modules/processes/processes.repo"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/lib/language-context"
 import {
-  Leaf,
   LayoutDashboard,
   FolderKanban,
   MessageSquare,
@@ -21,7 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
 interface PortalSidebarProps {
@@ -74,14 +74,19 @@ export function PortalSidebar({
     <div className="flex flex-col h-full bg-[#2d5a27]">
       <div className="p-4 border-b border-white/10">
         <Link href="/portal" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-            <Leaf className="w-6 h-6 text-[#2d5a27]" />
+          <div className="bg-white rounded-lg p-1.5">
+            <Image
+              src="/sustentec-logo.png"
+              alt="Sustentec"
+              width={408}
+              height={139}
+              className="h-8 w-auto"
+              priority
+            />
           </div>
           <div>
-            <span className="text-lg font-bold text-white">
-              Susten<span className="text-[#8bc34a]">tec</span>
-            </span>
-            <p className="text-xs text-white/70">{t("portal.sidebar.tagline")}</p>
+            <p className="text-sm font-semibold text-white">{t("portal.sidebar.tagline")}</p>
+            <p className="text-xs text-white/70">{t("portal.sidebar.subtitle")}</p>
           </div>
         </Link>
       </div>
@@ -177,14 +182,13 @@ export function PortalSidebar({
       <div className="p-4 border-t border-white/10">
         <p className="text-xs text-white/60 mb-3">{t("portal.sidebar.tech.heading")}</p>
         <div className="flex items-center gap-3 mb-3">
-          {/* TODO(#9): per-tenant tech resolution when Notion adapter lands */}
+          {/* Tech contact — Leon Dalmasso (issue #39) */}
           <Avatar className="h-10 w-10 border-2 border-white/20">
-            <AvatarImage src="/responsavel-ivon.jpg" alt="Dra. Ivón Oristela Benítez González" />
-            <AvatarFallback className="bg-[#4caf50] text-white text-sm">IO</AvatarFallback>
+            <AvatarFallback className="bg-[#4caf50] text-white text-sm">LD</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
-              Dra. Ivón Oristela Benítez González
+              Leon Dalmasso
             </p>
           </div>
         </div>
@@ -224,12 +228,16 @@ export function PortalSidebar({
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2d5a27] border-b border-white/10">
         <div className="flex items-center justify-between p-4">
           <Link href="/portal" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-[#2d5a27]" />
+            <div className="bg-white rounded-lg p-1.5">
+              <Image
+                src="/sustentec-logo.png"
+                alt="Sustentec"
+                width={408}
+                height={139}
+                className="h-7 w-auto"
+                priority
+              />
             </div>
-            <span className="text-lg font-bold text-white">
-              Susten<span className="text-[#8bc34a]">tec</span>
-            </span>
           </Link>
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}

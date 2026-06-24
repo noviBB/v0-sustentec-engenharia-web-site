@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { PortalView, ProcessTab } from "@/lib/enums"
 import { groupByProcess, totalDue } from "@/modules/payments"
+import { useMarkPendenciasSeen } from "@/modules/notifications/hooks/use-mark-pendencias-seen"
 import type { Client } from "@/modules/clients/clients.repo"
 import type { ProcessBuckets, ProcessRow } from "@/modules/processes/processes.repo"
 import type { MessageRow } from "@/modules/messages/messages.repo"
@@ -33,6 +34,12 @@ interface PortalShellProps {
   tasks: TaskRow[]
   /** All downloadable documents for the tenant's processes, prefetched. */
   documents: DocumentRow[]
+  /**
+   * Open pendências created since the user last opened the notifications bell.
+   * Drives the header bell badge (which clears when the bell is opened) — the
+   * sidebar / per-process badges still show the TOTAL open count.
+   */
+  unseenPendencias: number
 }
 
 // Value-keyed lookups so a raw string narrows to an enum member without an
@@ -73,6 +80,7 @@ export function PortalShell({
   milestones,
   tasks,
   documents,
+  unseenPendencias: initialUnseenPendencias,
 }: PortalShellProps) {
   const [activeItem, setActiveItem] = useState<PortalView>(PortalView.Painel)
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(
@@ -85,6 +93,11 @@ export function PortalShell({
   )
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
   const [unreadCount, setUnreadCount] = useState<number>(initialUnread)
+  // Bell badge: pendências new since the bell was last opened (not the total).
+  const [unseenPendencias, setUnseenPendencias] = useState<number>(
+    initialUnseenPendencias,
+  )
+  const { mutate: markPendenciasSeen } = useMarkPendenciasSeen()
 
   // Total still owed = pending + overdue. Uses the payments module's pure
   // `totalDue` helper so the "due" status set lives in one place (the module,
@@ -181,6 +194,12 @@ export function PortalShell({
     setActiveItem(toPortalView(item))
   }
 
+  // Clear the badge optimistically and persist the seen stamp.
+  function handleNotificationsOpened() {
+    setUnseenPendencias(0)
+    void markPendenciasSeen()
+  }
+
   function handleMessageMarkReadFailed(messageId: string) {
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, read: false } : m)),
@@ -251,6 +270,8 @@ export function PortalShell({
           <PortalHeader
             onItemChange={setActiveItem}
             pendencias={pendenciasSummary}
+            unseenPendencias={unseenPendencias}
+            onNotificationsOpened={handleNotificationsOpened}
             onOpenPendencias={(processId) =>
               handleProcessSelect(processId, ProcessTab.Pendencias)
             }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -61,6 +61,7 @@ export function DashboardContent({
   // Clicking a status card filters the list below to that bucket; clicking it
   // again (or the TOTAL card) shows everything.
   const [bucketFilter, setBucketFilter] = useState<Bucket | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const processes: ProcessRow[] = flattenBuckets(buckets)
   const counts = bucketCounts(buckets)
@@ -88,7 +89,16 @@ export function DashboardContent({
   )}`
 
   function toggleBucketFilter(bucket: Bucket) {
-    setBucketFilter((prev) => (prev === bucket ? null : bucket))
+    setBucketFilter((prev) => {
+      const next = prev === bucket ? null : bucket
+      if (next !== null) {
+        requestAnimationFrame(() => {
+          listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          listRef.current?.focus({ preventScroll: true })
+        })
+      }
+      return next
+    })
   }
 
   const statCardClasses = (active: boolean) =>
@@ -229,7 +239,13 @@ export function DashboardContent({
 
       <DashboardMap processes={processes} />
 
-      <Card className="bg-white">
+      <div
+        ref={listRef}
+        tabIndex={-1}
+        aria-label={t("portal.dashboard.processes.title")}
+        className="scroll-mt-4 outline-none"
+      >
+        <Card className="bg-white">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold tracking-wide">
             {t("portal.dashboard.processes.title")}
@@ -341,7 +357,8 @@ export function DashboardContent({
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
