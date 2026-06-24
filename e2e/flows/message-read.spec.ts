@@ -12,7 +12,12 @@ test.use({ storageState: 'e2e/storage/engeprat.json' });
 test.describe('message read', () => {
   test('clicking an unread message decrements the unread badge', async ({
     page,
+    resetDb,
   }) => {
+    // Reseed so the seeded unread inbound message is restored each run (this
+    // test consumes it by marking it read).
+    await resetDb(['public.messages']);
+
     await page.goto('/portal');
 
     // Open the inbox via the sidebar (i18n label "Mensagens").

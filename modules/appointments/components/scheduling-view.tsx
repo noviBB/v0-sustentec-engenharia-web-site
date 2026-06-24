@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ResultCode } from "@/lib/constants/result-codes"
 import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
-import { createAppointmentAction } from "@/modules/appointments/appointments.controller"
+import { useCreateAppointment } from "@/modules/appointments/hooks/use-create-appointment"
 import type { ResponsibleTechOption } from "@/modules/appointments/responsible-techs.repo"
 
 interface SchedulingViewProps {
@@ -75,7 +75,7 @@ function combineDateTimeIso(date: Date, time: string): string {
 export function SchedulingView({ techs }: SchedulingViewProps) {
   const { toast } = useToast()
   const { t } = useLanguage()
-  const [isPending, startTransition] = useTransition()
+  const { mutate: createAppointment, pending: isPending } = useCreateAppointment()
   const [tech, setTech] = useState("")
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState("")
@@ -93,61 +93,59 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
     setMessage("")
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit || !date) return
 
     const scheduled_for = combineDateTimeIso(date, time)
 
-    startTransition(async () => {
-      const result = await createAppointmentAction({
-        responsible_tech_id: tech,
-        scheduled_for,
-        subject: subject.trim(),
-        notes: message.trim() || undefined,
-      })
-
-      if (result.ok) {
-        toast({
-          title: t("portal.appointment.success.title"),
-          description: t("portal.appointment.success.description"),
-        })
-        resetForm()
-        return
-      }
-
-      switch (result.code) {
-        case ResultCode.DoubleBooked:
-          toast({
-            variant: "destructive",
-            title: t("portal.appointment.error.doubleBooked.title"),
-            description: t("portal.appointment.error.doubleBooked.description"),
-          })
-          break
-        case ResultCode.Validation:
-          toast({
-            variant: "destructive",
-            title: t("portal.appointment.error.validation.title"),
-            description: t("portal.appointment.error.validation.description"),
-          })
-          break
-        case ResultCode.Unauthorized:
-          toast({
-            variant: "destructive",
-            title: t("portal.appointment.error.unauthorized.title"),
-            description: t("portal.appointment.error.unauthorized.description"),
-          })
-          break
-        default:
-          toast({
-            variant: "destructive",
-            title: t("portal.appointment.error.server.title"),
-            description: result.ref
-              ? `${t("portal.appointment.error.server.description")} (ref ${result.ref})`
-              : t("portal.appointment.error.server.description"),
-          })
-      }
+    const result = await createAppointment({
+      responsible_tech_id: tech,
+      scheduled_for,
+      subject: subject.trim(),
+      notes: message.trim() || undefined,
     })
+
+    if (result.ok) {
+      toast({
+        title: t("portal.appointment.success.title"),
+        description: t("portal.appointment.success.description"),
+      })
+      resetForm()
+      return
+    }
+
+    switch (result.code) {
+      case ResultCode.DoubleBooked:
+        toast({
+          variant: "destructive",
+          title: t("portal.appointment.error.doubleBooked.title"),
+          description: t("portal.appointment.error.doubleBooked.description"),
+        })
+        break
+      case ResultCode.Validation:
+        toast({
+          variant: "destructive",
+          title: t("portal.appointment.error.validation.title"),
+          description: t("portal.appointment.error.validation.description"),
+        })
+        break
+      case ResultCode.Unauthorized:
+        toast({
+          variant: "destructive",
+          title: t("portal.appointment.error.unauthorized.title"),
+          description: t("portal.appointment.error.unauthorized.description"),
+        })
+        break
+      default:
+        toast({
+          variant: "destructive",
+          title: t("portal.appointment.error.server.title"),
+          description: result.ref
+            ? `${t("portal.appointment.error.server.description")} (ref ${result.ref})`
+            : t("portal.appointment.error.server.description"),
+        })
+    }
   }
 
   return (

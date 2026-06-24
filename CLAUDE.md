@@ -65,7 +65,8 @@ Every user-facing string is keyed and looked up via `t("key")` from [lib/languag
 ## Key patterns
 
 - **Import alias**: `@/...` resolves to repo root (see [tsconfig.json](tsconfig.json)).
-- **Modules over layers**: new business code goes in `modules/<domain>/`. Import a domain's public surface from its barrel `@/modules/<domain>` (controller fns + row TYPES). Server-only repo functions are imported from `@/modules/<domain>/<domain>.repo` by server callers (RSCs, route handlers, the Notion adapter).
+- **Modules over layers**: new business code goes in `modules/<domain>/`. Import a domain's public surface from its barrel `@/modules/<domain>` (controller fns + `use*` hooks + row TYPES). Server-only repo functions are imported from `@/modules/<domain>/<domain>.repo` by server callers (RSCs, route handlers, the Notion adapter).
+- **Frontend talks to the backend only through hooks**: components reach the backend ONLY via a module's `use*` hook (`modules/<domain>/hooks/use-<name>.ts`, `'use client'`, wraps the server action, returns `{ mutate, pending, error }`) — never a controller/service/repo directly (type-only imports of their row/result TYPES are fine). Module barrels (`modules/<domain>/index.ts`) export repo TYPES only, never repo VALUES. Both are enforced by `no-restricted-imports` in [eslint.config.mjs](eslint.config.mjs). Cross-module imports use the `@/` alias; same-module imports may stay relative (`./`).
 - **Result types**: actions return a discriminated `{ ok: true } | { ok: false; code: ResultCode; ref? }`; services return `{ kind: ... }`. No exceptions leak to the UI. Codes live in [lib/constants/result-codes.ts](lib/constants/result-codes.ts); audit events in [lib/constants/audit-events.ts](lib/constants/audit-events.ts).
 - **Class merging**: use `cn()` from [lib/utils.ts](lib/utils.ts). Never hand-concatenate Tailwind classes.
 - **Exports**: named function exports. Default exports only for Next.js `page`/`layout` files.

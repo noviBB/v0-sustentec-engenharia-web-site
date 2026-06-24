@@ -39,18 +39,18 @@ async function seedPayment(processId: string, installmentNo: number) {
   return row!.id;
 }
 
-beforeAll(async () => {
-  repo = await import('@/modules/payments/payments.repo');
-  a = await createTenant(world, 'Pay Tenant A');
-  b = await createTenant(world, 'Pay Tenant B');
-  aProc = await createProcess(a.clientId);
-  bProc = await createProcess(b.clientId);
-  await seedPayment(aProc, 1);
-  bPaymentId = await seedPayment(bProc, 1);
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('payments.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/payments/payments.repo');
+    a = await createTenant(world, 'Pay Tenant A');
+    b = await createTenant(world, 'Pay Tenant B');
+    aProc = await createProcess(a.clientId);
+    bProc = await createProcess(b.clientId);
+    await seedPayment(aProc, 1);
+    bPaymentId = await seedPayment(bProc, 1);
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('listPaymentsByClient returns own payments only', async () => {
     const aRows = await repo.listPaymentsByClient(a.session, a.clientId);
     expect(aRows.length).toBeGreaterThan(0);

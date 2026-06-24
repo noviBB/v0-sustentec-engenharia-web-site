@@ -9,6 +9,9 @@
 // Controller (server action)
 export { submitContact } from './contact.controller';
 
+// Client mutation hook — the frontend's entrypoint to the action.
+export { useSubmitContact } from './hooks/use-submit-contact';
+
 // Section components
 export { Header } from './components/header';
 export { HeroSection } from './components/hero-section';

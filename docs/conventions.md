@@ -120,3 +120,9 @@ db core     (lib/db/index.ts — the single Drizzle instance + dbRls/dbAnon/getD
 - **Exception:** [lib/notion/repository.ts](../lib/notion/repository.ts) is the Notion adapter's own transactional writer (uses `getDbService()` transactions); it lives under the adapter boundary but plays the repository role.
 
 **Enforced** by `no-restricted-imports` in [eslint.config.mjs](../eslint.config.mjs): view code can't import the DB/Supabase-server at runtime (type-only allowed); the `db` name is banned; `*.service.ts` can't import `next/*` or Supabase. Every controller/service/repo file starts with `import 'server-only'`.
+
+### Frontend talks to the backend only through hooks
+
+- **Components reach the backend only via `use*` hooks** — never a controller, service, or repo directly. Each mutation has a client hook at `modules/<domain>/hooks/use-<name>.ts` (`'use client'`) that wraps the server action and returns `{ mutate, pending, error }`; the component imports the hook (exported from the module barrel `@/modules/<domain>`) and uses `pending` in place of a local `useTransition`/loading flag. Type-only imports of controller/service/repo files (row/result TYPES) stay allowed. Enforced by a `no-restricted-imports` block scoped to `components/**` and `modules/**/components/**`.
+- **Module barrels export repo TYPES only.** `modules/<domain>/index.ts` re-exports the controller action, the `use*` hook, and row/result TYPES — never repo VALUES. Server callers (RSCs, route handlers, the Notion adapter) import repo functions directly from `@/modules/<domain>/<domain>.repo`. Enforced by a `no-restricted-imports` block scoped to `modules/*/index.ts`.
+- **Imports:** cross-module imports use the `@/` alias; same-module imports may stay relative (`./`).

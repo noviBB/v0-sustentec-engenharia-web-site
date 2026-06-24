@@ -56,35 +56,35 @@ async function seedMilestone(
   });
 }
 
-beforeAll(async () => {
-  repo = await import('@/modules/milestones/milestones.repo');
-  a = await createTenant(world, 'Mil Tenant A');
-  b = await createTenant(world, 'Mil Tenant B');
-  aProc = await createProcess(a.clientId);
-  bProc = await createProcess(b.clientId);
-  const tag = randomUUID().slice(0, 6);
-  // ordinal-2 kind seeded FIRST to prove ordering is by ordinal, not insert order.
-  kind2 = await seedKind(`k2-${tag}`, 'Segunda etapa', 2);
-  kind1 = await seedKind(`k1-${tag}`, 'Primeira etapa', 1);
-  await seedMilestone(aProc, kind2, false, null);
-  await seedMilestone(aProc, kind1, true, new Date('2026-01-01T00:00:00Z'));
-  await seedMilestone(bProc, kind1, true, new Date());
-});
-
-afterAll(async () => {
-  await cleanupWorld(world);
-  // milestone kinds are global, not client-scoped — clean them explicitly.
-  if (kindIds.length) {
-    const { getDbService } = await import('@/lib/db');
-    const { processMilestoneKinds } = await import('@/lib/db/schema');
-    const { inArray } = await import('drizzle-orm');
-    await getDbService()
-      .delete(processMilestoneKinds)
-      .where(inArray(processMilestoneKinds.id, kindIds));
-  }
-});
-
 describeIntegration('milestones.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/milestones/milestones.repo');
+    a = await createTenant(world, 'Mil Tenant A');
+    b = await createTenant(world, 'Mil Tenant B');
+    aProc = await createProcess(a.clientId);
+    bProc = await createProcess(b.clientId);
+    const tag = randomUUID().slice(0, 6);
+    // ordinal-2 kind seeded FIRST to prove ordering is by ordinal, not insert order.
+    kind2 = await seedKind(`k2-${tag}`, 'Segunda etapa', 2);
+    kind1 = await seedKind(`k1-${tag}`, 'Primeira etapa', 1);
+    await seedMilestone(aProc, kind2, false, null);
+    await seedMilestone(aProc, kind1, true, new Date('2026-01-01T00:00:00Z'));
+    await seedMilestone(bProc, kind1, true, new Date());
+  });
+
+  afterAll(async () => {
+    await cleanupWorld(world);
+    // milestone kinds are global, not client-scoped — clean them explicitly.
+    if (kindIds.length) {
+      const { getDbService } = await import('@/lib/db');
+      const { processMilestoneKinds } = await import('@/lib/db/schema');
+      const { inArray } = await import('drizzle-orm');
+      await getDbService()
+        .delete(processMilestoneKinds)
+        .where(inArray(processMilestoneKinds.id, kindIds));
+    }
+  });
+
   it('returns own milestones joined with kind, ordered by ordinal', async () => {
     const rows = await repo.listMilestonesForClient(a.session, a.clientId);
     const mine = rows.filter((r) => r.process_id === aProc);

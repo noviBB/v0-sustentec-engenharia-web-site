@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
@@ -21,7 +21,7 @@ import {
   Pencil,
 } from "lucide-react"
 import type { Client } from "@/modules/clients/clients.repo"
-import { updateClientAction } from "@/modules/clients/clients.controller"
+import { useUpdateCadastral } from "@/modules/clients/hooks/use-update-cadastral"
 import {
   clientCadastralSchema,
   type ClientCadastralInput,
@@ -66,7 +66,7 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [snapshot, setSnapshot] = useState<Client>(client)
-  const [isPending, startTransition] = useTransition()
+  const { mutate: updateCadastral, pending: isPending } = useUpdateCadastral()
 
   const form = useForm<ClientCadastralInput>({
     resolver: zodResolver(clientCadastralSchema),
@@ -139,36 +139,34 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
     setIsEditing(false)
   }
 
-  function onSubmit(values: ClientCadastralInput) {
-    startTransition(async () => {
-      const result = await updateClientAction(values)
-      if (result.ok) {
-        // Optimistic merge: zod transformed empty strings -> undefined, but
-        // the row still has whatever the server persisted. We keep what the
-        // user typed (normalized) so the read view reflects the edit
-        // without an extra round-trip.
-        setSnapshot((prev) => ({
-          ...prev,
-          contact_name: values.contact_name ?? null,
-          contact_role: values.contact_role ?? null,
-          contact_email: values.contact_email ?? null,
-          contact_phone: values.contact_phone ?? null,
-          address_street: values.address_street ?? null,
-          address_city: values.address_city ?? null,
-          address_state: values.address_state ?? null,
-          address_postal_code: values.address_postal_code ?? null,
-        }))
-        toast({
-          title: t("portal.dados.toast.saved"),
-        })
-        setIsEditing(false)
-      } else {
-        toast({
-          variant: "destructive",
-          title: t("portal.dados.toast.error"),
-        })
-      }
-    })
+  async function onSubmit(values: ClientCadastralInput) {
+    const result = await updateCadastral(values)
+    if (result.ok) {
+      // Optimistic merge: zod transformed empty strings -> undefined, but
+      // the row still has whatever the server persisted. We keep what the
+      // user typed (normalized) so the read view reflects the edit
+      // without an extra round-trip.
+      setSnapshot((prev) => ({
+        ...prev,
+        contact_name: values.contact_name ?? null,
+        contact_role: values.contact_role ?? null,
+        contact_email: values.contact_email ?? null,
+        contact_phone: values.contact_phone ?? null,
+        address_street: values.address_street ?? null,
+        address_city: values.address_city ?? null,
+        address_state: values.address_state ?? null,
+        address_postal_code: values.address_postal_code ?? null,
+      }))
+      toast({
+        title: t("portal.dados.toast.saved"),
+      })
+      setIsEditing(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: t("portal.dados.toast.error"),
+      })
+    }
   }
 
   return (

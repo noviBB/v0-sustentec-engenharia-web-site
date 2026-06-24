@@ -6,5 +6,6 @@
  * module. Old `@/lib/*` paths keep working via thin re-export shims.
  */
 export { updateClientAction } from '@/modules/clients/clients.controller';
+export { useUpdateCadastral } from '@/modules/clients/hooks/use-update-cadastral';
 export type { ClientCadastralResult } from '@/modules/clients/client.schema';
 export type { Client } from '@/modules/clients/clients.repo';

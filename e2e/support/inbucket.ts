@@ -75,15 +75,36 @@ async function getMessage(id: string): Promise<MailMessage> {
 }
 
 /**
- * Delete every captured message (test isolation). Mailpit clears the whole
- * store; the address argument is kept for call-site compatibility but the
- * suite only sends to the single notify address.
+ * Delete captured messages for test isolation.
+ *
+ * When `address` is given, deletes ONLY messages addressed to it (search by
+ * `to:<address>`, collect IDs, then `DELETE /api/v1/messages` with a
+ * `{ IDs: [...] }` body). This avoids wiping other workers' mail when running
+ * locally in parallel. When `address` is undefined, falls back to clearing the
+ * whole Mailpit store.
  */
-export async function clearMailbox(_address?: string): Promise<void> {
-  const url = `${MAILPIT_BASE_URL}/api/v1/messages`;
-  const res = await fetch(url, { method: 'DELETE' });
+export async function clearMailbox(address?: string): Promise<void> {
+  const deleteUrl = `${MAILPIT_BASE_URL}/api/v1/messages`;
+
+  if (address === undefined) {
+    // Fallback: clear the entire store.
+    const res = await fetch(deleteUrl, { method: 'DELETE' });
+    if (!res.ok) {
+      throw new Error(`[mailpit] DELETE ${deleteUrl} failed: ${res.status}`);
+    }
+    return;
+  }
+
+  const ids = (await searchByRecipient(address)).map((m) => m.ID);
+  if (ids.length === 0) return; // nothing addressed to this recipient
+
+  const res = await fetch(deleteUrl, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ IDs: ids }),
+  });
   if (!res.ok) {
-    throw new Error(`[mailpit] DELETE ${url} failed: ${res.status}`);
+    throw new Error(`[mailpit] DELETE ${deleteUrl} (IDs) failed: ${res.status}`);
   }
 }
 

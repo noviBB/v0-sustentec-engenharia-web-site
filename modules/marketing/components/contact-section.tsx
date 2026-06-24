@@ -1,6 +1,5 @@
 "use client"
 
-import { useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { MapPin, Phone, Mail, MessageCircle } from "lucide-react"
@@ -12,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { useLanguage } from "@/lib/language-context"
 import { useToast } from "@/hooks/use-toast"
 import { ResultCode } from "@/lib/constants/result-codes"
-import { submitContact } from "@/modules/marketing/contact.controller"
+import { useSubmitContact } from "@/modules/marketing/hooks/use-submit-contact"
 import {
   contactSubmissionSchema,
   type ContactSubmissionInput,
@@ -21,7 +20,7 @@ import {
 export function ContactSection() {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
+  const { mutate: submit, pending: isPending } = useSubmitContact()
 
   const {
     register,
@@ -34,33 +33,31 @@ export function ContactSection() {
     defaultValues: { name: "", email: "", phone: "", message: "" },
   })
 
-  const onSubmit = handleSubmit((values) => {
-    startTransition(async () => {
-      const result = await submitContact(values)
+  const onSubmit = handleSubmit(async (values) => {
+    const result = await submit(values)
 
-      if (result.ok) {
-        toast({
-          title: t("contact.success.title"),
-          description: t("contact.success.description"),
-        })
-        reset()
-        return
-      }
-
-      const description =
-        result.code === ResultCode.Validation
-          ? t("contact.error.validation")
-          : result.code === ResultCode.RateLimited
-          ? t("contact.error.rateLimited")
-          : result.ref
-          ? `${t("contact.error.server")} (ref: ${result.ref})`
-          : t("contact.error.server")
-
+    if (result.ok) {
       toast({
-        title: t("contact.error.title"),
-        description,
-        variant: "destructive",
+        title: t("contact.success.title"),
+        description: t("contact.success.description"),
       })
+      reset()
+      return
+    }
+
+    const description =
+      result.code === ResultCode.Validation
+        ? t("contact.error.validation")
+        : result.code === ResultCode.RateLimited
+        ? t("contact.error.rateLimited")
+        : result.ref
+        ? `${t("contact.error.server")} (ref: ${result.ref})`
+        : t("contact.error.server")
+
+    toast({
+      title: t("contact.error.title"),
+      description,
+      variant: "destructive",
     })
   })
 

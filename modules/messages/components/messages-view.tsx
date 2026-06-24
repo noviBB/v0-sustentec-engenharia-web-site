@@ -1,6 +1,5 @@
 "use client"
 
-import { useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -9,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { MessageRow } from "@/modules/messages/messages.repo"
-import { markMessageReadAction } from "@/modules/messages/messages.controller"
+import { useMarkRead } from "@/modules/messages/hooks/use-mark-read"
 import { ResultCode } from "@/lib/constants/result-codes"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -72,7 +71,7 @@ export function MessagesView({
 }: MessagesViewProps) {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
+  const { mutate: markRead, pending: isPending } = useMarkRead()
 
   // Ascending order — thread-style, most recent at the bottom.
   const sorted = [...messages].sort((a, b) => {
@@ -81,27 +80,25 @@ export function MessagesView({
     return ta - tb
   })
 
-  function handleClick(msg: MessageRow) {
+  async function handleClick(msg: MessageRow) {
     if (msg.read || msg.direction === "outbound") return
     // Optimistic: tell the parent to bump the counter immediately, then
     // run the mutation. If it fails we roll back via `onMarkReadFailed`
     // and surface a toast (with a correlation ref for server errors).
     onMarkedRead(msg.id)
-    startTransition(async () => {
-      const result = await markMessageReadAction(msg.id)
-      if (!result.ok) {
-        onMarkReadFailed(msg.id)
-        const description =
-          result.code === ResultCode.ServerError && result.ref
-            ? `${t("portal.messages.error.server.description")} (ref ${result.ref})`
-            : t("portal.messages.error.server.description")
-        toast({
-          variant: "destructive",
-          title: t("portal.messages.error.server.title"),
-          description,
-        })
-      }
-    })
+    const result = await markRead(msg.id)
+    if (!result.ok) {
+      onMarkReadFailed(msg.id)
+      const description =
+        result.code === ResultCode.ServerError && result.ref
+          ? `${t("portal.messages.error.server.description")} (ref ${result.ref})`
+          : t("portal.messages.error.server.description")
+      toast({
+        variant: "destructive",
+        title: t("portal.messages.error.server.title"),
+        description,
+      })
+    }
   }
 
   return (

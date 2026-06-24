@@ -176,6 +176,60 @@ export default tseslint.config(
       ],
     },
   },
+  // Block D — components reach the backend ONLY through a module hook
+  // (`@/modules/<d>` `use*` hook), never a controller/service/repo directly.
+  // Type-only imports stay legal (`allowTypeImports`) so views can keep
+  // importing row/result TYPES from those files.
+  {
+    files: [
+      'components/**/*.{ts,tsx}',
+      'modules/**/components/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              // Controllers (server actions) and repos are the backend
+              // entrypoints — components must go through a `use*` hook instead.
+              // `.service` is intentionally NOT listed: server services carry
+              // their own `import 'server-only'` guard (a client import fails
+              // the build), while pure client-safe derivation services
+              // (payments/processes) are meant to be imported by components.
+              group: ['@/modules/*/*.controller', '@/modules/*/*.repo'],
+              allowTypeImports: true,
+              message:
+                'Components reach the backend only through a module hook ' +
+                '(`@/modules/<d>` use* hook), never a controller or repo directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Block E — module barrels export repo TYPES only. A `modules/*/index.ts`
+  // must not re-export repo VALUES (runtime data access stays server-side and
+  // is imported directly from `@/modules/<d>/<d>.repo` by server callers).
+  {
+    files: ['modules/*/index.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['*.repo', './*.repo'],
+              allowTypeImports: true,
+              message:
+                'Barrels export repo TYPES only; runtime data access stays ' +
+                'server-side.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Closed sets of values (result codes, event names, statuses) MUST be real
   // string `enum`s — never an `as const` object literal masquerading as one.
   // See docs/conventions.md. This guard flags `... as const` in the modules
