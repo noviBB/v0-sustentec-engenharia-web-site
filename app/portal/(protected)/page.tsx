@@ -12,6 +12,7 @@ import { listActiveResponsibleTechs } from "@/modules/appointments/responsible-t
 import { listMilestonesForClient } from "@/modules/milestones/milestones.repo"
 import { listTasksForClient } from "@/modules/tasks/tasks.repo"
 import { listDocumentsForClient } from "@/modules/documents/documents.repo"
+import { countUnseenPendencias } from "@/modules/notifications/notifications.repo"
 import { PortalShell } from "@/components/portal/portal-shell"
 
 /**
@@ -46,6 +47,7 @@ export default async function PortalPage() {
     milestones,
     tasks,
     documents,
+    unseenPendencias,
   ] = await Promise.all([
     listBuckets(session, client.id),
     listMessagesForClient(session, client.id),
@@ -55,6 +57,7 @@ export default async function PortalPage() {
     listMilestonesForClient(session, client.id),
     listTasksForClient(session, client.id),
     listDocumentsForClient(session, client.id),
+    countUnseenPendencias(session, client.id),
   ])
 
   return (
@@ -68,6 +71,7 @@ export default async function PortalPage() {
       milestones={milestones}
       tasks={tasks}
       documents={documents}
+      unseenPendencias={unseenPendencias}
     />
   )
 }

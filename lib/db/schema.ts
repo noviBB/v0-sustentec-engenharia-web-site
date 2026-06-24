@@ -99,6 +99,26 @@ export const userClients = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// pendencia_seen  (no FK on user_id; per-user-per-tenant notifications cursor)
+// ---------------------------------------------------------------------------
+export const pendenciaSeen = pgTable(
+  'pendencia_seen',
+  {
+    user_id: uuid('user_id').notNull(),
+    client_id: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, { onDelete: 'cascade' }),
+    seen_at: timestamp('seen_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.user_id, t.client_id] })],
+);
+
+// ---------------------------------------------------------------------------
 // responsible_techs
 // ---------------------------------------------------------------------------
 export const responsibleTechs = pgTable('responsible_techs', {

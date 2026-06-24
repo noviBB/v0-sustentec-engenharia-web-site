@@ -143,7 +143,8 @@ const translations: Record<Language, Record<string, string>> = {
     "footer.terms": "Termos de Uso",
 
     // Portal — login
-    "portal.login.tagline": "Portal do Cliente",
+    "portal.login.tagline": "Sustentec Tracker",
+    "portal.login.subtitle": "Acompanhe seu processo ambiental em tempo real",
     "portal.login.welcome": "Bem-vindo de volta",
     "portal.login.description": "Acesse sua conta para acompanhar seu projeto",
     "portal.login.email": "E-mail",
@@ -328,6 +329,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.header.notifications": "Notificações",
     "portal.header.notifications.title": "Pendências por projeto",
     "portal.header.notifications.empty": "Nenhuma pendência no momento",
+    "portal.header.notifications.allSeen": "Nenhuma pendência nova",
     "portal.header.notifications.itemCount.one": "{count} pendência",
     "portal.header.notifications.itemCount.other": "{count} pendências",
 
@@ -398,7 +400,8 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.status.finalizado": "Finalizado",
 
     // Portal — sidebar
-    "portal.sidebar.tagline": "Portal do Cliente",
+    "portal.sidebar.tagline": "Sustentec Tracker",
+    "portal.sidebar.subtitle": "Acompanhe seu processo ambiental em tempo real",
     "portal.sidebar.menu.painel": "Painel Principal",
     "portal.sidebar.menu.processos": "Meus Projetos",
     "portal.sidebar.menu.mensagens": "Mensagens",
@@ -539,7 +542,8 @@ const translations: Record<Language, Record<string, string>> = {
     "footer.terms": "Terms of Use",
 
     // Portal — login
-    "portal.login.tagline": "Client Portal",
+    "portal.login.tagline": "Sustentec Tracker",
+    "portal.login.subtitle": "Track your environmental process in real time",
     "portal.login.welcome": "Welcome back",
     "portal.login.description": "Sign in to track your project",
     "portal.login.email": "Email",
@@ -723,6 +727,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.header.notifications": "Notifications",
     "portal.header.notifications.title": "Pending items by project",
     "portal.header.notifications.empty": "No pending items right now",
+    "portal.header.notifications.allSeen": "No new pending items",
     "portal.header.notifications.itemCount.one": "{count} pending item",
     "portal.header.notifications.itemCount.other": "{count} pending items",
 
@@ -793,7 +798,8 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.status.finalizado": "Finalized",
 
     // Portal — sidebar
-    "portal.sidebar.tagline": "Client Portal",
+    "portal.sidebar.tagline": "Sustentec Tracker",
+    "portal.sidebar.subtitle": "Track your environmental process in real time",
     "portal.sidebar.menu.painel": "Dashboard",
     "portal.sidebar.menu.processos": "My Projects",
     "portal.sidebar.menu.mensagens": "Messages",

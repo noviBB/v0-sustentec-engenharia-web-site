@@ -35,7 +35,8 @@ export default function LoginPage() {
               priority
               className="h-14 w-auto"
             />
-            <p className="text-xs text-muted-foreground">{t("portal.login.tagline")}</p>
+            <p className="text-sm font-semibold text-primary">{t("portal.login.tagline")}</p>
+            <p className="text-xs text-muted-foreground">{t("portal.login.subtitle")}</p>
           </Link>
         </div>
 

@@ -28,8 +28,11 @@ export interface PendenciasSummaryItem {
 
 interface PortalHeaderProps {
   onItemChange: (item: PortalView) => void
-  /** Open pendências per process — the badge shows the total. */
+  /** Open pendências per process — the dropdown list. */
   pendencias: PendenciasSummaryItem[]
+  /** Pendências new since the bell was last opened — drives the badge. */
+  unseenPendencias: number
+  onNotificationsOpened: () => void
   /** Opens the given process on its pendências tab. */
   onOpenPendencias: (processId: string) => void
 }
@@ -37,12 +40,13 @@ interface PortalHeaderProps {
 export function PortalHeader({
   onItemChange,
   pendencias,
+  unseenPendencias,
+  onNotificationsOpened,
   onOpenPendencias,
 }: PortalHeaderProps) {
   const { user, displayName } = useAuth()
   const { t } = useLanguage()
   const initial = displayName.trim().charAt(0).toUpperCase() || "C"
-  const totalPendencias = pendencias.reduce((acc, p) => acc + p.count, 0)
 
   return (
     <header className="h-auto bg-card border-b border-border">
@@ -75,16 +79,19 @@ export function PortalHeader({
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
-          {/* Notifications — total open pendências; the menu lists them per project. */}
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open && unseenPendencias > 0) onNotificationsOpened()
+            }}
+          >
             <DropdownMenuTrigger className="relative p-2 hover:bg-muted rounded-lg transition-colors flex items-center gap-2">
               <Bell className="w-5 h-5 text-muted-foreground" />
               <span className="hidden sm:inline text-sm text-muted-foreground">
                 {t("portal.header.notifications")}
               </span>
-              {totalPendencias > 0 && (
+              {unseenPendencias > 0 && (
                 <Badge className="h-5 min-w-5 flex items-center justify-center text-xs bg-red-500 text-white">
-                  {totalPendencias}
+                  {unseenPendencias}
                 </Badge>
               )}
             </DropdownMenuTrigger>

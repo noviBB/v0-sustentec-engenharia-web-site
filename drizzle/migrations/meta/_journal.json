@@ -29,6 +29,13 @@
       "when": 1781120228540,
       "tag": "0003_material_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782325267358,
+      "tag": "0004_jittery_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

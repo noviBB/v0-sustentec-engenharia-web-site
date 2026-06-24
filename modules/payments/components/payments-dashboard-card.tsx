@@ -26,11 +26,11 @@ export function PaymentsDashboardCard({ total }: PaymentsDashboardCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-rose-100 rounded-xl">
+          <div className="p-2.5 bg-rose-100 rounded-xl shrink-0">
             <CreditCard className="w-6 h-6 text-rose-600" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-foreground break-words tabular-nums leading-tight">
               {brl.format(total)}
             </p>
             <p className="text-xs text-muted-foreground">
