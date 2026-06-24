@@ -1,6 +1,7 @@
 import 'server-only';
 import { and, asc, eq, lt, sql } from 'drizzle-orm';
 import { dbRls, getDbService, type SessionLike } from '@/lib/db';
+import { PaymentStatus } from '@/lib/db/enums';
 import { payments, processes } from '@/lib/db/schema';
 
 export type PaymentRow = typeof payments.$inferSelect;
@@ -82,7 +83,7 @@ export async function markPaymentPaid(
       .update(payments)
       .set({
         paid_at: sql`now()`,
-        status: 'paid',
+        status: PaymentStatus.Paid,
         updated_at: sql`now()`,
       })
       .where(eq(payments.id, paymentId))
@@ -103,10 +104,10 @@ export async function markOverdue(): Promise<PaymentRow[]> {
   const db = getDbService();
   return db
     .update(payments)
-    .set({ status: 'overdue', updated_at: sql`now()` })
+    .set({ status: PaymentStatus.Overdue, updated_at: sql`now()` })
     .where(
       and(
-        eq(payments.status, 'pending'),
+        eq(payments.status, PaymentStatus.Pending),
         lt(payments.due_date, sql`current_date`),
       ),
     )

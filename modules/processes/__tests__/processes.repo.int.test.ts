@@ -8,6 +8,7 @@ import {
   newWorld,
   type Tenant,
 } from '@/modules/_test-support/integration';
+import { ProcessStatus } from '@/lib/db/enums';
 
 /**
  * RLS invariants (processes SPEC §"Integration (RLS)"):
@@ -15,7 +16,9 @@ import {
  *   - listProcessesForClient only returns own-tenant rows;
  *   - listBuckets drops `arquivado` and soft-deleted rows.
  */
-type Repo = typeof import('@/modules/processes/processes.repo');
+import type * as ProcessesRepo from '@/modules/processes/processes.repo';
+
+type Repo = typeof ProcessesRepo;
 
 const world = newWorld();
 let repo: Repo;
@@ -31,13 +34,19 @@ describeIntegration('processes.repo (RLS)', () => {
     repo = await import('@/modules/processes/processes.repo');
     a = await createTenant(world, 'Proc Tenant A');
     b = await createTenant(world, 'Proc Tenant B');
-    aProcAndamento = await createProcess(a.clientId, { status: 'andamento' });
-    aProcArquivado = await createProcess(a.clientId, { status: 'arquivado' });
+    aProcAndamento = await createProcess(a.clientId, {
+      status: ProcessStatus.Andamento,
+    });
+    aProcArquivado = await createProcess(a.clientId, {
+      status: ProcessStatus.Arquivado,
+    });
     aProcDeleted = await createProcess(a.clientId, {
-      status: 'andamento',
+      status: ProcessStatus.Andamento,
       deleted_at: new Date(),
     });
-    bProc = await createProcess(b.clientId, { status: 'andamento' });
+    bProc = await createProcess(b.clientId, {
+      status: ProcessStatus.Andamento,
+    });
   });
   afterAll(() => cleanupWorld(world));
 

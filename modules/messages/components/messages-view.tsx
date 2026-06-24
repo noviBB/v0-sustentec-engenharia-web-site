@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip"
 import type { MessageRow } from "@/modules/messages/messages.repo"
 import { useMarkRead } from "@/modules/messages/hooks/use-mark-read"
+import { MessageDirection } from "@/modules/messages"
 import { ResultCode } from "@/lib/constants/result-codes"
 import { ArrowDownLeft, ArrowUpRight, Mail, MailOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -81,7 +82,7 @@ export function MessagesView({
   })
 
   async function handleClick(msg: MessageRow) {
-    if (msg.read || msg.direction === "outbound") return
+    if (msg.read || msg.direction === MessageDirection.Outbound) return
     // Optimistic: tell the parent to bump the counter immediately, then
     // run the mutation. If it fails we roll back via `onMarkReadFailed`
     // and surface a toast (with a correlation ref for server errors).
@@ -127,13 +128,13 @@ export function MessagesView({
       ) : (
         <div className="space-y-4">
           {sorted.map((msg) => {
-            const isOutbound = msg.direction === "outbound"
+            const isOutbound = msg.direction === MessageDirection.Outbound
             const isUnread = !msg.read && !isOutbound
             return (
               <Card
                 key={msg.id}
                 data-testid={isUnread ? "message-unread" : undefined}
-                onClick={() => handleClick(msg)}
+                onClick={() => { void handleClick(msg); }}
                 className={cn(
                   "bg-white",
                   isOutbound && "ml-auto max-w-[88%] border-l-4 border-l-[#2d5a27]",

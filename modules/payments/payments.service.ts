@@ -10,8 +10,18 @@
  * `PaymentWithProcess` (and lighter test fixtures) satisfy them.
  */
 
+import { PaymentStatus } from '@/lib/db/enums';
+
 /** A payment is "due" (still owed) when it is pending or overdue. */
-export type DuePaymentStatus = 'pending' | 'overdue';
+export type DuePaymentStatus = PaymentStatus.Pending | PaymentStatus.Overdue;
+
+/** The enum members that count as "due", as plain strings for membership
+ *  checks against loosely-typed (`status: string`) inputs without tripping
+ *  `no-unsafe-enum-comparison`. */
+const DUE_STATUSES: ReadonlySet<string> = new Set<DuePaymentStatus>([
+  PaymentStatus.Pending,
+  PaymentStatus.Overdue,
+]);
 
 /** Minimal shape needed to sum outstanding amounts. */
 export interface AmountStatusLike {
@@ -26,7 +36,7 @@ export interface ProcessScopedLike {
 
 /** True when a payment still counts toward the outstanding balance. */
 export function isDue(status: string): boolean {
-  return status === 'pending' || status === 'overdue';
+  return DUE_STATUSES.has(status);
 }
 
 /**

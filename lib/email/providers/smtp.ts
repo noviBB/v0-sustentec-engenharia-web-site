@@ -1,7 +1,12 @@
 import 'server-only';
 import nodemailer, { type Transporter } from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import type { EmailProvider, OutgoingEmail } from './types';
+
+/** nodemailer's bare `Transporter` defaults its info to `any`; pin it to the
+ *  SMTP transport's typed `SentMessageInfo` so `info.messageId` is `string`. */
+type SmtpTransporter = Transporter<SMTPTransport.SentMessageInfo>;
 
 /**
  * SMTP provider — talks to the team's own mail server via nodemailer.
@@ -19,9 +24,9 @@ import type { EmailProvider, OutgoingEmail } from './types';
  * No connection pooling: sends run inside serverless functions, so a
  * one-shot transport per runtime instance is the right shape.
  */
-let cachedTransporter: Transporter | null = null;
+let cachedTransporter: SmtpTransporter | null = null;
 
-function getTransporter(): Transporter {
+function getTransporter(): SmtpTransporter {
   const host = process.env.SMTP_HOST;
   if (!host) {
     throw new Error(

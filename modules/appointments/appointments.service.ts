@@ -2,6 +2,7 @@ import 'server-only';
 
 import { AuditEvent } from '@/lib/constants/audit-events';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import { sendAppointmentCreatedEmail } from '@/lib/email/appointment-created';
 import type { SessionLike } from '@/lib/db';
 import { createAppointment as insertAppointment } from './appointments.repo';
@@ -22,10 +23,10 @@ import type { CreateAppointmentInput } from './appointment.schema';
  *                     by the repo for support lookups
  */
 export type CreateAppointmentDomainResult =
-  | { kind: 'ok'; id: string }
-  | { kind: 'double_booked' }
-  | { kind: 'unauthorized' }
-  | { kind: 'error'; ref?: string };
+  | { kind: ResultKind.Ok; id: string }
+  | { kind: ResultKind.DoubleBooked }
+  | { kind: ResultKind.Unauthorized }
+  | { kind: ResultKind.Error; ref?: string };
 
 export interface CreateAppointmentDeps {
   session: SessionLike;
@@ -60,12 +61,12 @@ export async function createAppointment(
 
   if (!result.ok) {
     if (result.code === ResultCode.DoubleBooked) {
-      return { kind: 'double_booked' };
+      return { kind: ResultKind.DoubleBooked };
     }
     if (result.code === ResultCode.Unauthorized) {
-      return { kind: 'unauthorized' };
+      return { kind: ResultKind.Unauthorized };
     }
-    return { kind: 'error', ref: result.ref };
+    return { kind: ResultKind.Error, ref: result.ref };
   }
 
   // Notify the team mailbox. The appointment is already committed — an email
@@ -96,5 +97,5 @@ export async function createAppointment(
     );
   }
 
-  return { kind: 'ok', id: result.id };
+  return { kind: ResultKind.Ok, id: result.id };
 }

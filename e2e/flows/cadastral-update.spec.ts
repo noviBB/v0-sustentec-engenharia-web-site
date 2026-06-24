@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { test, expect } from '../fixtures';
 
 /**
@@ -9,7 +11,7 @@ import { test, expect } from '../fixtures';
  */
 test.use({ storageState: 'e2e/storage/engeprat.json' });
 
-async function openDadosCadastrais(page: import('@playwright/test').Page) {
+async function openDadosCadastrais(page: Page) {
   await page.goto('/portal');
   // Sidebar nav → Dados Cadastrais (PT "Dados Cadastrais").
   // TODO selector: i18n nav label, no testid.

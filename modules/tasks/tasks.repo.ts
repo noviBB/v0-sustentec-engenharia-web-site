@@ -2,18 +2,21 @@ import 'server-only';
 import { and, asc, eq, inArray, isNull, not, sql } from 'drizzle-orm';
 import { dbRls, getDbService, type SessionLike } from '@/lib/db';
 import { processes, processTasks } from '@/lib/db/schema';
-import type { processTaskPriority, processTaskStatus } from '@/lib/db/enums';
+import { ProcessTaskPriority, ProcessTaskStatus } from '@/lib/db/enums';
 
 /** Statuses that do NOT count as open pendências (mirrors the view's filter). */
-const CLOSED_TASK_STATUSES = ['concluida', 'arquivada'] as const;
+const CLOSED_TASK_STATUSES: readonly ProcessTaskStatus[] = [
+  ProcessTaskStatus.Concluida,
+  ProcessTaskStatus.Arquivada,
+];
 
 export type TaskRow = {
   id: string;
   process_id: string;
   title: string;
   summary: string | null;
-  status: (typeof processTaskStatus.enumValues)[number];
-  priority: (typeof processTaskPriority.enumValues)[number];
+  status: ProcessTaskStatus;
+  priority: ProcessTaskPriority;
   due_date: string | null;
   created_at: Date;
 };
@@ -95,8 +98,8 @@ export async function ensurePaymentOverdueTask(
     process_id: processId,
     title,
     summary: `Identificamos que a parcela ${installmentNo} está com o pagamento em atraso. Regularize para evitar a suspensão do andamento.`,
-    status: 'aberta',
-    priority: 'alta',
+    status: ProcessTaskStatus.Aberta,
+    priority: ProcessTaskPriority.Alta,
   });
   return { created: true };
 }

@@ -2,6 +2,8 @@ import 'server-only';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
+import { z } from 'zod';
+import { DbMode } from '@/lib/enums';
 import { config } from '@/lib/config';
 import * as schema from './schema';
 import * as relations from './relations';
@@ -63,19 +65,42 @@ export type SessionLike =
       [k: string]: unknown;
     };
 
+// Discriminate the `SessionLike` union with zod instead of `as`. Both arms of
+// the union carry a `[key: string]: unknown` index signature, so plain
+// `in`-narrowing can't separate them — zod gives us a runtime discriminator
+// that also produces a precisely-typed result.
+//
+// `.passthrough()` on the bare-claims arm preserves any extra JWT fields
+// (`exp`, `aud`, custom claims) the caller passed, matching the previous
+// behavior of returning the object unchanged.
+const bareClaimsSchema = z
+  .object({ sub: z.string() })
+  .passthrough();
+
+const userSessionSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string().nullish(),
+    role: z.string().nullish(),
+  }),
+});
+
 function toClaims(session: SessionLike): JwtClaims {
-  if ('sub' in session && typeof (session as JwtClaims).sub === 'string') {
-    return session as JwtClaims;
+  const bare = bareClaimsSchema.safeParse(session);
+  if (bare.success) {
+    return bare.data;
   }
-  const withUser = session as { user: { id: string; email?: string | null; role?: string | null } };
-  if (!withUser?.user?.id) {
-    throw new Error('dbRls: session is missing a user id (no `sub` and no `user.id`)');
+  const withUser = userSessionSchema.safeParse(session);
+  if (withUser.success) {
+    return {
+      sub: withUser.data.user.id,
+      email: withUser.data.user.email ?? undefined,
+      role: withUser.data.user.role ?? 'authenticated',
+    };
   }
-  return {
-    sub: withUser.user.id,
-    email: withUser.user.email ?? undefined,
-    role: withUser.user.role ?? 'authenticated',
-  };
+  throw new Error(
+    'dbRls: session is missing a user id (no `sub` and no `user.id`)',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -154,21 +179,21 @@ export async function dbRls<T>(
 //   new call sites — `getDb` exists so step-2 migrations and any future
 //   `'service' | 'rls'` switches stay symmetrical.
 // ---------------------------------------------------------------------------
-export type DbMode = 'service' | 'anon' | 'rls';
+export { DbMode };
 
 export type TxRunner = {
   run<T>(fn: (tx: DrizzleTx) => Promise<T>): Promise<T>;
 };
 
-export function getDb(mode: 'service'): DrizzleClient;
-export function getDb(mode: 'anon'): TxRunner;
-export function getDb(mode: 'rls', session: SessionLike): TxRunner;
+export function getDb(mode: DbMode.Service): DrizzleClient;
+export function getDb(mode: DbMode.Anon): TxRunner;
+export function getDb(mode: DbMode.Rls, session: SessionLike): TxRunner;
 export function getDb(
   mode: DbMode,
   session?: SessionLike,
 ): DrizzleClient | TxRunner {
-  if (mode === 'service') return drizzleClient;
-  if (mode === 'anon') {
+  if (mode === DbMode.Service) return drizzleClient;
+  if (mode === DbMode.Anon) {
     return {
       run<T>(fn: (tx: DrizzleTx) => Promise<T>): Promise<T> {
         return dbAnon(fn);

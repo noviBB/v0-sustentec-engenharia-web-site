@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
+import { DbMode, ResultKind } from '@/lib/enums';
 import type { SessionLike } from '@/lib/db';
 import type { Client } from '@/modules/clients/clients.repo';
 import {
@@ -17,9 +18,9 @@ import {
  * correlation id emitted alongside the structured error log on failure.
  */
 export type UpdateClientCadastralResult =
-  | { kind: 'ok' }
-  | { kind: 'not_found' }
-  | { kind: 'error'; ref: string };
+  | { kind: ResultKind.Ok }
+  | { kind: ResultKind.NotFound }
+  | { kind: ResultKind.Error; ref: string };
 
 export interface UpdateClientCadastralArgs {
   /** RLS session of the signed-in caller; both the UPDATE and the audit
@@ -52,7 +53,7 @@ export async function updateClientCadastral({
   try {
     const updated = await updateClient(session, client.id, patch);
     if (!updated) {
-      return { kind: 'not_found' };
+      return { kind: ResultKind.NotFound };
     }
 
     await insertAuditLog(
@@ -73,10 +74,10 @@ export async function updateClientCadastral({
         },
         after: patch,
       },
-      { mode: 'rls', session },
+      { mode: DbMode.Rls, session },
     );
 
-    return { kind: 'ok' };
+    return { kind: ResultKind.Ok };
   } catch (err) {
     const ref = randomUUID().slice(0, 8);
     console.error(
@@ -87,6 +88,6 @@ export async function updateClientCadastral({
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return { kind: 'error', ref };
+    return { kind: ResultKind.Error, ref };
   }
 }

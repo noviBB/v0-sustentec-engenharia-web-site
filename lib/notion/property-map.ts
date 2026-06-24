@@ -12,6 +12,13 @@ import {
   parseUrl,
   stripMarkdown,
 } from './parsers';
+import {
+  ProcessLicenseType,
+  ProcessTaskPriority,
+  ProcessTaskStatus,
+  ProcessTipologia,
+} from '@/lib/db/enums';
+
 import { statusFromLabel } from './bucketing';
 import {
   NotionMappingError,
@@ -20,10 +27,6 @@ import {
   type NotionSyncError,
   type ParsedProcess,
   type ParsedTask,
-  type ProcessLicenseType,
-  type ProcessTaskPriority,
-  type ProcessTaskStatus,
-  type ProcessTipologia,
 } from './types';
 
 /**
@@ -74,11 +77,11 @@ export const SCALAR_PROPERTIES = {
 // TIPOLOGIA select -> process_tipologia enum
 // ---------------------------------------------------------------------------
 export const TIPOLOGIA_MAP: Record<string, ProcessTipologia> = {
-  licenciamento: 'licenciamento',
-  consultoria: 'consultoria',
-  laudo: 'laudo',
-  monitoramento: 'monitoramento',
-  outros: 'outros',
+  licenciamento: ProcessTipologia.Licenciamento,
+  consultoria: ProcessTipologia.Consultoria,
+  laudo: ProcessTipologia.Laudo,
+  monitoramento: ProcessTipologia.Monitoramento,
+  outros: ProcessTipologia.Outros,
 };
 
 // ---------------------------------------------------------------------------
@@ -91,22 +94,22 @@ export const TIPOLOGIA_MAP: Record<string, ProcessTipologia> = {
 // `outros`; renewal-style labels fold to `renovacao`. LP/LI/LO map 1:1.
 // ---------------------------------------------------------------------------
 export const LICENSE_TYPE_MAP: Record<string, ProcessLicenseType> = {
-  lp: 'LP',
-  li: 'LI',
-  lo: 'LO',
-  las: 'LAS',
-  lma: 'LMA',
-  lai: 'outros',
-  ca: 'outros',
-  outorga: 'outros',
-  lor: 'renovacao',
-  aa: 'outros',
-  asv: 'outros',
-  'nao cabe': 'outros',
-  cta: 'outros',
-  averbacao: 'outros',
-  lio: 'outros',
-  renovacao: 'renovacao',
+  lp: ProcessLicenseType.LP,
+  li: ProcessLicenseType.LI,
+  lo: ProcessLicenseType.LO,
+  las: ProcessLicenseType.LAS,
+  lma: ProcessLicenseType.LMA,
+  lai: ProcessLicenseType.Outros,
+  ca: ProcessLicenseType.Outros,
+  outorga: ProcessLicenseType.Outros,
+  lor: ProcessLicenseType.Renovacao,
+  aa: ProcessLicenseType.Outros,
+  asv: ProcessLicenseType.Outros,
+  'nao cabe': ProcessLicenseType.Outros,
+  cta: ProcessLicenseType.Outros,
+  averbacao: ProcessLicenseType.Outros,
+  lio: ProcessLicenseType.Outros,
+  renovacao: ProcessLicenseType.Renovacao,
 };
 
 // ---------------------------------------------------------------------------
@@ -144,24 +147,24 @@ export const TASK_PROPERTIES = {
 // Notion task status -> process_task_status enum
 // (enum: aberta, em_andamento, aguardando_cliente, concluida, arquivada)
 export const TASK_STATUS_MAP: Record<string, ProcessTaskStatus> = {
-  'a fazer': 'aberta',
-  aberta: 'aberta',
-  'em andamento': 'em_andamento',
-  'aguardando cliente': 'aguardando_cliente',
-  concluida: 'concluida',
-  concluído: 'concluida',
-  concluida_: 'concluida',
-  arquivada: 'arquivada',
+  'a fazer': ProcessTaskStatus.Aberta,
+  aberta: ProcessTaskStatus.Aberta,
+  'em andamento': ProcessTaskStatus.EmAndamento,
+  'aguardando cliente': ProcessTaskStatus.AguardandoCliente,
+  concluida: ProcessTaskStatus.Concluida,
+  concluído: ProcessTaskStatus.Concluida,
+  concluida_: ProcessTaskStatus.Concluida,
+  arquivada: ProcessTaskStatus.Arquivada,
 };
 
 // Notion task priority -> process_task_priority enum
 // (enum: baixa, media, alta, urgente)
 export const TASK_PRIORITY_MAP: Record<string, ProcessTaskPriority> = {
-  baixa: 'baixa',
-  media: 'media',
-  'média': 'media',
-  alta: 'alta',
-  urgente: 'urgente',
+  baixa: ProcessTaskPriority.Baixa,
+  media: ProcessTaskPriority.Media,
+  'média': ProcessTaskPriority.Media,
+  alta: ProcessTaskPriority.Alta,
+  urgente: ProcessTaskPriority.Urgente,
 };
 
 function fold(s: string): string {
@@ -199,13 +202,13 @@ export function parseTask(page: NotionPage): ParsedTask {
 
   const rawStatus = parseStatus(props[TASK_PROPERTIES.status]);
   const status: ProcessTaskStatus = rawStatus
-    ? TASK_STATUS_MAP[fold(rawStatus)] ?? 'aberta'
-    : 'aberta';
+    ? TASK_STATUS_MAP[fold(rawStatus)] ?? ProcessTaskStatus.Aberta
+    : ProcessTaskStatus.Aberta;
 
   const rawPriority = parseSelect(props[TASK_PROPERTIES.priority]);
   const priority: ProcessTaskPriority = rawPriority
-    ? TASK_PRIORITY_MAP[fold(rawPriority)] ?? 'media'
-    : 'media';
+    ? TASK_PRIORITY_MAP[fold(rawPriority)] ?? ProcessTaskPriority.Media
+    : ProcessTaskPriority.Media;
 
   const due_date = parseDate(props[TASK_PROPERTIES.due_date]);
 
@@ -316,7 +319,7 @@ export function parseProcess(
           raw,
         ),
       );
-      licenseSet.add('outros');
+      licenseSet.add(ProcessLicenseType.Outros);
     }
   }
 

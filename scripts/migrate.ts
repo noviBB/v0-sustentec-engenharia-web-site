@@ -47,8 +47,9 @@ async function applyCustomMigrations(): Promise<void> {
       SELECT sha256 FROM public._custom_migrations WHERE filename = ${filename}
     `;
 
-    if (existing.length > 0) {
-      const recordedSha: string = existing[0].sha256;
+    const existingRow = existing[0];
+    if (existingRow) {
+      const recordedSha: string = existingRow.sha256;
       if (recordedSha === sha) {
         console.log(`[custom] skip   ${filename}`);
         continue;

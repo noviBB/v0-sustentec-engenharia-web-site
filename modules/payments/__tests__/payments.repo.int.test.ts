@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
+import { PaymentStatus } from '@/lib/db/enums';
 import {
   cleanupWorld,
   createProcess,
@@ -13,7 +14,9 @@ import {
  * RLS invariant (payments SPEC §c): a session for client A must NOT read or
  * mark-paid any payment belonging to client B (empty results / no-op).
  */
-type Repo = typeof import('@/modules/payments/payments.repo');
+import type * as PaymentsRepo from '@/modules/payments/payments.repo';
+
+type Repo = typeof PaymentsRepo;
 
 const world = newWorld();
 let repo: Repo;
@@ -33,7 +36,7 @@ async function seedPayment(processId: string, installmentNo: number) {
       installment_no: installmentNo,
       amount: '100.00',
       due_date: '2026-01-01',
-      status: 'pending',
+      status: PaymentStatus.Pending,
     })
     .returning({ id: payments.id });
   return row!.id;
@@ -72,6 +75,6 @@ describeIntegration('payments.repo (RLS)', () => {
     expect(result).toBeNull();
 
     const bRows = await repo.listPaymentsByProcess(b.session, bProc);
-    expect(bRows[0]?.status).toBe('pending');
+    expect(bRows[0]?.status).toBe(PaymentStatus.Pending);
   });
 });

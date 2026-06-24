@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import type { ClientCadastralInput } from "@/modules/clients/client.schema"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,15 +23,43 @@ import {
 } from "lucide-react"
 import type { Client } from "@/modules/clients/clients.repo"
 import { useUpdateCadastral } from "@/modules/clients/hooks/use-update-cadastral"
-import {
-  clientCadastralSchema,
-  type ClientCadastralInput,
-} from "@/modules/clients/client.schema"
+import { clientCadastralSchema } from "@/modules/clients/client.schema"
 import { useLanguage } from "@/lib/language-context"
 import { useToast } from "@/hooks/use-toast"
 
 interface DadosCadastraisViewProps {
   client: Client
+}
+
+/**
+ * The form's *input* shape: every cadastral field is a plain string (empty
+ * string for "not set"). This is intentionally distinct from
+ * `ClientCadastralInput`, which is the schema's *output* (transform collapses
+ * empty strings to `undefined`). Giving `useForm` this all-strings type means
+ * `defaultValues` / `reset()` typecheck without a cast.
+ */
+type ClientCadastralFormValues = {
+  contact_name: string
+  contact_role: string
+  contact_email: string
+  contact_phone: string
+  address_street: string
+  address_city: string
+  address_state: string
+  address_postal_code: string
+}
+
+function toFormValues(client: Client): ClientCadastralFormValues {
+  return {
+    contact_name: client.contact_name ?? "",
+    contact_role: client.contact_role ?? "",
+    contact_email: client.contact_email ?? "",
+    contact_phone: client.contact_phone ?? "",
+    address_street: client.address_street ?? "",
+    address_city: client.address_city ?? "",
+    address_state: client.address_state ?? "",
+    address_postal_code: client.address_postal_code ?? "",
+  }
 }
 
 const DASH = "—"
@@ -68,20 +97,12 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
   const [snapshot, setSnapshot] = useState<Client>(client)
   const { mutate: updateCadastral, pending: isPending } = useUpdateCadastral()
 
-  const form = useForm<ClientCadastralInput>({
+  // Three-param `useForm`: field values are all-strings (the inputs), while
+  // the resolver's transformed output (`ClientCadastralInput`) is what the
+  // submit handler receives. This split removes the need for any `as` cast.
+  const form = useForm<ClientCadastralFormValues, unknown, ClientCadastralInput>({
     resolver: zodResolver(clientCadastralSchema),
-    // Cast: schema's transform produces `string | undefined` so the union
-    // is compatible with the form's input strings.
-    defaultValues: {
-      contact_name: snapshot.contact_name ?? "",
-      contact_role: snapshot.contact_role ?? "",
-      contact_email: snapshot.contact_email ?? "",
-      contact_phone: snapshot.contact_phone ?? "",
-      address_street: snapshot.address_street ?? "",
-      address_city: snapshot.address_city ?? "",
-      address_state: snapshot.address_state ?? "",
-      address_postal_code: snapshot.address_postal_code ?? "",
-    } as ClientCadastralInput,
+    defaultValues: toFormValues(snapshot),
   })
 
   const fields: ReadonlyArray<{
@@ -122,16 +143,7 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
   ]
 
   function startEditing() {
-    form.reset({
-      contact_name: snapshot.contact_name ?? "",
-      contact_role: snapshot.contact_role ?? "",
-      contact_email: snapshot.contact_email ?? "",
-      contact_phone: snapshot.contact_phone ?? "",
-      address_street: snapshot.address_street ?? "",
-      address_city: snapshot.address_city ?? "",
-      address_state: snapshot.address_state ?? "",
-      address_postal_code: snapshot.address_postal_code ?? "",
-    } as ClientCadastralInput)
+    form.reset(toFormValues(snapshot))
     setIsEditing(true)
   }
 
@@ -220,7 +232,9 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
 
           {isEditing ? (
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                void form.handleSubmit(onSubmit)(e)
+              }}
               className="space-y-4"
               noValidate
             >

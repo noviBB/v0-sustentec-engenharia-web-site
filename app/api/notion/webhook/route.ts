@@ -5,7 +5,11 @@ import { NextResponse } from 'next/server';
 import { AuditAction } from '@/lib/constants/audit-events';
 import { insertAuditLog } from '@/lib/db/auditLog';
 import { serverEnv } from '@/lib/env.server';
-import { handleWebhook, NotionTokenMissingError } from '@/lib/notion';
+import {
+  handleWebhook,
+  NotionTokenMissingError,
+  webhookPayloadSchema,
+} from '@/lib/notion';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -104,17 +108,12 @@ function parseEvent(raw: string): ParsedEvent | null {
   } catch {
     return null;
   }
-  if (typeof json !== 'object' || json === null) return null;
-  const obj = json as Record<string, unknown>;
-  const type = typeof obj.type === 'string' ? obj.type : null;
-  if (!type) return null;
+  // Validate the envelope with zod instead of casting to Record<string,unknown>.
   // Notion's `page.updated` payload places the page id at `data.id`.
-  const data =
-    typeof obj.data === 'object' && obj.data !== null
-      ? (obj.data as Record<string, unknown>)
-      : null;
-  const pageId = data && typeof data.id === 'string' ? data.id : null;
-  return { type, pageId };
+  const result = webhookPayloadSchema.safeParse(json);
+  if (!result.success) return null;
+  const { type, data } = result.data;
+  return { type, pageId: data?.id ?? null };
 }
 
 /**

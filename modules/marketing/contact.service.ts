@@ -3,6 +3,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 
 import { AuditEvent } from '@/lib/constants/audit-events';
+import { ResultKind } from '@/lib/enums';
 
 import { insertContactSubmission } from './contact.repo';
 import type { ContactSubmissionInput } from './contact.schema';
@@ -15,8 +16,8 @@ import type { ContactSubmissionInput } from './contact.schema';
  * `{ kind }` → `ResultCode` so transport concerns stay out of the service.
  */
 export type ContactServiceResult =
-  | { kind: 'ok' }
-  | { kind: 'error'; ref: string };
+  | { kind: ResultKind.Ok }
+  | { kind: ResultKind.Error; ref: string };
 
 /**
  * Request context the controller resolves (from `headers()`) and forwards to
@@ -51,7 +52,7 @@ export async function submitContactSubmission(
       source: 'marketing_site',
       user_agent: ctx.userAgent,
     });
-    return { kind: 'ok' };
+    return { kind: ResultKind.Ok };
   } catch (err) {
     const ref = randomUUID().slice(0, 8);
     console.error(
@@ -61,6 +62,6 @@ export async function submitContactSubmission(
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return { kind: 'error', ref };
+    return { kind: ResultKind.Error, ref };
   }
 }

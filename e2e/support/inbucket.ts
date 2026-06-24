@@ -11,27 +11,42 @@
  * Mailpit API: https://mailpit.axllent.org/docs/api-v1/
  */
 
+import { z } from 'zod';
+
 const MAILPIT_BASE_URL =
   process.env.MAILPIT_URL ?? process.env.INBUCKET_URL ?? 'http://127.0.0.1:54324';
 
+/** Address entry shared by Mailpit summary and message payloads. */
+const mailpitAddressSchema = z.object({
+  Address: z.string(),
+  Name: z.string(),
+});
+
 /** Raw message summary from `GET /api/v1/search` (Mailpit shape). */
-interface MailpitSummary {
-  ID: string;
-  Subject: string;
-  To: Array<{ Address: string; Name: string }>;
-  From: { Address: string; Name: string };
-  Created: string;
-}
+const mailpitSummarySchema = z.object({
+  ID: z.string(),
+  Subject: z.string(),
+  To: z.array(mailpitAddressSchema),
+  From: mailpitAddressSchema,
+  Created: z.string(),
+});
+export type MailpitSummary = z.infer<typeof mailpitSummarySchema>;
+
+/** Envelope returned by `GET /api/v1/search` (Mailpit shape). */
+const mailpitSearchResponseSchema = z.object({
+  messages: z.array(mailpitSummarySchema).optional(),
+});
 
 /** Full message from `GET /api/v1/message/<ID>` (Mailpit shape). */
-interface MailpitMessage {
-  ID: string;
-  Subject: string;
-  To: Array<{ Address: string; Name: string }>;
-  From: { Address: string; Name: string };
-  Text: string;
-  HTML: string;
-}
+const mailpitMessageSchema = z.object({
+  ID: z.string(),
+  Subject: z.string(),
+  To: z.array(mailpitAddressSchema),
+  From: mailpitAddressSchema,
+  Text: z.string(),
+  HTML: z.string(),
+});
+export type MailpitMessage = z.infer<typeof mailpitMessageSchema>;
 
 /** Normalised message returned to specs. */
 export interface MailMessage {
@@ -52,7 +67,7 @@ async function searchByRecipient(address: string): Promise<MailpitSummary[]> {
   if (!res.ok) {
     throw new Error(`[mailpit] GET ${url} failed: ${res.status}`);
   }
-  const data = (await res.json()) as { messages?: MailpitSummary[] };
+  const data = mailpitSearchResponseSchema.parse(await res.json());
   return data.messages ?? [];
 }
 
@@ -63,7 +78,7 @@ async function getMessage(id: string): Promise<MailMessage> {
   if (!res.ok) {
     throw new Error(`[mailpit] GET ${url} failed: ${res.status}`);
   }
-  const m = (await res.json()) as MailpitMessage;
+  const m = mailpitMessageSchema.parse(await res.json());
   return {
     id: m.ID,
     subject: m.Subject,

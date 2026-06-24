@@ -146,19 +146,36 @@ const DRY_RUN_PATCH_MARKER = Symbol.for('migrate-notion-dry-run-patch');
 type DbTx = typeof db.transaction;
 type PatchedDbTx = DbTx & { [DRY_RUN_PATCH_MARKER]?: true };
 
+/**
+ * Sentinel Error thrown to abort the outer dry-run transaction once the thunk
+ * has run. It carries the thunk's result so the catch can return it after the
+ * rollback. A real `Error` (not a plain object) keeps `only-throw-error` happy
+ * and lets the catch narrow with `instanceof` instead of a cast.
+ */
+class DryRunRollback<T> extends Error {
+  readonly value: T;
+  constructor(value: T) {
+    super('dry-run rollback');
+    this.name = 'DryRunRollback';
+    this.value = value;
+  }
+}
+
 async function runWithRollback<T>(thunk: () => Promise<T>): Promise<T> {
   // Snapshot BEFORE the try. If this property access throws (it shouldn't,
   // but belt-and-braces), no patch was ever installed and there's nothing
   // to restore.
+  // We intentionally snapshot the unbound `transaction` property (not a bound
+  // copy): the restore invariant in `finally` compares it by identity against
+  // the patch we install, and `.bind()` would mint a fresh function each call
+  // and break that check.
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- intentional unbound snapshot; see comment above.
   const original = db.transaction as PatchedDbTx;
   if (original[DRY_RUN_PATCH_MARKER]) {
     throw new Error(
       'runWithRollback: db.transaction is already patched (concurrent dry-run?). Refusing to re-patch.',
     );
   }
-
-  // Sentinel error: thrown to abort the outer transaction at the end.
-  const ROLLBACK = Symbol('dry-run-rollback');
 
   // We'll bind the patched function to a stable identity so the finally
   // block can assert "the patch I installed is still the live value" before
@@ -174,18 +191,19 @@ async function runWithRollback<T>(thunk: () => Promise<T>): Promise<T> {
       patchHolder.current = patched;
       (db as { transaction: DbTx }).transaction = patched;
       const r = await thunk();
-      throw { __rollback: ROLLBACK, value: r };
+      throw new DryRunRollback<T>(r);
     });
     return result as T;
   } catch (e: unknown) {
-    if (e && typeof e === 'object' && '__rollback' in e) {
-      return (e as unknown as { value: T }).value;
+    if (e instanceof DryRunRollback) {
+      return e.value as T;
     }
     throw e;
   } finally {
     // Only restore if `db.transaction` is still our patch. If something
     // else swapped it (shouldn't happen single-threaded, but the assertion
     // catches concurrent misuse), leave that other value in place.
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- intentional unbound read: identity-compared against the installed patch before restoring.
     const live = db.transaction as PatchedDbTx;
     if (patchHolder.current && live === patchHolder.current) {
       (db as { transaction: DbTx }).transaction = original;

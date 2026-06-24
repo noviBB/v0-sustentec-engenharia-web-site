@@ -9,12 +9,13 @@ import {
   processTasks,
 } from '@/lib/db/schema';
 import { vProcessesWithProgress } from '@/lib/db/views';
-import type {
-  processStatus,
-  processTipologia,
-  processLicenseType,
-  processTaskStatus,
-  processTaskPriority,
+import {
+  ProcessStatus,
+  type processStatus,
+  type processTipologia,
+  type processLicenseType,
+  type processTaskStatus,
+  type processTaskPriority,
 } from '@/lib/db/enums';
 
 // `pgView().existing()` in drizzle 0.36.x doesn't expose `$inferSelect` on
@@ -141,9 +142,9 @@ export async function listBuckets(
   };
   for (const row of rows) {
     if (
-      row.status === 'andamento' ||
-      row.status === 'acompanhamento' ||
-      row.status === 'finalizado'
+      row.status === ProcessStatus.Andamento ||
+      row.status === ProcessStatus.Acompanhamento ||
+      row.status === ProcessStatus.Finalizado
     ) {
       buckets[row.status].push(row);
     }

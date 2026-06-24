@@ -3,6 +3,10 @@ import 'server-only';
 import { Client } from '@notionhq/client';
 
 import { config } from '@/lib/config';
+import {
+  notionQueryResponseSchema,
+  parseNotionPage,
+} from './schemas';
 import { NotionTokenMissingError, type NotionPage } from './types';
 
 /**
@@ -16,18 +20,56 @@ import { NotionTokenMissingError, type NotionPage } from './types';
 
 const NOTION_VERSION = '2022-06-28';
 
-interface QueryResponse {
-  results: unknown[];
-  next_cursor: string | null;
-  has_more: boolean;
-}
-
 // Simple retry policy for Notion's 429 / 5xx responses.
 const MAX_RETRIES = 4;
 const BASE_DELAY_MS = 500;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * A loosely-typed Notion SDK method: takes a params object, returns the raw
+ * (untyped) REST response. We deliberately model the SDK methods through this
+ * single loose contract rather than the SDK's strict discriminated-union
+ * parameter types: the read responses are validated by zod downstream, and the
+ * write payloads (`updatePage`) are produced by the reverse-mapper and covered
+ * by its unit tests. This lets us call the SDK without an `as` cast.
+ */
+type NotionLooseFn = (arg: Record<string, unknown>) => Promise<unknown>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Type guard narrowing an `unknown` value to our loose SDK-method contract. A
+ * runtime `typeof === 'function'` is the strongest check JS allows; the call
+ * signature is asserted structurally by the predicate.
+ */
+function isNotionLooseFn(value: unknown): value is NotionLooseFn {
+  return typeof value === 'function';
+}
+
+/**
+ * Feature-detects `client[namespace][method]` at runtime without an `as` cast.
+ * @notionhq v4/v5 expose operations under different namespaces (e.g. `query`
+ * under `databases` vs `dataSources`); the SDK types don't model both shapes,
+ * so we walk the object graph with `in`/`typeof` guards and return the bound
+ * callable when present, or `undefined` when this client version lacks it.
+ */
+function resolveSdkMethod(
+  client: unknown,
+  namespace: string,
+  method: string,
+): NotionLooseFn | undefined {
+  if (!isRecord(client)) return undefined;
+  const ns = client[namespace];
+  if (!isRecord(ns)) return undefined;
+  const fn = ns[method];
+  if (!isNotionLooseFn(fn)) return undefined;
+  // Preserve the namespace as the receiver so the SDK method keeps its `this`.
+  return (arg) => fn.call(ns, arg);
 }
 
 export interface NotionClient {
@@ -78,20 +120,22 @@ export function createNotionClient(token?: string): NotionClient {
       } catch (e: unknown) {
         lastErr = e;
         const status =
-          e && typeof e === 'object' && 'status' in e
-            ? Number((e as { status: unknown }).status)
+          typeof e === 'object' && e !== null && 'status' in e
+            ? Number(e.status)
             : undefined;
         const retryable =
           status === 429 || (status !== undefined && status >= 500);
         if (!retryable || attempt === MAX_RETRIES) throw e;
-        const headerDelay =
-          e && typeof e === 'object' && 'headers' in e
-            ? Number(
-                (e as { headers?: Record<string, string> }).headers?.[
-                  'retry-after'
-                ],
-              ) * 1000
-            : NaN;
+        const retryAfter =
+          typeof e === 'object' &&
+          e !== null &&
+          'headers' in e &&
+          typeof e.headers === 'object' &&
+          e.headers !== null &&
+          'retry-after' in e.headers
+            ? e.headers['retry-after']
+            : undefined;
+        const headerDelay = Number(retryAfter) * 1000;
         const delay = Number.isFinite(headerDelay)
           ? headerDelay
           : BASE_DELAY_MS * 2 ** attempt;
@@ -105,33 +149,37 @@ export function createNotionClient(token?: string): NotionClient {
     async queryDatabaseAll(dataSourceId, filter) {
       // v5 surface: dataSources.query({ data_source_id }). Older majors used
       // databases.query({ database_id }); fall back if dataSources is absent.
-      const loose = notion as unknown as {
-        dataSources?: {
-          query: (a: unknown) => Promise<QueryResponse>;
-        };
-        databases?: {
-          query: (a: unknown) => Promise<QueryResponse>;
-        };
-      };
+      // The SDK's types don't model both namespaces, so we feature-detect via
+      // runtime guards over a `Record<string, unknown>` view of the client. The
+      // response is validated by notionQueryResponseSchema below.
+      const dataSourcesQuery = resolveSdkMethod(notion, 'dataSources', 'query');
+      const databasesQuery = resolveSdkMethod(notion, 'databases', 'query');
 
       const out: NotionPage[] = [];
       let cursor: string | undefined;
       do {
-        const res = await withRetry(() =>
-          loose.dataSources?.query
-            ? loose.dataSources.query({
+        const raw = await withRetry(() =>
+          dataSourcesQuery
+            ? dataSourcesQuery({
                 data_source_id: dataSourceId,
                 start_cursor: cursor,
                 ...(filter ? { filter } : {}),
               })
-            : loose.databases!.query({
-                database_id: dataSourceId,
-                start_cursor: cursor,
-                ...(filter ? { filter } : {}),
-              }),
+            : databasesQuery
+              ? databasesQuery({
+                  database_id: dataSourceId,
+                  start_cursor: cursor,
+                  ...(filter ? { filter } : {}),
+                })
+              : (() => {
+                  throw new Error(
+                    'Notion client exposes neither dataSources.query nor databases.query',
+                  );
+                })(),
         );
+        const res = notionQueryResponseSchema.parse(raw);
         for (const r of res.results) {
-          out.push(r as NotionPage);
+          out.push(parseNotionPage(r));
         }
         cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
       } while (cursor);
@@ -142,16 +190,22 @@ export function createNotionClient(token?: string): NotionClient {
       const res = await withRetry(() =>
         notion.pages.retrieve({ page_id: pageId }),
       );
-      return res as unknown as NotionPage;
+      return parseNotionPage(res);
     },
 
     async updatePage(pageId, properties) {
+      // `pages.update`'s `properties` param is a strict discriminated union over
+      // every Notion property kind; our reverse-mapper emits a loose
+      // Record<string, unknown> (covered by its own unit tests). We invoke the
+      // SDK method through the loose contract so no `as` cast is needed.
+      const update = resolveSdkMethod(notion, 'pages', 'update');
+      if (!update) {
+        throw new Error('Notion client does not expose pages.update');
+      }
       await withRetry(() =>
-        notion.pages.update({
+        update({
           page_id: pageId,
-          // The @notionhq typings are stricter than our loose property map;
-          // the shapes are validated by the reverse-mapper unit tests.
-          properties: properties as never,
+          properties,
         }),
       );
     },

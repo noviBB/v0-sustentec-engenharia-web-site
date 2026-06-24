@@ -1,5 +1,6 @@
 import 'server-only';
 import type { AuditAction } from '@/lib/constants/audit-events';
+import { DbMode } from '@/lib/enums';
 import {
   dbAnon,
   dbRls,
@@ -20,10 +21,10 @@ export interface AuditLogEntry {
 }
 
 export type AuditLogScope =
-  | { mode: 'service' }
-  | { mode: 'rls'; session: SessionLike }
-  | { mode: 'anon' }
-  | { mode: 'tx'; tx: DrizzleTx };
+  | { mode: DbMode.Service }
+  | { mode: DbMode.Rls; session: SessionLike }
+  | { mode: DbMode.Anon }
+  | { mode: DbMode.Tx; tx: DrizzleTx };
 
 /**
  * Inserts one row into `audit_log`. The single place that writes the table —
@@ -43,7 +44,7 @@ export type AuditLogScope =
  */
 export async function insertAuditLog(
   entry: AuditLogEntry,
-  scope: AuditLogScope = { mode: 'service' },
+  scope: AuditLogScope = { mode: DbMode.Service },
 ): Promise<void> {
   const values = {
     action: entry.action,
@@ -54,17 +55,17 @@ export async function insertAuditLog(
     after: entry.after ?? null,
   };
 
-  if (scope.mode === 'tx') {
+  if (scope.mode === DbMode.Tx) {
     await scope.tx.insert(auditLog).values(values);
     return;
   }
-  if (scope.mode === 'rls') {
+  if (scope.mode === DbMode.Rls) {
     await dbRls(scope.session, async (tx) => {
       await tx.insert(auditLog).values(values);
     });
     return;
   }
-  if (scope.mode === 'anon') {
+  if (scope.mode === DbMode.Anon) {
     await dbAnon(async (tx) => {
       await tx.insert(auditLog).values(values);
     });

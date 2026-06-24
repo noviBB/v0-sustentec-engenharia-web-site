@@ -20,6 +20,11 @@ import { randomUUID } from 'node:crypto';
 import { describe } from 'vitest';
 
 import type { SessionLike } from '@/lib/db';
+import type { processes } from '@/lib/db/schema';
+import { ProcessStatus } from '@/lib/db/enums';
+
+/** Drizzle insert shape for a `processes` row (type-only; no runtime DB load). */
+type ProcessInsert = typeof processes.$inferInsert;
 
 export const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 
@@ -31,13 +36,15 @@ export const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
  * skipped. All DB access in this file is behind dynamic imports for that
  * reason.
  */
-export const describeIntegration: typeof describe = hasDatabaseUrl
+type DescribeFn = (name: string, fn: () => void) => void;
+
+export const describeIntegration: DescribeFn = hasDatabaseUrl
   ? describe
-  : ((name: string, fn: () => void) =>
+  : (name, fn) =>
       describe.skip(
         `${name} [skipped: DATABASE_URL unset — start the local Supabase stack]`,
         fn,
-      )) as unknown as typeof describe;
+      );
 
 /** Lazy `@/lib/db` accessor — only resolved when actually running with a DB. */
 async function db() {
@@ -80,7 +87,8 @@ export async function createTenant(
     .insert(clients)
     .values({ name })
     .returning({ id: clients.id });
-  const clientId = client!.id;
+  if (!client) throw new Error('createTenant: client insert returned no row');
+  const clientId = client.id;
   const userId = randomUUID();
   await conn
     .insert(userClients)
@@ -95,22 +103,24 @@ export async function createTenant(
 /** Insert a minimal process for a tenant (service mode). Returns its id. */
 export async function createProcess(
   clientId: string,
-  overrides: Record<string, unknown> = {},
+  overrides: Partial<ProcessInsert> = {},
 ): Promise<string> {
   const { getDbService } = await db();
   const { processes } = await schema();
   const conn = getDbService();
+  const values: ProcessInsert = {
+    client_id: clientId,
+    code: `P-${randomUUID().slice(0, 6)}`,
+    name: 'Integration Process',
+    status: ProcessStatus.Andamento,
+    ...overrides,
+  };
   const [row] = await conn
     .insert(processes)
-    .values({
-      client_id: clientId,
-      code: `P-${randomUUID().slice(0, 6)}`,
-      name: 'Integration Process',
-      status: 'andamento',
-      ...overrides,
-    } as never)
+    .values(values)
     .returning({ id: processes.id });
-  return row!.id;
+  if (!row) throw new Error('createProcess: insert returned no row');
+  return row.id;
 }
 
 /**

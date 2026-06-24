@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ResultCode } from '@/lib/constants/result-codes';
+import type { SessionLike } from '@/lib/db';
+import { ResultKind } from '@/lib/enums';
 
 /**
  * Unit test for the messages service `markMessageReadForClient`. The service
@@ -18,7 +20,7 @@ vi.mock('@/modules/messages/messages.repo', () => fakeRepo);
 
 import { markMessageReadForClient } from '@/modules/messages/messages.service';
 
-const session = { sub: 'user-1' } as never;
+const session: SessionLike = { sub: 'user-1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -28,7 +30,7 @@ describe('markMessageReadForClient', () => {
   it('maps repo ok → { kind: "ok" }', async () => {
     fakeRepo.markMessageRead.mockResolvedValue({ ok: true });
     const result = await markMessageReadForClient(session, 'client-1', 'msg-1');
-    expect(result).toEqual({ kind: 'ok' });
+    expect(result).toEqual({ kind: ResultKind.Ok });
   });
 
   it('maps repo NotFound → { kind: "not_found" }', async () => {
@@ -37,7 +39,7 @@ describe('markMessageReadForClient', () => {
       code: ResultCode.NotFound,
     });
     const result = await markMessageReadForClient(session, 'client-1', 'msg-1');
-    expect(result).toEqual({ kind: 'not_found' });
+    expect(result).toEqual({ kind: ResultKind.NotFound });
   });
 
   it('maps repo ServerError → { kind: "error", ref } (ref passthrough)', async () => {
@@ -47,7 +49,7 @@ describe('markMessageReadForClient', () => {
       ref: 'deadbeef',
     });
     const result = await markMessageReadForClient(session, 'client-1', 'msg-1');
-    expect(result).toEqual({ kind: 'error', ref: 'deadbeef' });
+    expect(result).toEqual({ kind: ResultKind.Error, ref: 'deadbeef' });
   });
 
   it('forwards session, clientId and messageId unchanged to the repo', async () => {

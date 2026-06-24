@@ -39,10 +39,10 @@ interface SyncOptions {
   since?: Date;
 }
 
-async function resolveNotionClient(
+function resolveNotionClient(
   clientRow: { notion_integration_token: string | null },
   opts: SyncOptions,
-): Promise<NotionClient> {
+): NotionClient {
   if (opts.notion) return opts.notion;
   // Per-client token wins; otherwise fall back to the integration env token.
   return createNotionClient(clientRow.notion_integration_token ?? undefined);
@@ -68,7 +68,7 @@ export async function syncClient(
     );
   }
 
-  const notion = await resolveNotionClient(client, opts);
+  const notion = resolveNotionClient(client, opts);
   const caches = await loadSyncCaches();
   const resolveResponsible = makeResponsibleResolver(caches);
 
@@ -177,7 +177,7 @@ export async function syncOne(
   const client = await getClientById(clientId);
   if (!client) throw new Error(`client ${clientId} not found`);
 
-  const notion = await resolveNotionClient(client, opts);
+  const notion = resolveNotionClient(client, opts);
   const caches = await loadSyncCaches();
   const resolveResponsible = makeResponsibleResolver(caches);
 
@@ -227,7 +227,7 @@ export async function exportClient(
     throw new Error(`client ${clientId} not found`);
   }
 
-  const notion = await resolveNotionClient(client, opts);
+  const notion = resolveNotionClient(client, opts);
   const ids = await listProcessIdsForClient(clientId);
 
   let written = 0;
@@ -318,7 +318,7 @@ export async function handleWebhook(
     return { deduped: true, reason: 'unknown_page' };
   }
 
-  const notion = await resolveNotionClient(client, opts);
+  const notion = resolveNotionClient(client, opts);
   const page = await notion.retrievePage(pageId);
 
   // notion_etag stores Notion's `last_edited_time` string verbatim. If it

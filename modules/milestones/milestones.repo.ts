@@ -1,5 +1,5 @@
 import 'server-only';
-import { asc, eq, isNull } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { dbRls, type SessionLike } from '@/lib/db';
 import { processes, processMilestoneKinds, processMilestones } from '@/lib/db/schema';
 

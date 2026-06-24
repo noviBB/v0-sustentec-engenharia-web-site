@@ -12,6 +12,10 @@
 // Row types (type-only; the repo is `server-only` and is not re-exported here).
 export type { PaymentRow, PaymentWithProcess } from './payments.repo';
 
+// Status enum (value) — re-exported so view code can key on `PaymentStatus`
+// without importing `@/lib/db*` directly (the lint boundary forbids that).
+export { PaymentStatus } from '@/lib/db/enums';
+
 // Pure service helpers (safe on server and client).
 export {
   isDue,

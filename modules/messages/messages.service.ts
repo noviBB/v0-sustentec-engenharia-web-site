@@ -1,5 +1,6 @@
 import 'server-only';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import type { SessionLike } from '@/lib/db';
 import { markMessageRead } from '@/modules/messages/messages.repo';
 
@@ -9,9 +10,9 @@ import { markMessageRead } from '@/modules/messages/messages.repo';
  * `ResultCode` contract. `ref` is the correlation id surfaced on errors.
  */
 export type MarkMessageReadResult =
-  | { kind: 'ok' }
-  | { kind: 'not_found' }
-  | { kind: 'error'; ref: string };
+  | { kind: ResultKind.Ok }
+  | { kind: ResultKind.NotFound }
+  | { kind: ResultKind.Error; ref: string };
 
 /**
  * Orchestrates marking one of a client's messages as read. The read is
@@ -29,10 +30,10 @@ export async function markMessageReadForClient(
 ): Promise<MarkMessageReadResult> {
   const result = await markMessageRead(session, clientId, messageId);
   if (result.ok) {
-    return { kind: 'ok' };
+    return { kind: ResultKind.Ok };
   }
   if (result.code === ResultCode.NotFound) {
-    return { kind: 'not_found' };
+    return { kind: ResultKind.NotFound };
   }
-  return { kind: 'error', ref: result.ref };
+  return { kind: ResultKind.Error, ref: result.ref };
 }

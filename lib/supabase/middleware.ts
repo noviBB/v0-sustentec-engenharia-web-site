@@ -53,7 +53,7 @@ export async function updateSession(
 }
 
 async function getUserSafe(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: { auth: Pick<ReturnType<typeof createServerClient>['auth'], 'getUser'> },
 ) {
   const {
     data: { user },

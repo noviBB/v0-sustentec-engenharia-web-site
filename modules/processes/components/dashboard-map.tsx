@@ -5,6 +5,7 @@ import type { ProcessRow } from "@/modules/processes/processes.repo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
+import { ProcessStatus } from "@/lib/db/enums"
 
 interface DashboardMapProps {
   processes: ProcessRow[]
@@ -38,7 +39,9 @@ export function DashboardMap({ processes }: DashboardMapProps) {
 
   const points: MapPoint[] = processes
     .filter(
-      (p) => p.status === "andamento" || p.status === "acompanhamento",
+      (p) =>
+        p.status === ProcessStatus.Andamento ||
+        p.status === ProcessStatus.Acompanhamento,
     )
     .map((p) => {
       const lat = parseCoord(p.latitude)

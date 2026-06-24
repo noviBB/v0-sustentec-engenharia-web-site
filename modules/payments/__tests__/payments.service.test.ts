@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { PaymentStatus } from '@/lib/db/enums';
 import {
   countByStatus,
   groupByProcess,
@@ -14,11 +15,11 @@ import {
 
 describe('isDue', () => {
   it('is true only for pending/overdue', () => {
-    expect(isDue('pending')).toBe(true);
-    expect(isDue('overdue')).toBe(true);
+    expect(isDue(PaymentStatus.Pending)).toBe(true);
+    expect(isDue(PaymentStatus.Overdue)).toBe(true);
   });
   it('is false for paid and unknown statuses', () => {
-    expect(isDue('paid')).toBe(false);
+    expect(isDue(PaymentStatus.Paid)).toBe(false);
     expect(isDue('cancelled')).toBe(false);
     expect(isDue('')).toBe(false);
   });
@@ -28,27 +29,27 @@ describe('totalDue', () => {
   it('sums only due rows, treating null/undefined amounts as 0', () => {
     // Worked example straight from the SPEC.
     const rows = [
-      { status: 'pending', amount: '100' },
-      { status: 'paid', amount: '50' },
-      { status: 'overdue', amount: 25 },
+      { status: PaymentStatus.Pending, amount: '100' },
+      { status: PaymentStatus.Paid, amount: '50' },
+      { status: PaymentStatus.Overdue, amount: 25 },
     ];
     expect(totalDue(rows)).toBe(125);
   });
 
   it('excludes paid rows from the total', () => {
     const rows = [
-      { status: 'paid', amount: '999' },
-      { status: 'paid', amount: 1 },
+      { status: PaymentStatus.Paid, amount: '999' },
+      { status: PaymentStatus.Paid, amount: 1 },
     ];
     expect(totalDue(rows)).toBe(0);
   });
 
   it('coerces pg-numeric strings and tolerates null/undefined amounts', () => {
     const rows = [
-      { status: 'pending', amount: '10.50' },
-      { status: 'overdue', amount: null },
-      { status: 'overdue', amount: undefined },
-      { status: 'pending', amount: 4.5 },
+      { status: PaymentStatus.Pending, amount: '10.50' },
+      { status: PaymentStatus.Overdue, amount: null },
+      { status: PaymentStatus.Overdue, amount: undefined },
+      { status: PaymentStatus.Pending, amount: 4.5 },
     ];
     expect(totalDue(rows)).toBe(15);
   });
@@ -83,18 +84,23 @@ describe('groupByProcess', () => {
 describe('countByStatus', () => {
   it('counts exact status matches', () => {
     const rows = [
-      { status: 'pending', amount: 1 },
-      { status: 'overdue', amount: 1 },
-      { status: 'pending', amount: 1 },
-      { status: 'paid', amount: 1 },
+      { status: PaymentStatus.Pending, amount: 1 },
+      { status: PaymentStatus.Overdue, amount: 1 },
+      { status: PaymentStatus.Pending, amount: 1 },
+      { status: PaymentStatus.Paid, amount: 1 },
     ];
-    expect(countByStatus(rows, 'pending')).toBe(2);
-    expect(countByStatus(rows, 'overdue')).toBe(1);
-    expect(countByStatus(rows, 'paid')).toBe(1);
+    expect(countByStatus(rows, PaymentStatus.Pending)).toBe(2);
+    expect(countByStatus(rows, PaymentStatus.Overdue)).toBe(1);
+    expect(countByStatus(rows, PaymentStatus.Paid)).toBe(1);
   });
 
   it('returns 0 on no match or empty input', () => {
-    expect(countByStatus([], 'pending')).toBe(0);
-    expect(countByStatus([{ status: 'paid', amount: 1 }], 'overdue')).toBe(0);
+    expect(countByStatus([], PaymentStatus.Pending)).toBe(0);
+    expect(
+      countByStatus(
+        [{ status: PaymentStatus.Paid, amount: 1 }],
+        PaymentStatus.Overdue,
+      ),
+    ).toBe(0);
   });
 });

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  ProcessLicenseType,
+  ProcessStatus,
+  ProcessTaskPriority,
+  ProcessTaskStatus,
+  ProcessTipologia,
+} from '@/lib/db/enums';
+
 import { exportToNotion } from '../export';
 import { SCALAR_PROPERTIES, TASK_PROPERTIES } from '../property-map';
 import type { ProcessWithRelations } from '../types';
@@ -20,15 +28,19 @@ const FULL_PROCESS: ProcessWithRelations = {
   links: 'https://example.com/proc',
   city: 'Niterói - RJ',
   environmental_agency: 'INEA',
-  status: 'andamento',
+  status: ProcessStatus.Andamento,
   status_label: 'Em análise',
-  tipologia: 'licenciamento',
+  tipologia: ProcessTipologia.Licenciamento,
   client_cnpj: '03314057000153',
   applicant_cnpj: null,
   started_at: '2026-01-15',
   due_date: '2026-06-30',
   finished_at: null,
-  license_types: ['LP', 'LI', 'outros'],
+  license_types: [
+    ProcessLicenseType.LP,
+    ProcessLicenseType.LI,
+    ProcessLicenseType.Outros,
+  ],
   milestones: {
     aceite_cliente: true,
     analise_previa: true,
@@ -39,16 +51,16 @@ const FULL_PROCESS: ProcessWithRelations = {
       notion_page_id: 'task-001',
       title: 'Coletar documentos',
       summary: 'Reunir CNPJ e matrícula do imóvel',
-      status: 'em_andamento',
-      priority: 'alta',
+      status: ProcessTaskStatus.EmAndamento,
+      priority: ProcessTaskPriority.Alta,
       due_date: '2026-02-01',
     },
     {
       notion_page_id: null,
       title: 'Tarefa sem página',
       summary: null,
-      status: 'aberta',
-      priority: 'media',
+      status: ProcessTaskStatus.Aberta,
+      priority: ProcessTaskPriority.Media,
       due_date: null,
     },
   ],
@@ -115,7 +127,11 @@ describe('exportToNotion (reverse mapping)', () => {
   it('dedupes license labels that fold to the same Notion label', () => {
     const p = exportToNotion({
       ...FULL_PROCESS,
-      license_types: ['outros', 'outros', 'LP'],
+      license_types: [
+        ProcessLicenseType.Outros,
+        ProcessLicenseType.Outros,
+        ProcessLicenseType.LP,
+      ],
     });
     expect(p.properties[SCALAR_PROPERTIES.license_types]).toEqual({
       multi_select: [{ name: 'Outros' }, { name: 'LP' }],
@@ -160,6 +176,7 @@ describe('exportToNotion (reverse mapping)', () => {
   it('maps tasks to per-page payloads', () => {
     expect(payload.tasks).toHaveLength(2);
     const [t1, t2] = payload.tasks;
+    if (!t1 || !t2) throw new Error('expected two task payloads');
 
     expect(t1.page_id).toBe('task-001');
     expect(t1.properties[TASK_PROPERTIES.title]).toEqual({

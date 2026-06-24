@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { test, expect } from '../fixtures';
 
 /**
@@ -15,10 +17,7 @@ const RATE_LIMITER_ON = Boolean(
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
 );
 
-async function fillContactForm(
-  page: import('@playwright/test').Page,
-  email: string,
-) {
+async function fillContactForm(page: Page, email: string) {
   // Stable ids on the marketing contact form (#name/#email/#phone/#message).
   await page.locator('#name').fill('Cliente Teste');
   await page.locator('#email').fill(email);

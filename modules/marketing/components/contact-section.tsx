@@ -94,7 +94,7 @@ export function ContactSection() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Contact Form */}
           <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
-            <form onSubmit={onSubmit} className="space-y-6" noValidate>
+            <form onSubmit={(e) => { void onSubmit(e); }} className="space-y-6" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="name">{t("contact.name")}</Label>
                 <Input

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { ProcessStatus } from '@/lib/db/enums';
+
 import {
   bucketFromLabel,
   bucketFromStatus,
@@ -26,10 +28,12 @@ describe('statusFromLabel', () => {
 
 describe('bucketFromStatus', () => {
   it('collapses arquivado into finalizado', () => {
-    expect(bucketFromStatus('andamento')).toBe('andamento');
-    expect(bucketFromStatus('acompanhamento')).toBe('acompanhamento');
-    expect(bucketFromStatus('finalizado')).toBe('finalizado');
-    expect(bucketFromStatus('arquivado')).toBe('finalizado');
+    expect(bucketFromStatus(ProcessStatus.Andamento)).toBe('andamento');
+    expect(bucketFromStatus(ProcessStatus.Acompanhamento)).toBe(
+      'acompanhamento',
+    );
+    expect(bucketFromStatus(ProcessStatus.Finalizado)).toBe('finalizado');
+    expect(bucketFromStatus(ProcessStatus.Arquivado)).toBe('finalizado');
   });
 });
 

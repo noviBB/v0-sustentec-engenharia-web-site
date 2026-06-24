@@ -1,5 +1,7 @@
+import { ProcessStatus } from '@/lib/db/enums';
+
 import { normalizeLabel } from './parsers';
-import type { ProcessBucket, ProcessStatus } from './types';
+import type { ProcessBucket } from './types';
 
 /**
  * Maps a raw Notion `Situação` label to the canonical `process_status` enum.
@@ -17,35 +19,35 @@ import type { ProcessBucket, ProcessStatus } from './types';
  */
 const STATUS_MAP: Record<string, ProcessStatus> = {
   // andamento
-  andamento: 'andamento',
-  'em andamento': 'andamento',
-  'em analise': 'andamento',
-  'em análise': 'andamento',
-  'aguardando docs': 'andamento',
+  andamento: ProcessStatus.Andamento,
+  'em andamento': ProcessStatus.Andamento,
+  'em analise': ProcessStatus.Andamento,
+  'em análise': ProcessStatus.Andamento,
+  'aguardando docs': ProcessStatus.Andamento,
   // acompanhamento
-  acompanhamento: 'acompanhamento',
-  'em acompanhamento': 'acompanhamento',
-  passivo: 'acompanhamento',
-  'passivo ambiental': 'acompanhamento',
+  acompanhamento: ProcessStatus.Acompanhamento,
+  'em acompanhamento': ProcessStatus.Acompanhamento,
+  passivo: ProcessStatus.Acompanhamento,
+  'passivo ambiental': ProcessStatus.Acompanhamento,
   // finalizado
-  finalizado: 'finalizado',
-  finalizada: 'finalizado',
-  concluido: 'finalizado',
-  concluído: 'finalizado',
-  concluida: 'finalizado',
-  concluída: 'finalizado',
-  entregue: 'finalizado',
+  finalizado: ProcessStatus.Finalizado,
+  finalizada: ProcessStatus.Finalizado,
+  concluido: ProcessStatus.Finalizado,
+  concluído: ProcessStatus.Finalizado,
+  concluida: ProcessStatus.Finalizado,
+  concluída: ProcessStatus.Finalizado,
+  entregue: ProcessStatus.Finalizado,
   // arquivado
-  arquivado: 'arquivado',
-  arquivada: 'arquivado',
-  cancelado: 'arquivado',
-  cancelada: 'arquivado',
+  arquivado: ProcessStatus.Arquivado,
+  arquivada: ProcessStatus.Arquivado,
+  cancelado: ProcessStatus.Arquivado,
+  cancelada: ProcessStatus.Arquivado,
 };
 
 export function statusFromLabel(rawLabel: string | null): ProcessStatus {
-  if (rawLabel == null) return 'andamento';
+  if (rawLabel == null) return ProcessStatus.Andamento;
   const key = normalizeLabel(rawLabel);
-  return STATUS_MAP[key] ?? 'andamento';
+  return STATUS_MAP[key] ?? ProcessStatus.Andamento;
 }
 
 /**
@@ -55,12 +57,12 @@ export function statusFromLabel(rawLabel: string | null): ProcessStatus {
  */
 export function bucketFromStatus(status: ProcessStatus): ProcessBucket {
   switch (status) {
-    case 'andamento':
+    case ProcessStatus.Andamento:
       return 'andamento';
-    case 'acompanhamento':
+    case ProcessStatus.Acompanhamento:
       return 'acompanhamento';
-    case 'finalizado':
-    case 'arquivado':
+    case ProcessStatus.Finalizado:
+    case ProcessStatus.Arquivado:
       return 'finalizado';
     default:
       return 'andamento';

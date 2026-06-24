@@ -56,7 +56,7 @@ function parseArgs(argv: string[]): Args {
     fail('missing required --client=<clientId>');
   }
 
-  return { clientId: clientId as string, direction };
+  return { clientId, direction };
 }
 
 function printUsage(): void {

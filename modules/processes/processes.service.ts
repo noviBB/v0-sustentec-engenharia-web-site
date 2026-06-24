@@ -6,17 +6,18 @@
  * The repository (`processes.repo.ts`) owns DB access; this file owns the
  * status/bucket/aggregate logic the UI derives from those rows.
  */
+import { ProcessBucket, ProcessTaskStatus } from '@/lib/db/enums';
 import type { ProcessRow, ProcessBuckets } from './processes.repo';
 
 /** The three portal-facing process buckets (UI bucket = process status). */
-export type Bucket = 'andamento' | 'acompanhamento' | 'finalizado';
+export type Bucket = ProcessBucket;
 
 /** Bucket order used everywhere the dashboard renders groups / flattens rows. */
 export const BUCKET_ORDER: readonly Bucket[] = [
-  'andamento',
-  'acompanhamento',
-  'finalizado',
-] as const;
+  ProcessBucket.Andamento,
+  ProcessBucket.Acompanhamento,
+  ProcessBucket.Finalizado,
+];
 
 /**
  * Flattens the three buckets back into a single list, in canonical
@@ -72,14 +73,19 @@ export function pendenciasTarget(processes: ProcessRow[]): ProcessRow | null {
  * (`v_processes_with_progress.pendencias_count`) so the client-side filter and
  * the server-side count agree.
  */
-export const CLOSED_TASK_STATUSES: readonly string[] = [
-  'concluida',
-  'arquivada',
+export const CLOSED_TASK_STATUSES: readonly ProcessTaskStatus[] = [
+  ProcessTaskStatus.Concluida,
+  ProcessTaskStatus.Arquivada,
 ];
+
+/** String set of the closed statuses, for plain-string membership checks. */
+const CLOSED_TASK_STATUS_SET: ReadonlySet<string> = new Set(
+  CLOSED_TASK_STATUSES,
+);
 
 /** A task is "open" (an actionable pendência) when its status isn't closed. */
 export function isOpenTask(task: { status: string }): boolean {
-  return !CLOSED_TASK_STATUSES.includes(task.status);
+  return !CLOSED_TASK_STATUS_SET.has(task.status);
 }
 
 /** Filters a task list down to the open (pendência) tasks. */

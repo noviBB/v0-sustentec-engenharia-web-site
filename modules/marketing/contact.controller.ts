@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { createHash } from 'node:crypto';
 
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import { checkContactRateLimit } from '@/lib/rate-limit';
 
 import { contactSubmissionSchema } from './contact.schema';
@@ -37,7 +38,8 @@ export async function submitContact(
 
   const hdrs = await headers();
   const xff = hdrs.get('x-forwarded-for') ?? '';
-  const ip = xff.split(',')[0].trim() || hdrs.get('x-real-ip') || 'unknown';
+  const ip =
+    xff.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
 
   const ipHash = ip === 'unknown' ? null : hashIp(ip);
   const userAgent = hdrs.get('user-agent');
@@ -49,7 +51,7 @@ export async function submitContact(
   }
 
   const result = await submitContactSubmission(data, { ipHash, userAgent });
-  if (result.kind === 'ok') {
+  if (result.kind === ResultKind.Ok) {
     return { ok: true };
   }
   return { ok: false, code: ResultCode.ServerError, ref: result.ref };

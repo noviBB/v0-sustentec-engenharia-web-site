@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuditAction, AuditEvent } from '@/lib/constants/audit-events';
+import type { SessionLike } from '@/lib/db';
+import { ResultKind } from '@/lib/enums';
+import type { Client } from '@/modules/clients/clients.repo';
 import { findStructuredLog } from '@/modules/_test-support/console-log';
 
 /**
@@ -23,14 +26,17 @@ vi.mock('@/lib/db/auditLog', () => fakeAudit);
 
 import { updateClientCadastral } from '@/modules/clients/clients.service';
 
-const session = { sub: 'auth-uid-1' } as never;
+const session: SessionLike = { sub: 'auth-uid-1' };
 
 // A full client row; only the 8 cadastral fields seed the audit `before`.
-// Typed as a plain record so we can spread it; cast to the repo `Client` type
-// at the service call sites.
-const client: Record<string, unknown> = {
+// `notion_database_id` is real non-cadastral noise that must NOT appear in
+// the audit `before`.
+const client: Client = {
   id: 'client-1',
   name: 'Tenant One',
+  notion_cnpj_filter: null,
+  notion_database_id: 'db-1',
+  notion_integration_token: null,
   contact_name: 'Old Name',
   contact_role: 'Old Role',
   contact_email: 'old@example.com',
@@ -39,8 +45,8 @@ const client: Record<string, unknown> = {
   address_city: 'Old City',
   address_state: 'OS',
   address_postal_code: '00000',
-  // non-cadastral noise that must NOT appear in the audit before:
-  notion_page_id: 'np-1',
+  created_at: new Date(),
+  updated_at: new Date(),
   deleted_at: null,
 };
 
@@ -73,11 +79,11 @@ describe('updateClientCadastral', () => {
     fakeRepo.updateClient.mockResolvedValue(null);
     const result = await updateClientCadastral({
       session,
-      client: client as never,
+      client,
       actorId: 'auth-uid-1',
       patch,
     });
-    expect(result).toEqual({ kind: 'not_found' });
+    expect(result).toEqual({ kind: ResultKind.NotFound });
     expect(fakeAudit.insertAuditLog).not.toHaveBeenCalled();
   });
 
@@ -87,11 +93,11 @@ describe('updateClientCadastral', () => {
 
     const result = await updateClientCadastral({
       session,
-      client: client as never,
+      client,
       actorId: 'auth-uid-1',
       patch,
     });
-    expect(result).toEqual({ kind: 'ok' });
+    expect(result).toEqual({ kind: ResultKind.Ok });
 
     // repo called per SPEC: updateClient(session, client.id, patch).
     expect(fakeRepo.updateClient).toHaveBeenCalledWith(session, 'client-1', patch);
@@ -110,10 +116,10 @@ describe('updateClientCadastral', () => {
       [...CADASTRAL_FIELDS].sort(),
     );
     for (const f of CADASTRAL_FIELDS) {
-      expect(entry.before[f]).toBe((client as Record<string, unknown>)[f]);
+      expect(entry.before[f]).toBe(client[f]);
     }
     // and must NOT leak non-cadastral columns.
-    expect(entry.before).not.toHaveProperty('notion_page_id');
+    expect(entry.before).not.toHaveProperty('notion_database_id');
     expect(entry.before).not.toHaveProperty('id');
     // audit written in the same rls mode + session as the data change.
     expect(scope).toEqual({ mode: 'rls', session });
@@ -125,12 +131,12 @@ describe('updateClientCadastral', () => {
 
     const result = await updateClientCadastral({
       session,
-      client: client as never,
+      client,
       actorId: 'auth-uid-1',
       patch,
     });
-    expect(result.kind).toBe('error');
-    if (result.kind !== 'error') throw new Error('expected error');
+    expect(result.kind).toBe(ResultKind.Error);
+    if (result.kind !== ResultKind.Error) throw new Error('expected error');
     expect(result.ref).toHaveLength(8);
 
     const payload = findStructuredLog(errSpy.mock.calls);

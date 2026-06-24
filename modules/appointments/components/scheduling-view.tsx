@@ -183,7 +183,7 @@ export function SchedulingView({ techs }: SchedulingViewProps) {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="tech" className="flex items-center gap-2 text-sm font-medium">
                 <Users className="w-4 h-4 text-[#2d5a27]" />

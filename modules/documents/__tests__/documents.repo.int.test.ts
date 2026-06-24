@@ -17,7 +17,9 @@ import {
  *   - newest created_at first;
  *   - unknown client → [].
  */
-type Repo = typeof import('@/modules/documents/documents.repo');
+import type * as DocumentsRepo from '@/modules/documents/documents.repo';
+
+type Repo = typeof DocumentsRepo;
 
 const world = newWorld();
 let repo: Repo;

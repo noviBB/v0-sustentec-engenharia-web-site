@@ -3,6 +3,7 @@ import 'server-only';
 
 import { requireClient } from '@/lib/auth/tenant';
 import { ResultCode } from '@/lib/constants/result-codes';
+import { ResultKind } from '@/lib/enums';
 import {
   clientCadastralSchema,
   type ClientCadastralResult,
@@ -43,11 +44,11 @@ export async function updateClientAction(
   });
 
   switch (result.kind) {
-    case 'ok':
+    case ResultKind.Ok:
       return { ok: true };
-    case 'not_found':
+    case ResultKind.NotFound:
       return { ok: false, code: ResultCode.NotFound };
-    case 'error':
+    case ResultKind.Error:
       return { ok: false, code: ResultCode.ServerError, ref: result.ref };
   }
 }

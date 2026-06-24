@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuditEvent } from '@/lib/constants/audit-events';
+import { ResultKind } from '@/lib/enums';
 import { findStructuredLog } from '@/modules/_test-support/console-log';
 
 /**
@@ -47,7 +48,7 @@ describe('submitContactSubmission', () => {
   it('returns { kind: "ok" } on a successful anon insert', async () => {
     fakeRepo.insertContactSubmission.mockResolvedValue({ id: 'row-1' });
     const result = await submitContactSubmission(data, ctx);
-    expect(result).toEqual({ kind: 'ok' });
+    expect(result).toEqual({ kind: ResultKind.Ok });
     expect(fakeRepo.insertContactSubmission).toHaveBeenCalledTimes(1);
   });
 
@@ -68,8 +69,8 @@ describe('submitContactSubmission', () => {
   it('returns { kind: "error", ref } with an 8-char ref and logs on repo throw', async () => {
     fakeRepo.insertContactSubmission.mockRejectedValue(new Error('db down'));
     const result = await submitContactSubmission(data, ctx);
-    expect(result.kind).toBe('error');
-    if (result.kind !== 'error') throw new Error('expected error');
+    expect(result.kind).toBe(ResultKind.Error);
+    if (result.kind !== ResultKind.Error) throw new Error('expected error');
     expect(result.ref).toHaveLength(8);
 
     // Structured audit line emitted to stderr (JSON.stringify'd payload).
