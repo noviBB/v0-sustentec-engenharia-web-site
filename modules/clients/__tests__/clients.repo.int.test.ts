@@ -23,14 +23,14 @@ let repo: Repo;
 let a: Tenant;
 let b: Tenant;
 
-beforeAll(async () => {
-  repo = await import('@/modules/clients/clients.repo');
-  a = await createTenant(world, 'Clients Tenant A');
-  b = await createTenant(world, 'Clients Tenant B');
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('clients.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/clients/clients.repo');
+    a = await createTenant(world, 'Clients Tenant A');
+    b = await createTenant(world, 'Clients Tenant B');
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('getClientByIdRls returns own row but null cross-tenant', async () => {
     const own = await repo.getClientByIdRls(a.session, a.clientId);
     expect(own?.id).toBe(a.clientId);

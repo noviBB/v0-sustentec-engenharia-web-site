@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { randomUUID } from 'node:crypto';
 
 import { AuditEvent } from '@/lib/constants/audit-events';

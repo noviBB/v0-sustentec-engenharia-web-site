@@ -15,17 +15,17 @@ import { describeIntegration } from '@/modules/_test-support/integration';
  */
 const createdIds: string[] = [];
 
-afterAll(async () => {
-  if (createdIds.length === 0) return;
-  const { getDbService } = await import('@/lib/db');
-  const { contactSubmissions } = await import('@/lib/db/schema');
-  const { inArray } = await import('drizzle-orm');
-  await getDbService()
-    .delete(contactSubmissions)
-    .where(inArray(contactSubmissions.id, createdIds));
-});
-
 describeIntegration('contact.repo (anon RLS)', () => {
+  afterAll(async () => {
+    if (createdIds.length === 0) return;
+    const { getDbService } = await import('@/lib/db');
+    const { contactSubmissions } = await import('@/lib/db/schema');
+    const { inArray } = await import('drizzle-orm');
+    await getDbService()
+      .delete(contactSubmissions)
+      .where(inArray(contactSubmissions.id, createdIds));
+  });
+
   it('anon may INSERT a submission (write-only)', async () => {
     const { insertContactSubmission } = await import(
       '@/modules/marketing/contact.repo'

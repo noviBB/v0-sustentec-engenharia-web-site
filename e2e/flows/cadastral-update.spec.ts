@@ -22,7 +22,12 @@ async function openDadosCadastrais(page: import('@playwright/test').Page) {
 test.describe('cadastral update', () => {
   test('edit a field and save shows a success toast and persists', async ({
     page,
+    resetDb,
   }) => {
+    // Reseed clients so contact_name is restored to its baseline each run
+    // (this test mutates it).
+    await resetDb(['public.clients']);
+
     await openDadosCadastrais(page);
 
     // Enter edit mode (PT "Editar").

@@ -26,21 +26,21 @@ let aProcArquivado: string;
 let aProcDeleted: string;
 let bProc: string;
 
-beforeAll(async () => {
-  repo = await import('@/modules/processes/processes.repo');
-  a = await createTenant(world, 'Proc Tenant A');
-  b = await createTenant(world, 'Proc Tenant B');
-  aProcAndamento = await createProcess(a.clientId, { status: 'andamento' });
-  aProcArquivado = await createProcess(a.clientId, { status: 'arquivado' });
-  aProcDeleted = await createProcess(a.clientId, {
-    status: 'andamento',
-    deleted_at: new Date(),
-  });
-  bProc = await createProcess(b.clientId, { status: 'andamento' });
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('processes.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/processes/processes.repo');
+    a = await createTenant(world, 'Proc Tenant A');
+    b = await createTenant(world, 'Proc Tenant B');
+    aProcAndamento = await createProcess(a.clientId, { status: 'andamento' });
+    aProcArquivado = await createProcess(a.clientId, { status: 'arquivado' });
+    aProcDeleted = await createProcess(a.clientId, {
+      status: 'andamento',
+      deleted_at: new Date(),
+    });
+    bProc = await createProcess(b.clientId, { status: 'andamento' });
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('listProcessesForClient returns only own-tenant, non-deleted rows', async () => {
     const rows = await repo.listProcessesForClient(a.session, a.clientId);
     const ids = rows.map((r) => r.id);

@@ -39,17 +39,17 @@ async function seedMessage(clientId: string, opts: { read?: boolean } = {}) {
   return row!.id;
 }
 
-beforeAll(async () => {
-  repo = await import('@/modules/messages/messages.repo');
-  a = await createTenant(world, 'Msg Tenant A');
-  b = await createTenant(world, 'Msg Tenant B');
-  await seedMessage(a.clientId, { read: false });
-  await seedMessage(a.clientId, { read: true });
-  bMessageId = await seedMessage(b.clientId, { read: false });
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('messages.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/messages/messages.repo');
+    a = await createTenant(world, 'Msg Tenant A');
+    b = await createTenant(world, 'Msg Tenant B');
+    await seedMessage(a.clientId, { read: false });
+    await seedMessage(a.clientId, { read: true });
+    bMessageId = await seedMessage(b.clientId, { read: false });
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('listMessagesForClient sees only own-tenant rows', async () => {
     const aRows = await repo.listMessagesForClient(a.session, a.clientId);
     expect(aRows.length).toBe(2);

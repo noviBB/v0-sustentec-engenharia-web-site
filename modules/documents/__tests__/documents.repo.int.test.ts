@@ -43,20 +43,20 @@ async function seedDoc(
   });
 }
 
-beforeAll(async () => {
-  repo = await import('@/modules/documents/documents.repo');
-  a = await createTenant(world, 'Doc Tenant A');
-  b = await createTenant(world, 'Doc Tenant B');
-  aProc = await createProcess(a.clientId);
-  bProc = await createProcess(b.clientId);
-  await seedDoc(aProc, 'older', new Date('2026-01-01T00:00:00Z'));
-  await seedDoc(aProc, 'newer', new Date('2026-02-01T00:00:00Z'));
-  await seedDoc(aProc, 'gone', new Date('2026-03-01T00:00:00Z'), new Date());
-  await seedDoc(bProc, 'b-doc', new Date('2026-01-15T00:00:00Z'));
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('documents.repo (RLS)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/documents/documents.repo');
+    a = await createTenant(world, 'Doc Tenant A');
+    b = await createTenant(world, 'Doc Tenant B');
+    aProc = await createProcess(a.clientId);
+    bProc = await createProcess(b.clientId);
+    await seedDoc(aProc, 'older', new Date('2026-01-01T00:00:00Z'));
+    await seedDoc(aProc, 'newer', new Date('2026-02-01T00:00:00Z'));
+    await seedDoc(aProc, 'gone', new Date('2026-03-01T00:00:00Z'), new Date());
+    await seedDoc(bProc, 'b-doc', new Date('2026-01-15T00:00:00Z'));
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('returns own docs newest-first, excluding soft-deleted', async () => {
     const rows = await repo.listDocumentsForClient(a.session, a.clientId);
     expect(rows.map((r) => r.name)).toEqual(['newer', 'older']);

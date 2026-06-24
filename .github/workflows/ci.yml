@@ -39,6 +39,9 @@ jobs:
   # is the canonical platform function that reads `request.jwt.claims` the way
   # dbRls() sets it — a bare image's auth.uid() returns NULL and RLS allow-cases
   # would all fail.
+  # TODO(ci-cost): these are RLS-only tests but we boot the full Supabase stack
+  # via `supabase start`. A leaner Postgres+GoTrue profile (or sharing the e2e
+  # job's already-running stack) could cut CI time/minutes. Behavior unchanged.
   integration:
     runs-on: ubuntu-latest
     env:
@@ -67,29 +70,13 @@ jobs:
       # No db:seed — the RLS integration tests self-provision their tenants.
       - run: pnpm test:int
 
-  # ---- Production build (artifact reused by e2e) ---------------------------
-  build:
-    runs-on: ubuntu-latest
-    needs: typecheck
-    env:
-      # `next build` collects page data for the API routes, which load the
-      # config module and validate env. These only need to be present/valid —
-      # dynamic routes don't open a DB connection at build. Keys via secrets.
-      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SERVICE_ROLE_KEY }}
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      DATABASE_DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      CRON_SECRET: test-cron-secret
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-      - run: pnpm build
-
   # ---- End-to-end: Playwright against the local Supabase stack -------------
+  # No separate build job: the Playwright webServer runs `pnpm build && pnpm
+  # start` itself (see playwright.config.ts), so e2e builds .next with the
+  # resolved env. typecheck gates type errors independently.
   e2e:
     runs-on: ubuntu-latest
-    needs: build
+    needs: typecheck
     env:
       # Email -> Inbucket (the SMTP sink the local Supabase stack runs).
       EMAIL_PROVIDER: smtp
@@ -145,8 +132,6 @@ jobs:
       - name: Install Playwright (chromium)
         run: pnpm exec playwright install --with-deps chromium
 
-      # No artifact download — the Playwright webServer runs `pnpm build &&
-      # pnpm start`, so it builds .next itself with the resolved env.
       - name: Run Playwright tests
         run: pnpm exec playwright test
 

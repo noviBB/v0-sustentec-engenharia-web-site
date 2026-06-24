@@ -44,16 +44,16 @@ async function tasksWithTitle(processId: string, n: number) {
     );
 }
 
-beforeAll(async () => {
-  repo = await import('@/modules/tasks/tasks.repo');
-  a = await createTenant(world, 'Task Tenant A');
-  b = await createTenant(world, 'Task Tenant B');
-  aProc = await createProcess(a.clientId);
-  bProc = await createProcess(b.clientId);
-});
-afterAll(() => cleanupWorld(world));
-
 describeIntegration('tasks.repo (RLS + ensurePaymentOverdueTask)', () => {
+  beforeAll(async () => {
+    repo = await import('@/modules/tasks/tasks.repo');
+    a = await createTenant(world, 'Task Tenant A');
+    b = await createTenant(world, 'Task Tenant B');
+    aProc = await createProcess(a.clientId);
+    bProc = await createProcess(b.clientId);
+  });
+  afterAll(() => cleanupWorld(world));
+
   it('listTasksForClient: tenant A never sees tenant B tasks', async () => {
     const { getDbService } = await import('@/lib/db');
     const { processTasks } = await import('@/lib/db/schema');
