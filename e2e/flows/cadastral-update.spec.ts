@@ -75,4 +75,17 @@ test.describe('cadastral update', () => {
       page.getByText(/dados cadastrais atualizados|client details updated/i),
     ).toHaveCount(0);
   });
+
+  test('read view shows CNPJ/CPF and mailing address, and drops Cargo', async ({
+    page,
+  }) => {
+    await openDadosCadastrais(page);
+
+    await expect(page.getByText(/cnpj\/cpf/i)).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByText(/endereço de correspondência|mailing address/i),
+    ).toBeVisible();
+    // "Cargo" / "Role" (contact role) was removed in #43.3.
+    await expect(page.getByText(/^cargo$|^role$/i)).toHaveCount(0);
+  });
 });

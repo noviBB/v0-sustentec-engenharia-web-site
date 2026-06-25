@@ -16,7 +16,6 @@ import {
   Phone,
   MapPin,
   FileText,
-  Briefcase,
   Building2,
   MapPinned,
   Pencil,
@@ -121,11 +120,6 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
       value: nonEmpty(snapshot.contact_name),
     },
     {
-      icon: Briefcase,
-      label: t("portal.dados.field.contactRole"),
-      value: nonEmpty(snapshot.contact_role),
-    },
-    {
       icon: Mail,
       label: t("portal.dados.field.contactEmail"),
       value: nonEmpty(snapshot.contact_email),
@@ -221,9 +215,6 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
               <Building className="w-6 h-6 text-[#2d5a27]" />
             </div>
             <div>
-              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27]/70">
-                {t("portal.dados.section.client.eyebrow")}
-              </p>
               <p className="text-2xl font-bold text-foreground leading-tight">
                 {snapshot.name}
               </p>
@@ -244,12 +235,6 @@ export function DadosCadastraisView({ client }: DadosCadastraisViewProps) {
                     {t("portal.dados.field.contactName")}
                   </Label>
                   <Input id="contact_name" {...form.register("contact_name")} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="contact_role">
-                    {t("portal.dados.field.contactRole")}
-                  </Label>
-                  <Input id="contact_role" {...form.register("contact_role")} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="contact_email">

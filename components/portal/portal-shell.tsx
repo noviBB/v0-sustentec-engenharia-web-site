@@ -213,6 +213,7 @@ export function PortalShell({
         <ProcessDetail
           key={`${selectedProcess.id}:${detailInitialTab}`}
           process={selectedProcess}
+          client={client}
           payments={paymentsByProcess.get(selectedProcess.id) ?? []}
           milestones={milestonesByProcess.get(selectedProcess.id) ?? []}
           tasks={tasksByProcess.get(selectedProcess.id) ?? []}
