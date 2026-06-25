@@ -7,7 +7,8 @@ import type { PaymentRow } from "@/modules/payments/payments.repo"
 import type { MilestoneRow } from "@/modules/milestones/milestones.repo"
 import type { TaskRow } from "@/modules/tasks/tasks.repo"
 import type { DocumentRow } from "@/modules/documents/documents.repo"
-import { licenseTypeLabel } from "@/lib/constants/license-type-labels"
+import type { Client } from "@/modules/clients/clients.repo"
+import { buildProjectDataRows } from "./project-data-rows"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -37,6 +38,7 @@ import { useLanguage } from "@/lib/language-context"
 
 interface ProcessDetailProps {
   process: ProcessRow
+  client: Client
   payments?: PaymentRow[]
   milestones?: MilestoneRow[]
   tasks?: TaskRow[]
@@ -69,6 +71,7 @@ const TASK_PRIORITY_BADGE: Record<string, string> = {
 
 export function ProcessDetail({
   process,
+  client,
   payments = [],
   milestones = [],
   tasks = [],
@@ -82,37 +85,7 @@ export function ProcessDetail({
   const statusBadgeText = process.status_label ?? process.status
   const openTasks = pickOpenTasks(tasks)
 
-  // The exact "Resumo do enquadramento" rows the client asked for, in order
-  // (issue #32) — aligned as a label/value table, em-dash for missing data.
-  const resumoRows: Array<{ label: string; value: string }> = [
-    {
-      label: t("portal.process.resumo.licenseType"),
-      value:
-        process.license_types.length > 0
-          ? process.license_types.map(licenseTypeLabel).join(", ")
-          : "—",
-    },
-    {
-      label: t("portal.process.resumo.agency"),
-      value: process.environmental_agency ?? "—",
-    },
-    {
-      label: t("portal.process.resumo.processingTime"),
-      value: process.tempo_tramitacao ?? "—",
-    },
-    {
-      label: t("portal.process.resumo.impactClass"),
-      value: process.classe_impacto ?? "—",
-    },
-    {
-      label: t("portal.process.resumo.responsibleTech"),
-      value: process.responsible_tech_name ?? "—",
-    },
-    {
-      label: t("portal.process.resumo.licensedActivity"),
-      value: process.atividade_licenciada ?? "—",
-    },
-  ]
+  const dataRows = buildProjectDataRows(process, client, t)
 
   return (
     <div className="space-y-6">
@@ -237,9 +210,9 @@ export function ProcessDetail({
               <CardTitle className="text-sm font-semibold tracking-wide">{t("portal.process.resumo.title")}</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Aligned label/value table — exact rows + order from issue #32. */}
+              {/* The 10 "Dados do Projeto" rows (issue #43). */}
               <div className="divide-y divide-gray-100">
-                {resumoRows.map((row) => (
+                {dataRows.map((row) => (
                   <div
                     key={row.label}
                     className="grid grid-cols-1 sm:grid-cols-[220px_1fr] gap-1 sm:gap-4 py-2.5 text-sm"
@@ -249,12 +222,6 @@ export function ProcessDetail({
                   </div>
                 ))}
               </div>
-              {process.objective && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-xs text-muted-foreground">{t("portal.process.resumo.objective")}</p>
-                  <p className="text-sm text-foreground mt-1">{process.objective}</p>
-                </div>
-              )}
               {process.observation && (
                 <div className="mt-3">
                   <p className="text-xs text-muted-foreground">{t("portal.process.resumo.observations")}</p>
