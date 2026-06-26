@@ -80,18 +80,27 @@ const ESRI_TILE_URL =
 const ESRI_ATTRIBUTION =
   "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
 
+// Only a handful of distinct status colors ever exist, so cache one DivIcon per
+// color — MultiMarkerMap would otherwise rebuild the SVG + icon for every marker
+// on every render.
+const pinIconCache = new Map<string, L.DivIcon>()
+
 function coloredPinIcon(color: string): L.DivIcon {
+  const cached = pinIconCache.get(color)
+  if (cached) return cached
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36">
     <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 24 12 24s12-15.6 12-24c0-6.6-5.4-12-12-12z" fill="${color}" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));"/>
     <circle cx="12" cy="12" r="4.5" fill="#ffffff"/>
   </svg>`
-  return L.divIcon({
+  const icon = L.divIcon({
     html: svg,
     className: "",
     iconSize: [24, 36],
     iconAnchor: [12, 36],
     popupAnchor: [0, -32],
   })
+  pinIconCache.set(color, icon)
+  return icon
 }
 
 interface SingleMarkerMapProps {

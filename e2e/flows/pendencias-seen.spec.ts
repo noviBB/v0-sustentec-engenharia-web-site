@@ -58,6 +58,12 @@ test.describe('pendências per-project notification (#45.6)', () => {
     const startText = (await targetBadge.textContent())?.trim() ?? '';
     expect(Number(startText)).toBeGreaterThan(0);
 
+    // F1: the dashboard "Resolver Pendências" card reflects the UNSEEN total
+    // (target 2 + other 1 = 3 across the seed) — same metric as the badges.
+    await expect(
+      page.getByText(/você tem 3 itens pendentes|you have 3 pending items/i),
+    ).toBeVisible();
+
     // Open the target project from the sidebar, then switch to its Pendências
     // tab — that fires the mark-seen server action (which POSTs back to
     // /portal). We wait for that POST so the seen cursor is persisted before we
@@ -83,5 +89,11 @@ test.describe('pendências per-project notification (#45.6)', () => {
     await page.reload();
     await expect(sidebarBadge(page, OTHER)).toBeVisible({ timeout: 15_000 });
     await expect(sidebarBadge(page, TARGET)).toHaveCount(0);
+
+    // F1: the "Resolver Pendências" count drops in lockstep with the badges —
+    // only the OTHER project's single unseen item remains.
+    await expect(
+      page.getByText(/você tem 1 item pendente|you have 1 pending item/i),
+    ).toBeVisible({ timeout: 15_000 });
   });
 });

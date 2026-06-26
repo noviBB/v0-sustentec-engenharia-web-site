@@ -47,7 +47,8 @@ export async function markProcessPendenciasSeen(
     const ref = randomUUID().slice(0, 8);
     console.error(
       JSON.stringify({
-        event: AuditEvent.MarkPendenciasSeenFailed,
+        event: AuditEvent.MarkProcessPendenciasSeenFailed,
+        processId,
         ref,
         error: err instanceof Error ? err.message : String(err),
       }),

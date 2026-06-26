@@ -9,6 +9,12 @@ import {
 } from '@/lib/db/schema';
 import { ProcessTaskStatus } from '@/lib/db/enums';
 
+// Open pendência = a non-deleted task not in a terminal status. Shared by both
+// unseen-count queries below and mirrored by v_processes_with_progress's
+// pendencias_count (drizzle/custom/0003_views.sql) — keep the three in sync.
+const openTaskPredicate = sql`${processTasks.deleted_at} IS NULL
+  AND ${processTasks.status} NOT IN (${ProcessTaskStatus.Concluida}, ${ProcessTaskStatus.Arquivada})`;
+
 export async function markPendenciasSeen(
   session: SessionLike,
   clientId: string,
@@ -42,8 +48,7 @@ export async function countUnseenPendencias(
       .innerJoin(processes, sql`${processes.id} = ${processTasks.process_id}`)
       .where(
         sql`${processes.client_id} = ${clientId}
-          AND ${processTasks.deleted_at} IS NULL
-          AND ${processTasks.status} NOT IN (${ProcessTaskStatus.Concluida}, ${ProcessTaskStatus.Arquivada})
+          AND ${openTaskPredicate}
           AND (
             (SELECT seen_at FROM pendencia_seen WHERE user_id = auth.uid() AND client_id = ${clientId}) IS NULL
             OR ${processTasks.created_at} > (SELECT seen_at FROM pendencia_seen WHERE user_id = auth.uid() AND client_id = ${clientId})
@@ -95,8 +100,7 @@ export async function countUnseenPendenciasByProcess(
       .innerJoin(processes, sql`${processes.id} = ${processTasks.process_id}`)
       .where(
         sql`${processes.client_id} = ${clientId}
-          AND ${processTasks.deleted_at} IS NULL
-          AND ${processTasks.status} NOT IN (${ProcessTaskStatus.Concluida}, ${ProcessTaskStatus.Arquivada})
+          AND ${openTaskPredicate}
           AND (
             (SELECT seen_at FROM process_pendencia_seen WHERE user_id = auth.uid() AND process_id = ${processTasks.process_id}) IS NULL
             OR ${processTasks.created_at} > (SELECT seen_at FROM process_pendencia_seen WHERE user_id = auth.uid() AND process_id = ${processTasks.process_id})

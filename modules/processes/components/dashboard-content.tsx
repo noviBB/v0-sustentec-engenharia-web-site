@@ -11,8 +11,6 @@ import {
   BUCKET_ORDER,
   bucketCounts,
   flattenBuckets,
-  pendenciasTarget as pickPendenciasTarget,
-  totalPendencias as sumPendencias,
 } from "@/modules/processes/processes.service"
 import { ProcessBucket, ProcessStatus } from "@/lib/db/enums"
 import { useLanguage } from "@/lib/language-context"
@@ -72,7 +70,12 @@ export function DashboardContent({
   const inProgress = counts.andamento
   const inAccompaniment = counts.acompanhamento
   const finalized = counts.finalizado
-  const totalPendencias = sumPendencias(processes)
+  // "Pendências" surfaces all use the per-process UNSEEN count so every
+  // pendência number on screen (badges, the bell, and this card) agrees.
+  const unseenTotal = processes.reduce(
+    (acc, p) => acc + (unseenByProcess[p.id] ?? 0),
+    0,
+  )
 
   const allGroups: Array<{ bucket: Bucket; items: ProcessRow[] }> =
     BUCKET_ORDER.map((bucket) => ({ bucket, items: buckets[bucket] }))
@@ -80,8 +83,13 @@ export function DashboardContent({
     (group) => bucketFilter === null || group.bucket === bucketFilter,
   )
 
-  // "Resolver Pendências" jumps to the project with the most open items.
-  const pendenciasTarget = pickPendenciasTarget(processes)
+  // "Resolver Pendências" jumps to the project with the most UNSEEN items.
+  const pendenciasTarget = processes.reduce<ProcessRow | null>((best, p) => {
+    const unseen = unseenByProcess[p.id] ?? 0
+    if (unseen <= 0) return best
+    if (!best || unseen > (unseenByProcess[best.id] ?? 0)) return p
+    return best
+  }, null)
 
   const newProjectMailto = `mailto:${NEW_PROJECT_EMAIL}?cc=${encodeURIComponent(
     NEW_PROJECT_CC,
@@ -413,10 +421,10 @@ export function DashboardContent({
                 {t("portal.dashboard.shortcut.pendencias.title")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {(totalPendencias === 1
+                {(unseenTotal === 1
                   ? t("portal.dashboard.shortcut.pendencias.one")
                   : t("portal.dashboard.shortcut.pendencias.other")
-                ).replace("{count}", String(totalPendencias))}
+                ).replace("{count}", String(unseenTotal))}
               </p>
             </div>
           </CardContent>

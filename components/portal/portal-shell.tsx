@@ -220,8 +220,16 @@ export function PortalShell({
   // Fired when a process's pendências tab is opened: zero that process's
   // unseen count optimistically and persist its per-process seen stamp.
   function handlePendenciasViewed(processId: string) {
+    const previous = unseenByProcess[processId] ?? 0
+    if (previous === 0) return
     setUnseenByProcess((prev) => ({ ...prev, [processId]: 0 }))
-    void markProcessPendenciasSeen(processId)
+    void markProcessPendenciasSeen(processId).then((res) => {
+      // Persist failed — restore the badge so the "seen" state isn't silently
+      // lost (it would otherwise reappear only on the next reload).
+      if (!res.ok) {
+        setUnseenByProcess((prev) => ({ ...prev, [processId]: previous }))
+      }
+    })
   }
 
   function handleMessageMarkReadFailed(messageId: string) {

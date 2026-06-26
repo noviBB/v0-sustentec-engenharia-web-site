@@ -402,8 +402,6 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.map.dashboardTitle": "PROJETOS",
     "portal.map.legend.andamento": "Em andamento",
     "portal.map.legend.acompanhamento": "Em acompanhamento",
-    "portal.map.legend.finalizado": "Finalizado",
-
     // Portal — project status badge
     "portal.status.andamento": "Em andamento",
     "portal.status.acompanhamento": "Em acompanhamento",
@@ -810,8 +808,6 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.map.dashboardTitle": "PROJECTS",
     "portal.map.legend.andamento": "In progress",
     "portal.map.legend.acompanhamento": "In accompaniment",
-    "portal.map.legend.finalizado": "Completed",
-
     // Portal — project status badge
     "portal.status.andamento": "In progress",
     "portal.status.acompanhamento": "In accompaniment",
