@@ -20,7 +20,7 @@ export function PaymentsDashboardCard({ total }: PaymentsDashboardCardProps) {
   return (
     <Card className="bg-white">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+        <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide">
           {t("portal.payments.dashboardTotal")}
         </CardTitle>
       </CardHeader>
@@ -30,11 +30,8 @@ export function PaymentsDashboardCard({ total }: PaymentsDashboardCardProps) {
             <CreditCard className="w-6 h-6 text-rose-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-2xl font-bold text-foreground break-words tabular-nums leading-tight">
+            <p className="text-2xl font-bold text-foreground whitespace-nowrap tabular-nums leading-tight">
               {brl.format(total)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("portal.payments.dashboardTotal")}
             </p>
           </div>
         </div>

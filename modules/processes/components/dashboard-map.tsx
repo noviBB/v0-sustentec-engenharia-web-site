@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { ProcessStatus } from "@/lib/db/enums"
+import { statusPinColor } from "./map-pin-color"
 
 interface DashboardMapProps {
   processes: ProcessRow[]
@@ -16,7 +17,14 @@ export interface MapPoint {
   lat: number
   lng: number
   label: string
+  status: ProcessStatus
 }
+
+/** The statuses plotted on the dashboard map, in legend order. */
+const LEGEND_STATUSES: ProcessStatus[] = [
+  ProcessStatus.Andamento,
+  ProcessStatus.Acompanhamento,
+]
 
 function parseCoord(value: string | number | null): number | null {
   if (value === null || value === undefined || value === "") return null
@@ -52,6 +60,7 @@ export function DashboardMap({ processes }: DashboardMapProps) {
         lat,
         lng,
         label: p.name ?? p.code ?? p.id,
+        status: p.status,
       }
     })
     .filter((pt): pt is MapPoint => pt !== null)
@@ -62,6 +71,18 @@ export function DashboardMap({ processes }: DashboardMapProps) {
         <CardTitle className="text-sm font-semibold tracking-wide">
           {t("portal.map.dashboardTitle")}
         </CardTitle>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          {LEGEND_STATUSES.map((status) => (
+            <span key={status} className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: statusPinColor(status) }}
+                aria-hidden
+              />
+              {t(`portal.map.legend.${status}`)}
+            </span>
+          ))}
+        </div>
       </CardHeader>
       <CardContent>
         {points.length === 0 ? (

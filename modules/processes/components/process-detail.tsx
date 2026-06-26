@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { ProcessRow } from "@/modules/processes/processes.repo"
 import { openTasks as pickOpenTasks } from "@/modules/processes/processes.service"
 import type { PaymentRow } from "@/modules/payments/payments.repo"
@@ -38,6 +38,10 @@ import { useLanguage } from "@/lib/language-context"
 import { ProcessTab } from "@/lib/enums"
 import { ProcessTaskPriority } from "@/lib/db/enums"
 
+// Widened to `string` so it compares against the Radix tab `value` (a raw
+// string) without a string-vs-enum comparison.
+const PENDENCIAS_TAB: string = ProcessTab.Pendencias
+
 interface ProcessDetailProps {
   process: ProcessRow
   client: Client
@@ -45,10 +49,14 @@ interface ProcessDetailProps {
   milestones?: MilestoneRow[]
   tasks?: TaskRow[]
   documents?: DocumentRow[]
+  /** The current user's UNSEEN open-pendências count for THIS process. */
+  unseenCount: number
   /** Tab to open on mount — e.g. "pendencias" from Resolver Pendências. */
   initialTab?: string
   /** Returns to the dashboard ("Mais informações" card). */
   onBack: () => void
+  /** Called when the user actually views the Pendências tab. */
+  onPendenciasViewed?: (processId: string) => void
 }
 
 function formatBRDate(value: string | Date | null | undefined): string {
@@ -96,8 +104,10 @@ export function ProcessDetail({
   milestones = [],
   tasks = [],
   documents = [],
+  unseenCount,
   initialTab = ProcessTab.Resumo,
   onBack,
+  onPendenciasViewed,
 }: ProcessDetailProps) {
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<string>(initialTab)
@@ -107,13 +117,25 @@ export function ProcessDetail({
 
   const dataRows = buildProjectDataRows(process, client, t)
 
+  // Deep-links (notifications dropdown / "Resolver Pendências") open straight
+  // to this tab; the shell remounts via `key` on selection, so a mount-only
+  // effect fires the view exactly once.
+  useEffect(() => {
+    if (initialTab === PENDENCIAS_TAB) onPendenciasViewed?.(process.id)
+  }, [])
+
+  function handleTabChange(value: string) {
+    setActiveTab(value)
+    if (value === PENDENCIAS_TAB) onPendenciasViewed?.(process.id)
+  }
+
   return (
     <div className="space-y-6">
       {/* Process Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           {process.code && (
-            <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2.5 py-1 mb-2">
+            <span className="inline-block text-xs font-semibold tracking-[0.15em] uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2.5 py-1 mb-2">
               {process.code}
             </span>
           )}
@@ -172,7 +194,7 @@ export function ProcessDetail({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
           <TabsTrigger
             value={ProcessTab.Resumo}
@@ -194,9 +216,9 @@ export function ProcessDetail({
           >
             <AlertCircle className="w-4 h-4" />
             {t("portal.process.tab.pendencias")}
-            {process.pendencias_count > 0 && (
+            {unseenCount > 0 && (
               <Badge className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs rounded-full bg-amber-500 text-white">
-                {process.pendencias_count}
+                {unseenCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -435,6 +457,7 @@ export function ProcessDetail({
             latitude={process.latitude}
             longitude={process.longitude}
             label={process.name}
+            status={process.status}
           />
         </TabsContent>
       </Tabs>

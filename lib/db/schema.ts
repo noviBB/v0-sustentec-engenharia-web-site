@@ -119,6 +119,26 @@ export const pendenciaSeen = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// process_pendencia_seen  (no FK on user_id; per-user-per-process pendências cursor)
+// ---------------------------------------------------------------------------
+export const processPendenciaSeen = pgTable(
+  'process_pendencia_seen',
+  {
+    user_id: uuid('user_id').notNull(),
+    process_id: uuid('process_id')
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    seen_at: timestamp('seen_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.user_id, t.process_id] })],
+);
+
+// ---------------------------------------------------------------------------
 // responsible_techs
 // ---------------------------------------------------------------------------
 export const responsibleTechs = pgTable('responsible_techs', {

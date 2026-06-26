@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { PortalView, ProcessTab } from "@/lib/enums"
 import { groupByProcess, totalDue } from "@/modules/payments"
 import { useMarkPendenciasSeen } from "@/modules/notifications/hooks/use-mark-pendencias-seen"
+import { useMarkProcessPendenciasSeen } from "@/modules/notifications"
 import type { Client } from "@/modules/clients/clients.repo"
 import type { ProcessBuckets, ProcessRow } from "@/modules/processes/processes.repo"
 import type { MessageRow } from "@/modules/messages/messages.repo"
@@ -40,6 +41,12 @@ interface PortalShellProps {
    * sidebar / per-process badges still show the TOTAL open count.
    */
   unseenPendencias: number
+  /**
+   * Per-process count of open pendências the user hasn't seen yet
+   * (process_id → unseen count). Drives the sidebar / per-process badges and
+   * the header dropdown; cleared per-process as the user views each one.
+   */
+  unseenByProcess: Record<string, number>
 }
 
 // Value-keyed lookups so a raw string narrows to an enum member without an
@@ -81,6 +88,7 @@ export function PortalShell({
   tasks,
   documents,
   unseenPendencias: initialUnseenPendencias,
+  unseenByProcess: initialUnseenByProcess,
 }: PortalShellProps) {
   const [activeItem, setActiveItem] = useState<PortalView>(PortalView.Painel)
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(
@@ -97,7 +105,13 @@ export function PortalShell({
   const [unseenPendencias, setUnseenPendencias] = useState<number>(
     initialUnseenPendencias,
   )
+  // Per-process unseen counts; cleared optimistically when a process's
+  // pendências tab is opened (separate concern from the global bell above).
+  const [unseenByProcess, setUnseenByProcess] = useState<
+    Record<string, number>
+  >(initialUnseenByProcess)
   const { mutate: markPendenciasSeen } = useMarkPendenciasSeen()
+  const { mutate: markProcessPendenciasSeen } = useMarkProcessPendenciasSeen()
 
   // Total still owed = pending + overdue. Uses the payments module's pure
   // `totalDue` helper so the "due" status set lives in one place (the module,
@@ -164,15 +178,18 @@ export function PortalShell({
   const pendenciasSummary = useMemo(
     () =>
       processes
-        .filter((p) => p.pendencias_count > 0)
-        .sort((a, b) => b.pendencias_count - a.pendencias_count)
+        .filter((p) => (unseenByProcess[p.id] ?? 0) > 0)
+        .sort(
+          (a, b) =>
+            (unseenByProcess[b.id] ?? 0) - (unseenByProcess[a.id] ?? 0),
+        )
         .map((p) => ({
           id: p.id,
           name: p.name,
           code: p.code,
-          count: p.pendencias_count,
+          count: unseenByProcess[p.id] ?? 0,
         })),
-    [processes],
+    [processes, unseenByProcess],
   )
 
   function handleProcessSelect(processId: string, tab: string = ProcessTab.Resumo) {
@@ -200,6 +217,13 @@ export function PortalShell({
     void markPendenciasSeen()
   }
 
+  // Fired when a process's pendências tab is opened: zero that process's
+  // unseen count optimistically and persist its per-process seen stamp.
+  function handlePendenciasViewed(processId: string) {
+    setUnseenByProcess((prev) => ({ ...prev, [processId]: 0 }))
+    void markProcessPendenciasSeen(processId)
+  }
+
   function handleMessageMarkReadFailed(messageId: string) {
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, read: false } : m)),
@@ -218,6 +242,8 @@ export function PortalShell({
           milestones={milestonesByProcess.get(selectedProcess.id) ?? []}
           tasks={tasksByProcess.get(selectedProcess.id) ?? []}
           documents={documentsByProcess.get(selectedProcess.id) ?? []}
+          unseenCount={unseenByProcess[selectedProcess.id] ?? 0}
+          onPendenciasViewed={handlePendenciasViewed}
           initialTab={detailInitialTab}
           onBack={() => setActiveItem(PortalView.Painel)}
         />
@@ -245,6 +271,7 @@ export function PortalShell({
             buckets={buckets}
             unreadCount={unreadCount}
             paymentsTotalDue={paymentsTotalDue}
+            unseenByProcess={unseenByProcess}
             onSelectProcess={handleProcessSelect}
             onNavigate={navigate}
           />
@@ -263,6 +290,7 @@ export function PortalShell({
         // from an earlier Resolver Pendências / notifications jump.
         onProcessChange={(processId) => handleProcessSelect(processId)}
         processes={processes}
+        unseenByProcess={unseenByProcess}
         unreadCount={unreadCount}
       />
 

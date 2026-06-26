@@ -14,6 +14,8 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react"
 
 import type { MapPoint } from "./dashboard-map"
+import type { ProcessStatus } from "@/lib/db/enums"
+import { statusPinColor } from "./map-pin-color"
 
 // React StrictMode (dev) double-invokes mount effects, which makes react-leaflet
 // try to initialize Leaflet twice on the same DOM node and throw "Map container
@@ -69,16 +71,51 @@ function fixDefaultIcon(): void {
   proto._sustentecIconFixed = true
 }
 
+// A colored teardrop map-pin built as an inline SVG `divIcon`. Filling the pin
+// with the status hex (white stroke + soft drop shadow) lets a marker carry its
+// status at a glance. The 24x36 viewBox tip sits at the bottom-center, so the
+// anchor is (12, 36) and the popup opens just above the tip.
+const ESRI_TILE_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+const ESRI_ATTRIBUTION =
+  "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+
+function coloredPinIcon(color: string): L.DivIcon {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36">
+    <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 24 12 24s12-15.6 12-24c0-6.6-5.4-12-12-12z" fill="${color}" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));"/>
+    <circle cx="12" cy="12" r="4.5" fill="#ffffff"/>
+  </svg>`
+  return L.divIcon({
+    html: svg,
+    className: "",
+    iconSize: [24, 36],
+    iconAnchor: [12, 36],
+    popupAnchor: [0, -32],
+  })
+}
+
 interface SingleMarkerMapProps {
   lat: number
   lng: number
   label: string
+  /** When provided, the marker uses a status-colored pin instead of the default. */
+  status?: ProcessStatus
 }
 
-export function SingleMarkerMap({ lat, lng, label }: SingleMarkerMapProps) {
+export function SingleMarkerMap({
+  lat,
+  lng,
+  label,
+  status,
+}: SingleMarkerMapProps) {
   useEffect(() => {
     fixDefaultIcon()
   }, [])
+
+  const icon = useMemo(
+    () => (status ? coloredPinIcon(statusPinColor(status)) : undefined),
+    [status],
+  )
 
   return (
     <MapShell>
@@ -91,10 +128,10 @@ export function SingleMarkerMap({ lat, lng, label }: SingleMarkerMapProps) {
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={ESRI_ATTRIBUTION}
+            url={ESRI_TILE_URL}
           />
-          <Marker position={[lat, lng]}>
+          <Marker position={[lat, lng]} {...(icon ? { icon } : {})}>
             <Popup>{label}</Popup>
           </Marker>
         </MapContainer>
@@ -130,11 +167,15 @@ export function MultiMarkerMap({ points }: MultiMarkerMapProps) {
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={ESRI_ATTRIBUTION}
+            url={ESRI_TILE_URL}
           />
           {points.map((p) => (
-            <Marker key={p.id} position={[p.lat, p.lng]}>
+            <Marker
+              key={p.id}
+              position={[p.lat, p.lng]}
+              icon={coloredPinIcon(statusPinColor(p.status))}
+            >
               <Popup>{p.label}</Popup>
             </Marker>
           ))}

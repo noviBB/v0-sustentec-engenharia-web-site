@@ -69,10 +69,10 @@ export function PortalHeader({
 
         {/* Center Title */}
         <div className="flex-1 lg:flex-none lg:text-center px-4">
-          <h1 className="text-lg md:text-xl font-semibold text-primary">
+          <h1 className="text-xl md:text-2xl font-semibold text-primary">
             {t("portal.header.title")}
           </h1>
-          <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
+          <p className="text-sm md:text-base text-muted-foreground hidden sm:block">
             {t("portal.header.subtitle")}
           </p>
         </div>

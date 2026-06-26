@@ -70,3 +70,90 @@ describeIntegration('notifications.repo (RLS)', () => {
     expect(await repo.countUnseenPendencias(a.session, a.clientId)).toBe(1);
   });
 });
+
+describeIntegration('notifications.repo process_pendencia_seen (RLS)', () => {
+  const w = newWorld();
+  let r: Repo;
+  let t1: Tenant;
+  let t2: Tenant;
+  let p1: string;
+  let p2: string;
+
+  function countFor(rows: { process_id: string; count: number }[], pid: string) {
+    return rows.find((row) => row.process_id === pid)?.count ?? 0;
+  }
+
+  beforeAll(async () => {
+    r = await import('@/modules/notifications/notifications.repo');
+    t1 = await createTenant(w, 'Notif PerProc T1');
+    t2 = await createTenant(w, 'Notif PerProc T2');
+    p1 = await createProcess(t1.clientId);
+    p2 = await createProcess(t1.clientId);
+    // p1: 2 open tasks, p2: 1 open task — all created in the past.
+    const past = new Date('2020-01-01T00:00:00.000Z');
+    await seedOpenTask(p1, past);
+    await seedOpenTask(p1, past);
+    await seedOpenTask(p2, past);
+  });
+  afterAll(() => cleanupWorld(w));
+
+  it('counts all open tasks per process when never seen', async () => {
+    const rows = await r.countUnseenPendenciasByProcess(t1.session, t1.clientId);
+    expect(countFor(rows, p1)).toBe(2);
+    expect(countFor(rows, p2)).toBe(1);
+  });
+
+  it('markProcessPendenciasSeen clears only the marked process', async () => {
+    await r.markProcessPendenciasSeen(t1.session, p1);
+
+    const rows = await r.countUnseenPendenciasByProcess(t1.session, t1.clientId);
+    expect(countFor(rows, p1)).toBe(0);
+    expect(countFor(rows, p2)).toBe(1);
+    // p1 should not appear at all (filtered out when count drops to 0).
+    expect(rows.some((row) => row.process_id === p1)).toBe(false);
+  });
+
+  it('counts a task created after the per-process cursor as unseen again', async () => {
+    await seedOpenTask(p1, new Date(Date.now() + 60_000));
+    const rows = await r.countUnseenPendenciasByProcess(t1.session, t1.clientId);
+    expect(countFor(rows, p1)).toBe(1);
+  });
+
+  it('persists the seen row scoped to the marking user', async () => {
+    const { getDbService } = await import('@/lib/db');
+    const { processPendenciaSeen } = await import('@/lib/db/schema');
+    const { and, eq } = await import('drizzle-orm');
+    const [row] = await getDbService()
+      .select({ seen: processPendenciaSeen.seen_at })
+      .from(processPendenciaSeen)
+      .where(
+        and(
+          eq(processPendenciaSeen.user_id, t1.userId),
+          eq(processPendenciaSeen.process_id, p1),
+        ),
+      );
+    expect(row?.seen).toBeInstanceOf(Date);
+  });
+
+  it('isolates rows by user: a second tenant sees none of t1 seen rows', async () => {
+    const { getDbService } = await import('@/lib/db');
+    const { processPendenciaSeen } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+    // t2 has its own (different) processes; it has marked nothing, so under
+    // RLS t2 reads zero process_pendencia_seen rows.
+    const { dbRls } = await import('@/lib/db');
+    const visible = await dbRls(t2.session, async (tx) =>
+      tx
+        .select({ process_id: processPendenciaSeen.process_id })
+        .from(processPendenciaSeen),
+    );
+    expect(visible).toHaveLength(0);
+
+    // Service-mode sanity check: the row genuinely exists for t1's user.
+    const all = await getDbService()
+      .select({ user_id: processPendenciaSeen.user_id })
+      .from(processPendenciaSeen)
+      .where(eq(processPendenciaSeen.process_id, p1));
+    expect(all.every((x) => x.user_id === t1.userId)).toBe(true);
+  });
+});

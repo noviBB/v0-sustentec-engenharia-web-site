@@ -318,7 +318,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.status.paid": "Pago",
     "portal.payments.status.overdue": "Em atraso",
     "portal.payments.paidOn": "Pago em {date}",
-    "portal.payments.dashboardTotal": "Total a pagar",
+    "portal.payments.dashboardTotal": "TOTAL A PAGAR",
     "portal.payments.emailSubject": "Pagamento em atraso",
 
     // Portal — header
@@ -399,7 +399,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — map
     "portal.map.title": "Localização",
     "portal.map.noCoordinates": "Coordenadas não cadastradas",
-    "portal.map.dashboardTitle": "Projetos ativos",
+    "portal.map.dashboardTitle": "PROJETOS",
+    "portal.map.legend.andamento": "Em andamento",
+    "portal.map.legend.acompanhamento": "Em acompanhamento",
+    "portal.map.legend.finalizado": "Finalizado",
 
     // Portal — project status badge
     "portal.status.andamento": "Em andamento",
@@ -723,7 +726,7 @@ const translations: Record<Language, Record<string, string>> = {
     "portal.payments.status.paid": "Paid",
     "portal.payments.status.overdue": "Overdue",
     "portal.payments.paidOn": "Paid on {date}",
-    "portal.payments.dashboardTotal": "Total due",
+    "portal.payments.dashboardTotal": "TOTAL DUE",
     "portal.payments.emailSubject": "Overdue payment",
 
     // Portal — header
@@ -804,7 +807,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Portal — map
     "portal.map.title": "Location",
     "portal.map.noCoordinates": "Coordinates not configured",
-    "portal.map.dashboardTitle": "Active projects",
+    "portal.map.dashboardTitle": "PROJECTS",
+    "portal.map.legend.andamento": "In progress",
+    "portal.map.legend.acompanhamento": "In accompaniment",
+    "portal.map.legend.finalizado": "Completed",
 
     // Portal — project status badge
     "portal.status.andamento": "In progress",
