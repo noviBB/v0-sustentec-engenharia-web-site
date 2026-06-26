@@ -115,7 +115,11 @@ Don't `cd` into a worktree and commit in the main checkout simultaneously — wo
 
 ## Commit signatures
 
-**Do not add `Co-Authored-By: Claude` (or any Claude-related) trailers to commit messages.** Commits should be authored under the user's normal git identity with no attribution to Claude in the body or trailers. This applies to all commits, including squash-merges and amended commits.
+**STRICTLY FORBIDDEN: never put any Claude signature anywhere in the repo.** Do not add `Co-Authored-By: Claude` (or any Claude-related) trailer, body line, or attribution to commit messages or PR descriptions — including squash-merges and amended commits. Commits are authored under the user's normal git identity only, with no attribution to Claude.
+
+## Editing
+
+When making multiple independent edits, batch them into a single message (parallel tool calls) rather than applying them one at a time.
 
 ## More
 

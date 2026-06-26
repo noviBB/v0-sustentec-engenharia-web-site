@@ -20,6 +20,7 @@ export enum AuditEvent {
   PaymentOverdueEmailFailed = 'payment_overdue_email_failed',
   AppointmentNotifyEmailFailed = 'appointment_notify_email_failed',
   MarkPendenciasSeenFailed = 'mark_pendencias_seen_failed',
+  MarkProcessPendenciasSeenFailed = 'mark_process_pendencias_seen_failed',
 }
 
 /** Values written to the `audit_log.action` column. */

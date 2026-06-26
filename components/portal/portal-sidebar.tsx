@@ -31,6 +31,7 @@ interface PortalSidebarProps {
   onProcessChange: (processId: string) => void
   processes: ProcessRow[]
   unreadCount: number
+  unseenByProcess: Record<string, number>
 }
 
 export function PortalSidebar({
@@ -40,6 +41,7 @@ export function PortalSidebar({
   onProcessChange,
   processes,
   unreadCount,
+  unseenByProcess,
 }: PortalSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(true)
@@ -66,7 +68,7 @@ export function PortalSidebar({
   ]
 
   const totalPendencias = processes.reduce(
-    (acc, p) => acc + (p.pendencias_count ?? 0),
+    (acc, p) => acc + (unseenByProcess[p.id] ?? 0),
     0,
   )
 
@@ -104,7 +106,7 @@ export function PortalSidebar({
                 }
               }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all",
                 activeItem === item.id && item.id !== PortalView.Processos
                   ? "bg-[#4caf50] text-white shadow-md"
                   : "text-white/80 hover:bg-white/10 hover:text-white"
@@ -152,7 +154,7 @@ export function PortalSidebar({
                       setIsMobileOpen(false)
                     }}
                     className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all",
+                      "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                       selectedProcess === process.id
                         ? "bg-[#4caf50] text-white shadow-md"
                         : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -160,15 +162,15 @@ export function PortalSidebar({
                   >
                     <div className="flex-1 text-left min-w-0">
                       {process.code && (
-                        <p className="text-[10px] font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
+                        <p className="text-xs font-semibold tracking-wider text-[#f5f1e6]/90 uppercase">
                           {process.code}
                         </p>
                       )}
-                      <p className="truncate text-xs">{process.name ?? "—"}</p>
+                      <p className="truncate text-sm">{process.name ?? "—"}</p>
                     </div>
-                    {process.pendencias_count > 0 && (
-                      <Badge className="h-4 min-w-4 flex items-center justify-center text-[10px] rounded-full bg-amber-500 text-white">
-                        {process.pendencias_count}
+                    {(unseenByProcess[process.id] ?? 0) > 0 && (
+                      <Badge className="h-5 min-w-5 flex items-center justify-center text-xs rounded-full bg-amber-500 text-white">
+                        {unseenByProcess[process.id] ?? 0}
                       </Badge>
                     )}
                   </button>

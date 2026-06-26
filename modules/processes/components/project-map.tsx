@@ -4,12 +4,15 @@ import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
+import type { ProcessStatus } from "@/lib/db/enums"
 
 interface ProjectMapProps {
   latitude: string | number | null
   longitude: string | number | null
   /** Optional label shown on the popup. Defaults to the i18n map title. */
   label?: string | null
+  /** The process status — colors the marker pin when provided. */
+  status?: ProcessStatus
 }
 
 function parseCoord(value: string | number | null): number | null {
@@ -30,6 +33,7 @@ export function ProjectMap({
   latitude,
   longitude,
   label,
+  status,
 }: ProjectMapProps) {
   const { t } = useLanguage()
   const lat = parseCoord(latitude)
@@ -54,6 +58,7 @@ export function ProjectMap({
               lat={lat}
               lng={lng}
               label={label ?? t("portal.map.title")}
+              status={status}
             />
           </div>
         )}

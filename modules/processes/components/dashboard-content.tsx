@@ -11,8 +11,6 @@ import {
   BUCKET_ORDER,
   bucketCounts,
   flattenBuckets,
-  pendenciasTarget as pickPendenciasTarget,
-  totalPendencias as sumPendencias,
 } from "@/modules/processes/processes.service"
 import { ProcessBucket, ProcessStatus } from "@/lib/db/enums"
 import { useLanguage } from "@/lib/language-context"
@@ -36,6 +34,8 @@ interface DashboardContentProps {
   /** Pre-bucketed processes from `listBuckets`. */
   buckets: ProcessBuckets
   unreadCount: number
+  /** Per-process unseen (unread) count, keyed by process id; drives the per-row badge. */
+  unseenByProcess: Record<string, number>
   /** Sum of pending + overdue payment amounts across the client's projects. */
   paymentsTotalDue: number
   /** Opens a process detail; `tab` preselects a detail tab (e.g. pendências). */
@@ -53,6 +53,7 @@ export function DashboardContent({
   displayName,
   buckets,
   unreadCount,
+  unseenByProcess,
   paymentsTotalDue,
   onSelectProcess,
   onNavigate,
@@ -69,7 +70,12 @@ export function DashboardContent({
   const inProgress = counts.andamento
   const inAccompaniment = counts.acompanhamento
   const finalized = counts.finalizado
-  const totalPendencias = sumPendencias(processes)
+  // "Pendências" surfaces all use the per-process UNSEEN count so every
+  // pendência number on screen (badges, the bell, and this card) agrees.
+  const unseenTotal = processes.reduce(
+    (acc, p) => acc + (unseenByProcess[p.id] ?? 0),
+    0,
+  )
 
   const allGroups: Array<{ bucket: Bucket; items: ProcessRow[] }> =
     BUCKET_ORDER.map((bucket) => ({ bucket, items: buckets[bucket] }))
@@ -77,8 +83,13 @@ export function DashboardContent({
     (group) => bucketFilter === null || group.bucket === bucketFilter,
   )
 
-  // "Resolver Pendências" jumps to the project with the most open items.
-  const pendenciasTarget = pickPendenciasTarget(processes)
+  // "Resolver Pendências" jumps to the project with the most UNSEEN items.
+  const pendenciasTarget = processes.reduce<ProcessRow | null>((best, p) => {
+    const unseen = unseenByProcess[p.id] ?? 0
+    if (unseen <= 0) return best
+    if (!best || unseen > (unseenByProcess[best.id] ?? 0)) return p
+    return best
+  }, null)
 
   const newProjectMailto = `mailto:${NEW_PROJECT_EMAIL}?cc=${encodeURIComponent(
     NEW_PROJECT_CC,
@@ -135,7 +146,7 @@ export function DashboardContent({
           onClick={() => setBucketFilter(null)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+            <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.total")}
             </CardTitle>
           </CardHeader>
@@ -146,9 +157,6 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{totalProcesses}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("portal.dashboard.stat.total.label")}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -161,7 +169,7 @@ export function DashboardContent({
           onClick={() => toggleBucketFilter(ProcessBucket.Andamento)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+            <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.inProgress")}
             </CardTitle>
           </CardHeader>
@@ -172,9 +180,6 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{inProgress}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("portal.dashboard.stat.inProgress.label")}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -189,7 +194,7 @@ export function DashboardContent({
           onClick={() => toggleBucketFilter(ProcessBucket.Acompanhamento)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+            <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.accompaniment")}
             </CardTitle>
           </CardHeader>
@@ -200,9 +205,6 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{inAccompaniment}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("portal.dashboard.stat.accompaniment.label")}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -215,7 +217,7 @@ export function DashboardContent({
           onClick={() => toggleBucketFilter(ProcessBucket.Finalizado)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground tracking-wide">
+            <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide">
               {t("portal.dashboard.stat.finalized")}
             </CardTitle>
           </CardHeader>
@@ -226,9 +228,6 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="text-3xl font-bold text-foreground">{finalized}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("portal.dashboard.stat.finalized.label")}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -276,11 +275,11 @@ export function DashboardContent({
                   ) : (
                     <div className="space-y-3">
                       {group.items.map(process => {
-                        const pendencias = process.pendencias_count ?? 0
-                        const pendenciasLabel =
-                          pendencias === 1
-                            ? t("portal.dashboard.pendencias.one").replace("{count}", String(pendencias))
-                            : t("portal.dashboard.pendencias.other").replace("{count}", String(pendencias))
+                        const unseen = unseenByProcess[process.id] ?? 0
+                        const unseenLabel =
+                          unseen === 1
+                            ? t("portal.dashboard.pendencias.one").replace("{count}", String(unseen))
+                            : t("portal.dashboard.pendencias.other").replace("{count}", String(unseen))
                         return (
                           <div
                             key={process.id}
@@ -306,7 +305,7 @@ export function DashboardContent({
                                 </div>
                                 <div>
                                   {process.code && (
-                                    <span className="inline-block text-[10px] font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
+                                    <span className="inline-block text-xs font-semibold tracking-wider uppercase text-[#2d5a27] bg-[#f5f1e6] border border-[#e5dcc5] rounded px-2 py-0.5 mb-1.5">
                                       {process.code}
                                     </span>
                                   )}
@@ -337,9 +336,9 @@ export function DashboardContent({
                                 {process.status_label ?? bucketLabel(group.bucket)}
                               </Badge>
 
-                              {pendencias > 0 && (
+                              {unseen > 0 && (
                                 <Badge className="bg-amber-100 text-amber-800">
-                                  {pendenciasLabel}
+                                  {unseenLabel}
                                 </Badge>
                               )}
 
@@ -422,10 +421,10 @@ export function DashboardContent({
                 {t("portal.dashboard.shortcut.pendencias.title")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {(totalPendencias === 1
+                {(unseenTotal === 1
                   ? t("portal.dashboard.shortcut.pendencias.one")
                   : t("portal.dashboard.shortcut.pendencias.other")
-                ).replace("{count}", String(totalPendencias))}
+                ).replace("{count}", String(unseenTotal))}
               </p>
             </div>
           </CardContent>

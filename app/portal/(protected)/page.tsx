@@ -12,7 +12,10 @@ import { listActiveResponsibleTechs } from "@/modules/appointments/responsible-t
 import { listMilestonesForClient } from "@/modules/milestones/milestones.repo"
 import { listTasksForClient } from "@/modules/tasks/tasks.repo"
 import { listDocumentsForClient } from "@/modules/documents/documents.repo"
-import { countUnseenPendencias } from "@/modules/notifications/notifications.repo"
+import {
+  countUnseenPendencias,
+  countUnseenPendenciasByProcess,
+} from "@/modules/notifications/notifications.repo"
 import { PortalShell } from "@/components/portal/portal-shell"
 
 /**
@@ -48,6 +51,7 @@ export default async function PortalPage() {
     tasks,
     documents,
     unseenPendencias,
+    unseenByProcessRows,
   ] = await Promise.all([
     listBuckets(session, client.id),
     listMessagesForClient(session, client.id),
@@ -58,7 +62,12 @@ export default async function PortalPage() {
     listTasksForClient(session, client.id),
     listDocumentsForClient(session, client.id),
     countUnseenPendencias(session, client.id),
+    countUnseenPendenciasByProcess(session, client.id),
   ])
+
+  const unseenByProcess: Record<string, number> = Object.fromEntries(
+    unseenByProcessRows.map((r) => [r.process_id, r.count]),
+  )
 
   return (
     <PortalShell
@@ -72,6 +81,7 @@ export default async function PortalPage() {
       tasks={tasks}
       documents={documents}
       unseenPendencias={unseenPendencias}
+      unseenByProcess={unseenByProcess}
     />
   )
 }

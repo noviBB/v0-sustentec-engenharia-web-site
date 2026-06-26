@@ -36,7 +36,20 @@ If you have Tailwind 3 muscle memory: forget `tailwind.config.{js,ts}`. Configur
 
 ## Fonts
 
-Geist Sans and Geist Mono are loaded in [app/layout.tsx](../app/layout.tsx) via `next/font/google` and exposed as CSS variables. Use them through the standard Tailwind font utilities once the variables are applied to `<html>`.
+Geist Sans and Geist Mono are loaded in [app/layout.tsx](../app/layout.tsx) via `next/font/google`. Each is instantiated with a CSS-variable output (`--font-geist-sans` / `--font-geist-mono`, `display: 'swap'`), and both variables are applied to `<html>` via `geistSans.variable` / `geistMono.variable` in the className. [app/globals.css](../app/globals.css) then maps the `@theme` tokens to those variables — `--font-sans: var(--font-geist-sans), …` and `--font-mono: var(--font-geist-mono), …` (with `Geist Fallback` / `system-ui` / `monospace` fallbacks) — so `font-sans` / `font-mono` render the real webfont. Use them through the standard Tailwind font utilities.
+
+### Type scale
+
+The portal text floor is `text-xs` — **no arbitrary sizes** (`text-[10px]`, `text-[11px]`, `text-[0.8rem]`). Intended role → size:
+
+| Role | Tailwind size |
+|---|---|
+| Page title | `text-2xl` |
+| Big stat number | `text-3xl` |
+| Section / card title | `text-sm`–`text-base`, semibold |
+| Body | `text-sm` / `text-base` |
+| Nav | `text-base` |
+| Captions / badges | `text-xs` (floor) |
 
 ## Theming
 
