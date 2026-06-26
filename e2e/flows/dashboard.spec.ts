@@ -71,21 +71,16 @@ test.describe('portal dashboard', () => {
   }) => {
     await page.goto('/portal');
 
-    // Scope to the map card so its title doesn't collide with the stat-card
-    // titles (which case-insensitively match the legend labels). The map card
-    // is the only [data-slot="card"] that carries BOTH legend labels —
-    // "Em andamento" AND "Em acompanhamento" — in one card; no single stat card
-    // does.
-    const mapCard = page
-      .locator('[data-slot="card"]')
-      .filter({ has: page.getByText(/^(em andamento|in progress)$/i) })
-      .filter({
-        has: page.getByText(/^(em acompanhamento|in accompaniment)$/i),
-      });
+    // The dashboard map card title is exactly "PROJETOS" / "PROJECTS". The
+    // anchored regex distinguishes it from the process-list card ("MEUS
+    // PROJETOS") and the stat-card titles ("TOTAL DE PROJETOS", etc.), so the
+    // map card is the only [data-slot="card-title"] that matches.
+    const mapTitle = page
+      .locator('[data-slot="card-title"]')
+      .filter({ hasText: /^(projetos|projects)$/i });
 
-    await expect(
-      mapCard.locator('[data-slot="card-title"]'),
-    ).toHaveText(/^(projetos|projects)$/i, { timeout: 15_000 });
+    await expect(mapTitle).toHaveCount(1, { timeout: 15_000 });
+    await expect(mapTitle).toBeVisible();
 
     // The map heading is no longer "Projetos ativos" / "Active projects".
     await expect(
