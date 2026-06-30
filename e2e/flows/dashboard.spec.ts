@@ -44,7 +44,9 @@ test.describe('portal dashboard', () => {
     await expect(
       page.getByRole('heading', { level: 4, name: /finalizado|finalized/i }),
     ).toHaveCount(0);
-    await expect(page.locator('div[tabindex="-1"]')).toBeFocused();
+    // Scope to the process-list container (uniquely `scroll-mt-4`); a bare
+    // div[tabindex="-1"] also matches a shadcn sidebar primitive.
+    await expect(page.locator('div.scroll-mt-4[tabindex="-1"]')).toBeFocused();
 
     // Clicking the TOTAL card clears the filter — the Finalizado group returns.
     await page
