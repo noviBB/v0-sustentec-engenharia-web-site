@@ -15,6 +15,39 @@ const NOTIFY_EMAIL =
   process.env.APPOINTMENT_NOTIFY_EMAIL ??
   'contato@sustentec-engenharia.com.br';
 
+// Seeded active responsible techs in ascending display_name order (issue
+// #34.8), with the email each one is CC'd under on the notification (#34.7).
+// Mirrors scripts/seed-data.ts (RESPONSIBLE_TECHS, active=true). Note the
+// seed uses @example.com addresses, not @sustentec-engenharia.com.br.
+const SEEDED_TECHS: ReadonlyArray<{ displayName: string; email: string }> = [
+  { displayName: 'Hilton Fontenele', email: 'hilton@example.com' },
+  { displayName: 'Ivón O. Benítez', email: 'ivonoristela@example.com' },
+  { displayName: 'Kely Figueira', email: 'kely@example.com' },
+  { displayName: 'Laila Montel', email: 'laila@example.com' },
+  { displayName: 'Leon Dalmasso', email: 'leondalmasso@example.com' },
+  { displayName: 'Maíra Benedikt', email: 'maira@example.com' },
+  { displayName: 'Marcelo Perello', email: 'marcelo@example.com' },
+];
+
+// Mailpit reads the same way the inbucket helper does; we hit the message
+// endpoint directly only to read the Cc list, which the helper doesn't surface.
+const MAILPIT_BASE_URL =
+  process.env.MAILPIT_URL ??
+  process.env.INBUCKET_URL ??
+  'http://127.0.0.1:54324';
+
+/** CC addresses of a captured Mailpit message, read by id. */
+async function ccAddresses(messageId: string): Promise<string[]> {
+  const res = await fetch(
+    `${MAILPIT_BASE_URL}/api/v1/message/${encodeURIComponent(messageId)}`,
+  );
+  if (!res.ok) {
+    throw new Error(`[mailpit] GET message ${messageId} failed: ${res.status}`);
+  }
+  const body = (await res.json()) as { Cc?: Array<{ Address?: string }> };
+  return (body.Cc ?? []).map((c) => c.Address ?? '');
+}
+
 test.describe('appointment create', () => {
   test('booking a slot shows success toast and emails the team', async ({
     page,
@@ -40,6 +73,20 @@ test.describe('appointment create', () => {
     // Responsible tech: Radix Select with trigger id="tech". Open it, pick the
     // first option (option text is the tech display_name).
     await page.locator('#tech').click();
+
+    // #34.8 — the tech options are listed in ascending alphabetical order by
+    // display_name (repo orders asc(display_name)). Read them while the select
+    // is open and assert the sequence matches the seeded order.
+    const techOptions = await page
+      .getByRole('option')
+      .allInnerTexts();
+    const techNames = techOptions.map((t) => t.trim());
+    expect(techNames).toEqual([...techNames].sort((a, b) => a.localeCompare(b)));
+    expect(techNames).toEqual(SEEDED_TECHS.map((t) => t.displayName));
+
+    // Pick the first option (the alphabetically-first tech) and remember its
+    // display name so #34.7 can assert the matching CC below.
+    const chosenTechName = techNames[0]!;
     await page.getByRole('option').first().click();
 
     // Date: open the popover (data-testid="appt-date-trigger") and click an
@@ -85,5 +132,13 @@ test.describe('appointment create', () => {
     // The team mailbox receives the notification email.
     const mail = await waitForLatestMessage(NOTIFY_EMAIL, { timeoutMs: 20_000 });
     expect(mail.subject).toMatch(/nova reunião agendada/i);
+
+    // #34.7 — the chosen responsável is CC'd on the notification. Map the
+    // display name we clicked to its seeded email and assert it appears in the
+    // message's Cc list (read directly from Mailpit; the helper omits Cc).
+    const chosenTech = SEEDED_TECHS.find((t) => t.displayName === chosenTechName);
+    expect(chosenTech, `unknown tech option "${chosenTechName}"`).toBeTruthy();
+    const cc = await ccAddresses(mail.id);
+    expect(cc).toContain(chosenTech!.email);
   });
 });
