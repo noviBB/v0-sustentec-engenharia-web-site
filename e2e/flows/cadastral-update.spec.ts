@@ -88,4 +88,19 @@ test.describe('cadastral update', () => {
     // "Cargo" / "Role" (contact role) was removed in #43.3.
     await expect(page.getByText(/^cargo$|^role$/i)).toHaveCount(0);
   });
+
+  test('read view shows the client label exactly once (no duplicate eyebrow)', async ({
+    page,
+  }) => {
+    await openDadosCadastrais(page);
+
+    // #43.2: the client card used to stack an eyebrow word "Cliente" above the
+    // section title (a visual duplicate). Now only the section title renders
+    // (portal.dados.section.client = "CLIENTE", shown as the CardTitle) plus the
+    // client's name. The eyebrow (portal.dados.section.client.eyebrow) is gone,
+    // so the standalone word "Cliente" must appear exactly once as a label.
+    // Case-insensitive whole-string match catches the "CLIENTE" title; the
+    // subtitle ("Informações do cliente…") is not a whole-string match.
+    await expect(page.getByText(/^cliente$/i)).toHaveCount(1);
+  });
 });

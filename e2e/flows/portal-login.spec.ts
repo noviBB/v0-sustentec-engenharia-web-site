@@ -26,6 +26,24 @@ test.describe('portal login (UI)', () => {
     await expect(page).toHaveURL(/\/portal/);
   });
 
+  // #41.1: the login page shows the "Sustentec Tracker" branding (tagline +
+  // subtitle) and no longer carries the old "Portal do Cliente" phrasing.
+  test('shows Sustentec Tracker branding (#41.1)', async ({ page }) => {
+    await page.goto('/portal/login');
+
+    // PT is the default/fallback language; EN alternates are accepted in case
+    // the language switcher resolved to English.
+    await expect(page.getByText(/sustentec tracker/i)).toBeVisible();
+    await expect(
+      page.getByText(
+        /acompanhe seu processo ambiental em tempo real|track your environmental process in real time/i,
+      ),
+    ).toBeVisible();
+
+    // The old "Portal do Cliente" phrasing must be gone.
+    await expect(page.getByText(/portal do cliente/i)).toHaveCount(0);
+  });
+
   test('invalid credentials show an error and stay on login', async ({ page }) => {
     await page.goto('/portal/login');
     await page.locator('#email').fill('nobody@example.com');

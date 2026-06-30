@@ -26,21 +26,36 @@ test.describe('portal dashboard', () => {
     ).toBeVisible();
   });
 
-  test('clicking a status stat card filters the list, Total clears it', async ({
+  test('clicking a status stat card filters the list + focuses it, Total clears it (#39.1)', async ({
     page,
   }) => {
     await page.goto('/portal');
 
-    // TODO selector: the stat cards are clickable <Card>s without roles/testids.
-    // Click the "Andamento" card by its visible label, then re-click "Total".
-    const andamentoCard = page.getByText(/em andamento|andamento/i).first();
-    await andamentoCard.click();
+    // The stat cards are role="button" Cards; their accessible name includes the
+    // i18n title. Click "EM ANDAMENTO".
+    await page.getByRole('button', { name: /em andamento/i }).first().click();
 
-    // After filtering, the "Ver detalhes" affordance (or a process row) should
-    // still be present for in-progress processes.
-    // TODO selector: assert on the filter effect once a stable hook exists.
-    await expect(page.getByText(/total/i).first()).toBeVisible();
-    await page.getByText(/total/i).first().click();
+    // The list below filters to ONLY the andamento bucket (the "Finalizado"
+    // group header disappears), and the list container (the tabindex=-1 wrapper)
+    // receives focus — the scroll/focus affordance from toggleBucketFilter.
+    await expect(
+      page.getByRole('heading', { level: 4, name: /em andamento|in progress/i }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole('heading', { level: 4, name: /finalizado|finalized/i }),
+    ).toHaveCount(0);
+    // Scope to the process-list container (uniquely `scroll-mt-4`); a bare
+    // div[tabindex="-1"] also matches a shadcn sidebar primitive.
+    await expect(page.locator('div.scroll-mt-4[tabindex="-1"]')).toBeFocused();
+
+    // Clicking the TOTAL card clears the filter — the Finalizado group returns.
+    await page
+      .getByRole('button', { name: /total de projetos|total projects/i })
+      .first()
+      .click();
+    await expect(
+      page.getByRole('heading', { level: 4, name: /finalizado|finalized/i }),
+    ).toBeVisible();
   });
 
   test('stat cards drop the removed subtitle copy and keep the title (#45.1)', async ({
@@ -114,5 +129,76 @@ test.describe('portal dashboard', () => {
     });
 
     expect(box!.height).toBeLessThan(lineHeight * 1.5);
+  });
+
+  test('"Total a pagar" equals the seeded pending+overdue sum (#39.7)', async ({
+    page,
+  }) => {
+    await page.goto('/portal');
+    // Engeprat seed pending payments: CC 26-004 2×8500 + CC 26-016 2×6200 =
+    // R$ 29.400,00 (the paid installments and the finalized project are excluded).
+    await expect(
+      page.getByText(/R\$\s*29\.400,00/).first(),
+    ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('dashboard map plots one marker per active engeprat project (#45.4-5)', async ({
+    page,
+  }) => {
+    await page.goto('/portal');
+    await expect(page.locator('.leaflet-container')).toBeVisible({
+      timeout: 15_000,
+    });
+    // Andamento+acompanhamento with coordinates: CC 26-004 + CC 26-016 = 2
+    // (CC 26-017 is finalizado → excluded from the dashboard map).
+    await expect(page.locator('.leaflet-marker-icon')).toHaveCount(2);
+  });
+
+  test('sidebar shows Sustentec Tracker branding + Leon Dalmasso, no "Portal do Cliente" (#41.1/#39.5)', async ({
+    page,
+  }) => {
+    await page.goto('/portal');
+    await expect(
+      page.getByText(/sustentec tracker/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page
+        .getByText(
+          /acompanhe seu processo ambiental em tempo real|track your environmental process in real time/i,
+        )
+        .first(),
+    ).toBeVisible();
+    await expect(page.getByText(/leon dalmasso/i)).toBeVisible();
+    await expect(page.getByText(/portal do cliente/i)).toHaveCount(0);
+  });
+
+  test('"Nova proposta do Projeto" shortcut mailto targets leondalmasso cc contato (#34.10)', async ({
+    page,
+  }) => {
+    await page.goto('/portal');
+    await expect(
+      page.getByText(/nova proposta do projeto|new project proposal/i),
+    ).toBeVisible({ timeout: 15_000 });
+    const link = page.locator(
+      'a[href^="mailto:leondalmasso@sustentec-engenharia.com.br"]',
+    );
+    await expect(link).toHaveCount(1);
+    await expect(link).toHaveAttribute(
+      'href',
+      /^mailto:leondalmasso@sustentec-engenharia\.com\.br\?cc=contato%40sustentec-engenharia\.com\.br/i,
+    );
+  });
+
+  test('the Resolver Pendências total sums the per-project pendências (#34.1)', async ({
+    page,
+    resetDb,
+  }) => {
+    // Reset the per-process seen cursor so all open pendências read as unseen:
+    // engeprat seed has CC 26-004 (2 open) + CC 26-016 (1 open) = 3.
+    await resetDb(['public.process_pendencia_seen']);
+    await page.goto('/portal');
+    await expect(
+      page.getByText(/você tem 3 iten?s? pendentes?|you have 3 pending items?/i),
+    ).toBeVisible({ timeout: 15_000 });
   });
 });
